@@ -2,7 +2,7 @@
 
 ## Vì sao cần bước này?
 
-VBook cài extension từ một gói `plugin.zip` được liệt kê trong registry `plugin.json`. Repository hiện lưu source code; ZIP cần được build bằng VBook CLI và cần kiểm thử trên runtime Rhino của ứng dụng.
+VBook hỗ trợ cài extension trực tiếp vào app qua Web Server để debug. Để phân phối lâu dài qua GitHub, extension cần được build thành `plugin.zip` và đăng ký trong root `plugin.json`.
 
 ## 1. Chuẩn bị trên máy tính
 
@@ -12,9 +12,17 @@ Clone công cụ VBook CLI v2:
 git clone https://github.com/dat-bi/ext-vbook.git
 ```
 
-Copy thư mục `extensions/vbook-personal-library` từ repository này vào:
+Clone repository thư viện nếu chưa có:
+
+```bash
+git clone https://github.com/collab-code-ai/vbook-library.git
+```
+
+Copy thư mục extension vào workspace của CLI:
 
 ```text
+vbook-library/extensions/vbook-personal-library/
+    ↓ copy to
 ext-vbook/extensions/vbook-personal-library/
 ```
 
@@ -25,26 +33,24 @@ cd ext-vbook/vbook-tool
 npm install
 ```
 
-## 2. Lấy địa chỉ Web Server từ ứng dụng VBook
+## 2. Kết nối VBook trên điện thoại
 
 1. Mở VBook trên điện thoại.
 2. Mở tab **Web Server** trong app.
 3. Bật Web Server nếu đang tắt.
-4. Ghi lại IP và port mà app hiển thị.
+4. Ghi lại IP và port app hiển thị.
 5. Đảm bảo máy tính và điện thoại ở cùng mạng LAN.
 
-Tạo file `ext-vbook/vbook-tool/.env`:
+Tạo file `ext-vbook/vbook-tool/.env` và điền IP/port thực tế:
 
 ```env
-author=collab-code-ai
 VBOOK_IP=192.168.1.XX
 VBOOK_PORT=8080
-GITHUB_REPO=collab-code-ai/vbook-library
 ```
 
-Thay `192.168.1.XX` bằng IP thật trên màn hình VBook. Nếu app hiển thị port khác 8080, dùng đúng port đó.
+Không dùng IP ví dụ nếu chưa đối chiếu với màn hình điện thoại. Nếu app hiển thị port khác 8080, dùng đúng port đó.
 
-## 3. Chạy kiểm tra
+## 3. Validate và debug
 
 Mở terminal tại:
 
@@ -52,7 +58,7 @@ Mở terminal tại:
 ext-vbook/extensions/vbook-personal-library/
 ```
 
-Chạy các lệnh sau:
+Chạy:
 
 ```bash
 node ../../vbook-tool/index.js check-env
@@ -67,23 +73,33 @@ Sau khi có ít nhất một sách trong `library/catalog.json`, đồng bộ d�
 node ../../vbook-tool/index.js test-all
 ```
 
-`test-all` đi qua Home → Gen → Detail → TOC → Chapter. `catalog.json` hiện đang rỗng nên chưa thể có một lượt test-all hoàn chỉnh.
+`test-all` đi qua Home → Gen → Detail → TOC → Chapter. Catalog hiện đang rỗng nên chưa thể có một lượt test-all hoàn chỉnh.
 
-## 4. Build
+## 4. Cài trực tiếp vào VBook để dùng thử
 
-Chỉ build sau khi validation và kiểm thử thiết bị đạt yêu cầu:
+Sau khi `validate` đạt và debug không có lỗi, chạy:
+
+```bash
+node ../../vbook-tool/index.js install
+```
+
+CLI sẽ gửi extension từ thư mục làm việc vào VBook thông qua Web Server. Đây là cách cài thử/dev install; không cần ZIP hoặc root registry. Mở lại danh sách nguồn/extension trong VBook để tìm **VBook Personal Library**.
+
+## 5. Build gói để phân phối qua GitHub
+
+Sau khi test trên thiết bị đạt yêu cầu:
 
 ```bash
 node ../../vbook-tool/index.js build
 ```
 
-CLI tạo:
+CLI tạo `plugin.zip` trong thư mục extension. Upload file đó vào:
 
 ```text
 extensions/vbook-personal-library/plugin.zip
 ```
 
-Gửi `plugin.zip` vừa build lại cho ChatGPT hoặc upload vào đúng đường dẫn trong repository. Sau khi ZIP được upload, root registry `plugin.json` mới được publish và VBook mới có thể cài từ kho.
+Sau đó tạo root `plugin.json` từ `docs/plugin-registry.template.json`. Khi hai file đã được publish, VBook có thể cài qua Kho tiện ích.
 
 ## Lưu ý
 

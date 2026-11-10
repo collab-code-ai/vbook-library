@@ -1,6 +1,27 @@
 # Cài VBook Personal Library vào ứng dụng VBook
 
-## Điều kiện trước khi cài
+Có hai cách cài: cài trực tiếp để thử bằng VBook CLI, hoặc cài lâu dài từ GitHub repository.
+
+## Cách A — Cài trực tiếp từ máy tính (chưa cần ZIP)
+
+1. Mở VBook trên điện thoại.
+2. Mở tab **Web Server**, bật Web Server và ghi lại IP/port.
+3. Đảm bảo máy tính và điện thoại cùng mạng LAN.
+4. Làm theo [VBOOK-CLI-SETUP.md](VBOOK-CLI-SETUP.md) để chuẩn bị CLI và copy extension source vào workspace.
+5. Từ thư mục `ext-vbook/extensions/vbook-personal-library`, chạy:
+
+```bash
+node ../../vbook-tool/index.js validate
+node ../../vbook-tool/index.js install
+```
+
+6. Quay lại VBook, mở danh sách nguồn/extension và tìm **VBook Personal Library**.
+
+Cách này gửi extension trực tiếp từ máy tính vào ứng dụng qua Web Server. Nó phù hợp để kiểm thử, chưa phải cài đặt phân phối qua GitHub.
+
+## Cách B — Cài lâu dài từ GitHub
+
+### Điều kiện
 
 Repository phải có đủ:
 - `extensions/vbook-personal-library/plugin.zip`: extension đã build bằng VBook CLI.
@@ -9,15 +30,13 @@ Repository phải có đủ:
 
 Hiện source code và icon đã được tạo. ZIP và root registry chưa được publish vì còn bước kiểm thử/build bằng VBook CLI trên thiết bị.
 
-## URL registry
+### URL registry
 
 Sau khi publish root `plugin.json`, dùng URL:
 
 `https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/plugin.json`
 
-## Thêm kho trong ứng dụng
-
-Theo hướng dẫn của kho extension VBook hiện tại:
+### Thêm kho trong ứng dụng
 
 1. Mở ứng dụng **VBook**.
 2. Vào **Cài đặt**.
