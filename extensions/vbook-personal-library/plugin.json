@@ -4,12 +4,11 @@
     "author": "collab-code-ai",
     "version": 1,
     "source": "https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/library",
+    "regexp": "https?:\\/\\/raw\\.githubusercontent\\.com\\/collab-code-ai\\/vbook-library\\/main\\/library\\/books\\/[a-zA-Z0-9-]+\\/book\\.json",
     "description": "Đọc sách và truyện trong thư viện cá nhân trên GitHub",
-    "locale": "vi",
-    "regexp": "^(https?://)?raw\\.githubusercontent\\.com/collab-code-ai/vbook-library/main/library/books/[^/]+/book\\.json$",
-    "type": "novel",
-    "nsfw": false,
-    "encrypt": false
+    "locale": "vi_VN",
+    "language": "javascript",
+    "type": "novel"
   },
   "script": {
     "home": "home.js",
@@ -17,9 +16,5 @@
     "detail": "detail.js",
     "toc": "toc.js",
     "chap": "chap.js"
-  },
-  "config": {
-    "thread_num": 3,
-    "delay": 150
   }
 }

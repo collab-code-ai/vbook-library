@@ -1,43 +1,48 @@
 # Cài VBook Personal Library vào ứng dụng VBook
 
-## Điều kiện
+## Điều kiện trước khi cài
 
-Trước khi thêm nguồn vào app, repository phải có đủ:
-- `extension/plugin.zip`: gói extension đã build bằng VBook CLI.
-- `plugin.json` ở root: registry trỏ đến ZIP đó.
+Repository phải có đủ:
+- `extensions/vbook-personal-library/plugin.zip`: extension đã build bằng VBook CLI.
+- `plugin.json` ở root: registry trỏ tới ZIP.
+- Repository ở chế độ Public để VBook tải Raw GitHub.
 
-Hiện source scaffold đã được tạo; chưa thêm registry root và ZIP cho đến khi hoàn tất bước build hợp lệ.
+Hiện source code và icon đã được tạo. ZIP và root registry chưa được publish vì còn bước kiểm thử/build bằng VBook CLI trên thiết bị.
 
-## Cài nguồn
+## URL registry
 
-Khi hai file trên đã được publish, dùng URL registry:
+Sau khi publish root `plugin.json`, dùng URL:
 
 `https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/plugin.json`
 
-Trong VBook (tên menu có thể khác nhẹ theo phiên bản):
-1. Mở **Cài đặt**.
-2. Vào **Kho tiện ích** (Extension repositories).
-3. Chọn **Thêm kho**.
-4. Dán URL registry ở trên và xác nhận.
-5. Làm mới danh sách tiện ích.
-6. Tìm **VBook Personal Library** và chọn **Cài đặt**.
-7. Mở lại khu vực tiện ích/nguồn truyện. Chọn VBook Personal Library để xem các tab thư viện.
+## Thêm kho trong ứng dụng
 
-Ở một số phiên bản giao diện cũ, đường dẫn có thể là **Cá nhân → Phần mở rộng → dấu ba chấm → Quản lý extensions → Tất cả**.
+Theo hướng dẫn của kho extension VBook hiện tại:
 
-## Sau khi cài
+1. Mở ứng dụng **VBook**.
+2. Vào **Cài đặt**.
+3. Chọn **Kho tiện ích**.
+4. Nhấn **Thêm kho**.
+5. Dán URL registry ở trên.
+6. Xác nhận và làm mới danh sách.
+7. Tìm **VBook Personal Library** và chọn cài đặt.
+8. Quay lại danh sách nguồn/tiện ích và mở **VBook Personal Library**.
 
-- Tab **Toàn bộ thư viện** hiển thị mọi sách trong `library/catalog.json`.
-- Tab **Mới cập nhật** lọc theo thứ tự `updatedAt`.
-- Tab **Đang phát hành** lọc `status` khác `completed`.
-- Tab **Hoàn thành** lọc `status = completed`.
-- Dùng chức năng tìm kiếm của VBook để tìm theo tiêu đề, tác giả hoặc mô tả.
+## Sử dụng
 
-## Nếu không thấy nguồn hoặc sách
+- **Toàn bộ thư viện**: mọi đầu sách trong `library/catalog.json`.
+- **Mới cập nhật**: sắp xếp theo `updatedAt` mới nhất.
+- **Đang phát hành**: sách có trạng thái khác `completed`.
+- **Đã hoàn thành**: sách có `status = completed`.
+- Dùng tìm kiếm VBook để lọc theo tên sách, tác giả, mô tả hoặc thể loại.
 
-1. Kiểm tra URL registry mở được trên trình duyệt và trả về JSON.
-2. Kiểm tra `plugin.json` root có entry `VBook Personal Library`.
-3. Kiểm tra trường `path` trỏ tới `extension/plugin.zip` và URL ZIP mở được.
-4. Kiểm tra repository là Public.
-5. Làm mới kho tiện ích hoặc thoát/mở lại VBook.
-6. Nếu extension đã cài nhưng chưa có sách, kiểm tra `library/catalog.json`; danh mục ban đầu đang rỗng.
+Catalog ban đầu đang rỗng. Sau khi ChatGPT thêm sách và cập nhật `catalog.json`, VBook sẽ hiển thị sách khi tải lại nguồn.
+
+## Khắc phục sự cố
+
+1. Mở URL registry trên trình duyệt; phải trả về JSON.
+2. Kiểm tra `path` trong registry trỏ tới ZIP có tồn tại.
+3. Kiểm tra `source` trong registry và `metadata.source` trong extension đều trỏ tới thư mục `library`.
+4. Kiểm tra repository Public.
+5. Làm mới Kho tiện ích hoặc đóng/mở lại VBook.
+6. Nếu extension cài được nhưng chưa thấy sách, kiểm tra `library/catalog.json`.

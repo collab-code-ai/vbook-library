@@ -1,28 +1,29 @@
 # VBook Personal Library
 
-Thư viện sách/truyện cá nhân được phân phối qua GitHub và đọc bằng ứng dụng VBook.
+Thư viện sách/truyện cá nhân được lưu trên GitHub và đọc bằng ứng dụng VBook thông qua một extension duy nhất.
 
 ## Kiến trúc
 
-- `library/catalog.json`: danh mục tất cả đầu sách.
-- `library/books/<book-id>/book.json`: metadata và cấu trúc chương/tập của một đầu sách.
-- `library/books/.../*.html`: nội dung chương dạng HTML fragment.
-- `extension/`: mã nguồn VBook extension (type `novel`).
-- `docs/`: quy ước dữ liệu, quy trình nhập sách và hướng dẫn cài đặt.
+- `library/catalog.json`: danh mục nhẹ để VBook hiển thị và tìm kiếm sách.
+- `library/books/<book-id>/book.json`: metadata, tập và chương của một đầu sách.
+- `library/books/.../*.html`: nội dung chương HTML fragment UTF-8.
+- `extensions/vbook-personal-library/`: extension VBook type `novel`.
+- `docs/`: schema dữ liệu, quy trình nhập sách, build và cài đặt.
 
-GitHub là nguồn dữ liệu công khai (source of truth) cho bản MVP. Không lưu token, cookie hoặc dữ liệu riêng tư trong repository.
+GitHub Public là nguồn dữ liệu gốc cho MVP. Nội dung trong repository có thể được truy cập công khai; chỉ đưa lên nội dung bạn sở hữu hoặc có quyền phân phối. Không lưu token/cookie trong repository.
 
-## Trạng thái triển khai
+## Trạng thái
 
-- [x] Khởi tạo cấu trúc dữ liệu và mã nguồn extension.
-- [x] Định nghĩa quy ước Book / Volume / Chapter.
-- [ ] Build `extension/plugin.zip` bằng VBook CLI và developer server.
-- [ ] Tạo registry `plugin.json` ở root sau khi ZIP đã được build và upload.
-- [ ] Cài từ Kho tiện ích trên VBook và kiểm thử trên thiết bị.
+- [x] Tạo cấu trúc thư viện Book / Volume / Chapter.
+- [x] Tạo mã nguồn extension theo cấu trúc `extensions/<name>` của VBook CLI v2.
+- [x] Tạo icon extension.
+- [ ] Chạy `vbook validate`, debug và `test-all` trên thiết bị VBook.
+- [ ] Build `plugin.zip` bằng VBook CLI.
+- [ ] Publish root `plugin.json` registry và cài từ ứng dụng VBook.
 
-**Lưu ý:** Chưa thêm repository này vào VBook cho đến khi `extension/plugin.zip` và root `plugin.json` đã được publish. Làm vậy để tránh VBook hiển thị một gói chưa tồn tại.
+**Chưa thêm repository vào VBook:** cần hoàn thành build `plugin.zip` và tạo root `plugin.json` trước để app có thể tải gói cài đặt hợp lệ.
 
-## Cấu trúc
+## Cấu trúc repository
 
 ```text
 vbook-library/
@@ -30,42 +31,43 @@ vbook-library/
 ├── docs/
 │   ├── CONTENT-FORMAT.md
 │   ├── PUBLISHING.md
+│   ├── VBOOK-CLI-SETUP.md
 │   ├── VBOOK-INSTALL.md
 │   └── plugin-registry.template.json
-├── extension/
-│   ├── plugin.json
-│   └── src/
-│       ├── config.js
-│       ├── home.js
-│       ├── search.js
-│       ├── detail.js
-│       ├── toc.js
-│       └── chap.js
+├── extensions/
+│   └── vbook-personal-library/
+│       ├── plugin.json
+│       ├── icon.png
+│       └── src/
+│           ├── library.js
+│           ├── home.js
+│           ├── gen.js
+│           ├── search.js
+│           ├── detail.js
+│           ├── toc.js
+│           └── chap.js
 └── library/
     ├── catalog.json
     └── books/
         └── README.md
 ```
 
-## Thêm sách
+## Cách thêm sách
 
-Khi cung cấp một bản sách/truyện, hãy yêu cầu ChatGPT:
+Khi bạn gửi file hoặc nội dung sách/truyện, ChatGPT sẽ:
 
-1. Đọc và xác định metadata, chương và tập.
-2. Đề xuất ID ổn định cho sách.
-3. Chuyển nội dung từng chương thành HTML fragment UTF-8.
-4. Tạo/cập nhật `book.json`, các file chương và `catalog.json`.
-5. Kiểm tra đường dẫn, thứ tự chương, số lượng chương và JSON.
-6. Commit các thay đổi lên GitHub.
+1. Phân tích tên sách, tác giả, mô tả, trạng thái, tập và chương.
+2. Tạo ID ổn định cho đầu sách.
+3. Chuyển từng chương thành HTML fragment UTF-8.
+4. Tạo/cập nhật `book.json`, file chương và `catalog.json`.
+5. Kiểm tra đường dẫn, thứ tự tập/chương, JSON và nội dung.
+6. Commit trực tiếp các thay đổi lên GitHub.
 
-Chi tiết: [docs/CONTENT-FORMAT.md](docs/CONTENT-FORMAT.md) và [docs/PUBLISHING.md](docs/PUBLISHING.md).
+Extension đọc `catalog.json`, `book.json` và HTML chương. Thêm sách mới không yêu cầu build lại extension.
 
-## Cài vào VBook
+## URL
 
-Sau khi hoàn tất build và publish gói extension, làm theo [docs/VBOOK-INSTALL.md](docs/VBOOK-INSTALL.md).
+- Repository: https://github.com/collab-code-ai/vbook-library
+- Registry (chỉ hoạt động sau khi publish root `plugin.json`): https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/plugin.json
 
-Repository URL:
-`https://github.com/collab-code-ai/vbook-library`
-
-Registry URL (sẽ hoạt động sau khi publish root `plugin.json`):
-`https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/plugin.json`
+Chi tiết: [CONTENT-FORMAT](docs/CONTENT-FORMAT.md), [PUBLISHING](docs/PUBLISHING.md), [VBOOK-CLI-SETUP](docs/VBOOK-CLI-SETUP.md), [VBOOK-INSTALL](docs/VBOOK-INSTALL.md).
