@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "author": "collab-code-ai",
+    "description": "Personal book and novel library for VBook"
+  },
+  "data": [
+    {
+      "name": "VBook Personal Library",
+      "author": "collab-code-ai",
+      "path": "https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/extension/plugin.zip",
+      "version": 1,
+      "source": "https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/library",
+      "description": "Đọc sách và truyện được quản lý trong thư viện cá nhân GitHub",
+      "type": "novel",
+      "locale": "vi_VN"
+    }
+  ]
+}

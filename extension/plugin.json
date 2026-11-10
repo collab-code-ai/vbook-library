@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "name": "VBook Personal Library",
+    "author": "collab-code-ai",
+    "version": 1,
+    "source": "https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/library",
+    "description": "Đọc sách và truyện trong thư viện cá nhân trên GitHub",
+    "locale": "vi",
+    "regexp": "^(https?://)?raw\\.githubusercontent\\.com/collab-code-ai/vbook-library/main/library/books/[^/]+/book\\.json$",
+    "type": "novel",
+    "nsfw": false,
+    "encrypt": false
+  },
+  "script": {
+    "home": "home.js",
+    "search": "search.js",
+    "detail": "detail.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  },
+  "config": {
+    "thread_num": 3,
+    "delay": 150
+  }
+}
