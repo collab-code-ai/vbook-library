@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "demo-ngon-den-cuoi-cung",
+  "title": "Ngọn Đèn Cuối Cùng",
+  "author": "VBook Demo Studio",
+  "description": "Một chuyến phiêu lưu kỳ ảo qua thành phố mất ánh mặt trời, nơi một ngọn hải đăng cũ giữ bí mật về bầu trời.",
+  "language": "vi",
+  "status": "ongoing",
+  "genres": [
+    "Phiêu lưu",
+    "Kỳ ảo",
+    "Khám phá"
+  ],
+  "updatedAt": "2026-11-11T08:30:00+07:00",
+  "chapters": [],
+  "volumes": [
+    {
+      "id": "volume-0001",
+      "title": "Tập 1: Thành phố không bình minh",
+      "order": 1,
+      "chapters": [
+        {
+          "id": "chapter-0001",
+          "title": "Chương 1: Thành phố không có bình minh",
+          "order": 1,
+          "path": "books/demo-ngon-den-cuoi-cung/volumes/volume-0001/chapter-0001.html"
+        },
+        {
+          "id": "chapter-0002",
+          "title": "Chương 2: Tiếng chuông dưới lòng đất",
+          "order": 2,
+          "path": "books/demo-ngon-den-cuoi-cung/volumes/volume-0001/chapter-0002.html"
+        }
+      ]
+    },
+    {
+      "id": "volume-0002",
+      "title": "Tập 2: Hải đăng giữa tầng mây",
+      "order": 2,
+      "chapters": [
+        {
+          "id": "chapter-0001",
+          "title": "Chương 1: Con tàu trên tầng mây",
+          "order": 1,
+          "path": "books/demo-ngon-den-cuoi-cung/volumes/volume-0002/chapter-0001.html"
+        },
+        {
+          "id": "chapter-0002",
+          "title": "Chương 2: Ngọn đèn cuối cùng",
+          "order": 2,
+          "path": "books/demo-ngon-den-cuoi-cung/volumes/volume-0002/chapter-0002.html"
+        }
+      ]
+    }
+  ]
+}
