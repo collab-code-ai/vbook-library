@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "dp-700-fabric-data-engineering-audio",
+  "title": "DP-700: Implement data engineering solutions using Microsoft Fabric (Audio)",
+  "baseTitle": "DP-700: Implement data engineering solutions using Microsoft Fabric",
+  "edition": "audio",
+  "description": "Bài giảng tiếng Việt chuẩn hoá để nghe TTS, theo các module DP-700 về Data Engineering trên Microsoft Fabric.",
+  "language": "vi",
+  "status": "ongoing",
+  "genres": [
+    "Microsoft Fabric",
+    "DP-700",
+    "Audio"
+  ],
+  "updatedAt": "2026-11-11",
+  "chapters": [
+    {
+      "id": "module-01-dataflows-gen2",
+      "title": "Module 1: Ingest Data with Dataflows Gen2 in Microsoft Fabric",
+      "order": 1,
+      "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-01-dataflows-gen2.html",
+      "audioStandardVersion": "1.0",
+      "sourceUrls": [
+        "https://learn.microsoft.com/en-us/training/modules/use-dataflow-gen-2-fabric/",
+        "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/05-dataflows-gen2.html"
+      ]
+    },
+    {
+      "id": "module-02-data-pipelines",
+      "title": "Module 2: Orchestrate processes and data movement with Microsoft Fabric",
+      "order": 2,
+      "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-02-data-pipelines.html",
+      "audioStandardVersion": "1.0",
+      "sourceUrls": [
+        "https://learn.microsoft.com/en-us/training/modules/use-data-factory-pipelines-fabric/",
+        "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/04-ingest-pipeline.html"
+      ]
+    }
+  ],
+  "volumes": []
+}
