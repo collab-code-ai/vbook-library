@@ -67,6 +67,68 @@
       ]
     },
     {
+      "id": "learning-path-03",
+      "title": "Learning Path 3 — Implement Real-Time Intelligence with Microsoft Fabric",
+      "order": 3,
+      "chapters": [
+        {
+          "id": "module-01-realtime-intelligence",
+          "title": "Module 1: Get started with Real-Time Intelligence in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-01-realtime-intelligence.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/07-real-time-Intelligence.html"
+          ]
+        },
+        {
+          "id": "module-02-eventstream",
+          "title": "Module 2: Use Eventstream in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-02-eventstream.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/explore-event-streams-microsoft-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/09-real-time-analytics-eventstream.html"
+          ]
+        },
+        {
+          "id": "module-03-eventhouse",
+          "title": "Module 3: Work with real-time data in an Eventhouse in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-03-eventhouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/query-data-kql-database-microsoft-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/12-query-data-in-kql-database.html"
+          ]
+        },
+        {
+          "id": "module-04-dashboards",
+          "title": "Module 4: Create Real-Time Dashboards with Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-04-dashboards.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/create-real-time-dashboards-microsoft-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/13-real-time-dashboards.html"
+          ]
+        },
+        {
+          "id": "module-05-activator",
+          "title": "Module 5: Use Activator in Microsoft Fabric",
+          "order": 5,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-05-activator.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-fabric-activator/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/11-data-activator.html"
+          ]
+        }
+      ]
+    },
+    {
       "id": "learning-path-05",
       "title": "Learning Path 5 — Manage a Microsoft Fabric environment",
       "order": 5,
