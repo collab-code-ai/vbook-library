@@ -13,29 +13,98 @@
     "Audio"
   ],
   "updatedAt": "2026-11-11",
-  "chapters": [
+  "chapters": [],
+  "volumes": [
     {
-      "id": "module-01-dataflows-gen2",
-      "title": "Module 1: Ingest Data with Dataflows Gen2 in Microsoft Fabric",
+      "id": "learning-path-01",
+      "title": "Learning Path 1 — Ingest data with Microsoft Fabric",
       "order": 1,
-      "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-01-dataflows-gen2.html",
-      "audioStandardVersion": "1.0",
-      "sourceUrls": [
-        "https://learn.microsoft.com/en-us/training/modules/use-dataflow-gen-2-fabric/",
-        "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/05-dataflows-gen2.html"
+      "chapters": [
+        {
+          "id": "module-01-dataflows-gen2",
+          "title": "Module 1: Ingest Data with Dataflows Gen2 in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-01-dataflows-gen2.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-dataflow-gen-2-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/05-dataflows-gen2.html"
+          ]
+        },
+        {
+          "id": "module-02-data-pipelines",
+          "title": "Module 2: Orchestrate processes and data movement with Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-02-data-pipelines.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-data-factory-pipelines-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/04-ingest-pipeline.html"
+          ]
+        },
+        {
+          "id": "module-03-apache-spark",
+          "title": "Module 3: Use Apache Spark in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-01/module-03-apache-spark.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-apache-spark-work-files-lakehouse/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/02-analyze-spark.html"
+          ]
+        },
+        {
+          "id": "module-04-eventhouse-kql",
+          "title": "Module 4: Work with real-time data in an Eventhouse in Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-01/module-04-eventhouse-kql.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/query-data-kql-database-microsoft-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/12-query-data-in-kql-database.html"
+          ]
+        }
       ]
     },
     {
-      "id": "module-02-data-pipelines",
-      "title": "Module 2: Orchestrate processes and data movement with Microsoft Fabric",
-      "order": 2,
-      "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-02-data-pipelines.html",
-      "audioStandardVersion": "1.0",
-      "sourceUrls": [
-        "https://learn.microsoft.com/en-us/training/modules/use-data-factory-pipelines-fabric/",
-        "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/04-ingest-pipeline.html"
+      "id": "learning-path-05",
+      "title": "Learning Path 5 — Manage a Microsoft Fabric environment",
+      "order": 5,
+      "chapters": [
+        {
+          "id": "module-01-cicd",
+          "title": "Module 1: Implement continuous integration and continuous delivery (CI/CD) in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-05/module-01-cicd.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/implement-cicd-in-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/21-implement-cicd.html"
+          ]
+        },
+        {
+          "id": "module-02-monitor",
+          "title": "Module 2: Monitor activities in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-05/module-02-monitor.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/monitor-fabric-items/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/18-monitor-hub.html"
+          ]
+        },
+        {
+          "id": "module-03-security",
+          "title": "Module 3: Secure data access in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-05/module-03-security.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/19-secure-data-access.html"
+          ]
+        }
       ]
     }
-  ],
-  "volumes": []
+  ]
 }
