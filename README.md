@@ -17,11 +17,15 @@ GitHub Public là nguồn dữ liệu gốc cho MVP. Nội dung trong repository
 - [x] Tạo cấu trúc thư viện Book / Volume / Chapter.
 - [x] Tạo mã nguồn extension theo cấu trúc `extensions/<name>` của VBook CLI v2.
 - [x] Tạo icon extension.
-- [ ] Chạy `vbook validate`, debug và `test-all` trên thiết bị VBook.
-- [ ] Build `plugin.zip` bằng VBook CLI.
+- [x] Chạy `vbook validate` trên máy tính: 0 lỗi, 0 cảnh báo.
+- [x] Build `plugin.zip` bằng VBook CLI, không cần điện thoại.
+- [x] Chạy 12 kiểm tra bằng Rhino 1.7.15 với API VBook giả lập, gồm luồng đọc chương và catalog GitHub hiện tại.
+- [ ] Debug, `test-all` và xác nhận cài đặt trên ứng dụng VBook Android.
 - [ ] Publish root `plugin.json` registry và cài từ ứng dụng VBook.
 
-**Chưa thêm repository vào VBook:** cần hoàn thành build `plugin.zip` và tạo root `plugin.json` trước để app có thể tải gói cài đặt hợp lệ.
+**Cài bằng file ZIP:** tải [plugin.zip](extensions/vbook-personal-library/plugin.zip) về điện thoại → **Thêm extension** → chọn file ZIP. Không cần Web Server hoặc root registry cho cách cài này. Gói đã build và kiểm tra cục bộ; việc cài và hiển thị trên Android chưa được xác nhận. Catalog hiện chưa có sách.
+
+Kết quả kiểm tra: [BUILD-VERIFICATION.md](docs/BUILD-VERIFICATION.md).
 
 ## Cấu trúc repository
 

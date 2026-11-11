@@ -1,67 +1,34 @@
-# Cài VBook Personal Library vào ứng dụng VBook
+# Cài VBook Personal Library
 
-Có hai cách cài: cài trực tiếp để thử bằng VBook CLI, hoặc cài lâu dài từ GitHub repository.
+## Cách A: chọn file ZIP trên điện thoại
 
-## Cách A — Cài trực tiếp từ máy tính (chưa cần ZIP)
+Đây là cách phù hợp khi **Thêm extension** mở bộ chọn file.
 
-1. Mở VBook trên điện thoại.
-2. Mở tab **Web Server**, bật Web Server và ghi lại IP/port.
-3. Đảm bảo máy tính và điện thoại cùng mạng LAN.
-4. Làm theo [VBOOK-CLI-SETUP.md](VBOOK-CLI-SETUP.md) để chuẩn bị CLI và copy extension source vào workspace.
-5. Từ thư mục `ext-vbook/extensions/vbook-personal-library`, chạy:
+1. Tải [plugin.zip](../extensions/vbook-personal-library/plugin.zip) về điện thoại. Trên GitHub, dùng **Download raw file** ở trang file nếu cần.
+2. Mở VBook → màn hình quản lý extension → **Thêm extension**.
+3. Chọn đúng `plugin.zip` vừa tải.
+4. Mở nguồn **VBook Personal Library**.
 
-```bash
-node ../../vbook-tool/index.js validate
-node ../../vbook-tool/index.js install
+Không chọn ZIP của toàn repository và không cần giải nén trước. Cách này không cần máy tính kết nối điện thoại, Web Server, root registry hoặc đưa extension vào kho cộng đồng.
+
+Gói đã build thành công và đạt kiểm tra cục bộ, gồm Rhino với API giả lập. Chưa xác nhận thao tác cài và hiển thị bằng app Android thật. Xem [BUILD-VERIFICATION.md](BUILD-VERIFICATION.md).
+
+## Dữ liệu hiện tại
+
+`library/catalog.json` đang có `books: []`, nên nguồn sẽ chưa hiển thị sách. Khi thêm sách/chương lên GitHub, tải lại nguồn để lấy dữ liệu mới; không cần cài lại ZIP. Khi thay đổi mã extension, cần build và cài bản mới.
+
+## Cách B: thêm kho riêng qua GitHub, tùy chọn
+
+Cách này chỉ dùng sau khi tạo root `plugin.json` từ `docs/plugin-registry.template.json` và bảo đảm đường dẫn ZIP của registry đã tồn tại trên nhánh `main`.
+
+URL registry dự kiến:
+
+```text
+https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/plugin.json
 ```
 
-6. Quay lại VBook, mở danh sách nguồn/extension và tìm **VBook Personal Library**.
+Chưa tạo root registry trong đợt build này. Không dán URL dự kiến vào app khi file chưa tồn tại. Việc cài file ZIP không phụ thuộc vào registry.
 
-Cách này gửi extension trực tiếp từ máy tính vào ứng dụng qua Web Server. Nó phù hợp để kiểm thử, chưa phải cài đặt phân phối qua GitHub.
+## Tự build lại
 
-## Cách B — Cài lâu dài từ GitHub
-
-### Điều kiện
-
-Repository phải có đủ:
-- `extensions/vbook-personal-library/plugin.zip`: extension đã build bằng VBook CLI.
-- `plugin.json` ở root: registry trỏ tới ZIP.
-- Repository ở chế độ Public để VBook tải Raw GitHub.
-
-Hiện source code và icon đã được tạo. ZIP và root registry chưa được publish vì còn bước kiểm thử/build bằng VBook CLI trên thiết bị.
-
-### URL registry
-
-Sau khi publish root `plugin.json`, dùng URL:
-
-`https://raw.githubusercontent.com/collab-code-ai/vbook-library/main/plugin.json`
-
-### Thêm kho trong ứng dụng
-
-1. Mở ứng dụng **VBook**.
-2. Vào **Cài đặt**.
-3. Chọn **Kho tiện ích**.
-4. Nhấn **Thêm kho**.
-5. Dán URL registry ở trên.
-6. Xác nhận và làm mới danh sách.
-7. Tìm **VBook Personal Library** và chọn cài đặt.
-8. Quay lại danh sách nguồn/tiện ích và mở **VBook Personal Library**.
-
-## Sử dụng
-
-- **Toàn bộ thư viện**: mọi đầu sách trong `library/catalog.json`.
-- **Mới cập nhật**: sắp xếp theo `updatedAt` mới nhất.
-- **Đang phát hành**: sách có trạng thái khác `completed`.
-- **Đã hoàn thành**: sách có `status = completed`.
-- Dùng tìm kiếm VBook để lọc theo tên sách, tác giả, mô tả hoặc thể loại.
-
-Catalog ban đầu đang rỗng. Sau khi ChatGPT thêm sách và cập nhật `catalog.json`, VBook sẽ hiển thị sách khi tải lại nguồn.
-
-## Khắc phục sự cố
-
-1. Mở URL registry trên trình duyệt; phải trả về JSON.
-2. Kiểm tra `path` trong registry trỏ tới ZIP có tồn tại.
-3. Kiểm tra `source` trong registry và `metadata.source` trong extension đều trỏ tới thư mục `library`.
-4. Kiểm tra repository Public.
-5. Làm mới Kho tiện ích hoặc đóng/mở lại VBook.
-6. Nếu extension cài được nhưng chưa thấy sách, kiểm tra `library/catalog.json`.
+Xem [VBOOK-CLI-SETUP.md](VBOOK-CLI-SETUP.md). Lệnh `build` của bản CLI đã kiểm tra chạy hoàn toàn trên máy tính; kết nối điện thoại chỉ cần khi debug hoặc cài từ xa.

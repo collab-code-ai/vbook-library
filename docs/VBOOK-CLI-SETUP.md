@@ -1,109 +1,63 @@
-# VBook CLI v2 — Build và kiểm thử extension
+# VBook CLI v2: build ZIP trên máy tính
 
-## Vì sao cần bước này?
+## 1. Chuẩn bị
 
-VBook hỗ trợ cài extension trực tiếp vào app qua Web Server để debug. Để phân phối lâu dài qua GitHub, extension cần được build thành `plugin.zip` và đăng ký trong root `plugin.json`.
-
-## 1. Chuẩn bị trên máy tính
-
-Clone công cụ VBook CLI v2:
+Cài Git và Node.js. Clone công cụ và thư viện vào cùng thư mục cha:
 
 ```bash
 git clone https://github.com/dat-bi/ext-vbook.git
-```
-
-Clone repository thư viện nếu chưa có:
-
-```bash
 git clone https://github.com/collab-code-ai/vbook-library.git
-```
-
-Copy thư mục extension vào workspace của CLI:
-
-```text
-vbook-library/extensions/vbook-personal-library/
-    ↓ copy to
-ext-vbook/extensions/vbook-personal-library/
-```
-
-Cài dependencies:
-
-```bash
 cd ext-vbook/vbook-tool
-npm install
+npm ci --ignore-scripts --no-audit --no-fund
 ```
 
-## 2. Kết nối VBook trên điện thoại
+Đã kiểm tra với `dat-bi/ext-vbook` commit `e54f7ea1b586a69e35e49434a533721301113977`, VBook CLI 2.0.0, Node.js 24.22.1. Trong bản này, `commands/build.js` đóng gói bằng `archiver` ngay trên máy tính, không gọi `/extension/build` trên điện thoại.
 
-1. Mở VBook trên điện thoại.
-2. Mở tab **Web Server** trong app.
-3. Bật Web Server nếu đang tắt.
-4. Ghi lại IP và port app hiển thị.
-5. Đảm bảo máy tính và điện thoại ở cùng mạng LAN.
+## 2. Validate và build, không cần điện thoại
 
-Tạo file `ext-vbook/vbook-tool/.env` và điền IP/port thực tế:
-
-```env
-VBOOK_IP=192.168.1.XX
-VBOOK_PORT=8080
-```
-
-Không dùng IP ví dụ nếu chưa đối chiếu với màn hình điện thoại. Nếu app hiển thị port khác 8080, dùng đúng port đó.
-
-## 3. Validate và debug
-
-Mở terminal tại:
-
-```text
-ext-vbook/extensions/vbook-personal-library/
-```
-
-Chạy:
+Từ `ext-vbook/vbook-tool` sau bước trên:
 
 ```bash
-node ../../vbook-tool/index.js check-env
-node ../../vbook-tool/index.js validate
-node ../../vbook-tool/index.js debug src/home.js
-node ../../vbook-tool/index.js debug src/gen.js --input "@all"
+cd ../../vbook-library/extensions/vbook-personal-library
+node ../../../ext-vbook/vbook-tool/index.js validate
+node ../../../ext-vbook/vbook-tool/index.js build
 ```
 
-Sau khi có ít nhất một sách trong `library/catalog.json`, đồng bộ dữ liệu vào thư mục extension đang làm việc rồi chạy:
+Kết quả: `vbook-library/extensions/vbook-personal-library/plugin.zip`.
+
+ZIP chứa `plugin.json`, `icon.png` và `src/` ngay ở gốc. Không dùng nút Download ZIP của toàn repository để cài extension.
+
+Không cần copy extension vào repo công cụ. Không cần `.env`, IP, Web Server, VS Code hoặc giả lập Android để đóng gói. Không chạy `publish` tại repo công cụ nếu chỉ muốn build extension cá nhân, vì lệnh đó còn cập nhật registry của repo công cụ.
+
+## 3. Cài file ZIP trên điện thoại
+
+1. Tải hoặc chuyển `plugin.zip` sang điện thoại.
+2. Mở VBook → màn hình quản lý extension → **Thêm extension**.
+3. Chọn file ZIP vừa tải.
+4. Mở nguồn **VBook Personal Library**.
+
+Catalog đang rỗng nên danh sách sách sẽ rỗng. Thêm sách vào GitHub không yêu cầu build lại extension.
+
+## 4. Kiểm tra bằng Rhino trên máy tính
+
+Đã chạy 12 kiểm tra với Rhino 1.7.15 trên các script giải nén từ chính ZIP, xem [BUILD-VERIFICATION.md](BUILD-VERIFICATION.md). Để chạy lại, tải JAR Rhino từ Maven Central và chạy tại gốc `vbook-library`:
 
 ```bash
-node ../../vbook-tool/index.js test-all
+java -cp /path/to/rhino-1.7.15.jar org.mozilla.javascript.tools.shell.Main -version 200 tests/rhino-smoke.js extensions/vbook-personal-library
 ```
 
-`test-all` đi qua Home → Gen → Detail → TOC → Chapter. Catalog hiện đang rỗng nên chưa thể có một lượt test-all hoàn chỉnh.
+API `fetch`, `load`, `Response` được giả lập. Kết quả này xác nhận logic JavaScript trong Rhino, chưa xác nhận bộ cài, giao diện, mạng hoặc toàn bộ API của ứng dụng Android.
 
-## 4. Cài trực tiếp vào VBook để dùng thử
+## 5. Debug trực tiếp trên VBook, khi cần
 
-Sau khi `validate` đạt và debug không có lỗi, chạy:
+Web Server chỉ cần cho debug, `test-all` và cài từ xa. Bật Web Server trong VBook, lấy IP/port app hiển thị, đảm bảo máy tính và điện thoại cùng LAN rồi đặt `VBOOK_IP`, `VBOOK_PORT` trong `ext-vbook/vbook-tool/.env`.
+
+Từ thư mục extension:
 
 ```bash
-node ../../vbook-tool/index.js install
+node ../../../ext-vbook/vbook-tool/index.js check-env
+node ../../../ext-vbook/vbook-tool/index.js debug src/home.js
+node ../../../ext-vbook/vbook-tool/index.js debug src/gen.js --input "@all"
 ```
 
-CLI sẽ gửi extension từ thư mục làm việc vào VBook thông qua Web Server. Đây là cách cài thử/dev install; không cần ZIP hoặc root registry. Mở lại danh sách nguồn/extension trong VBook để tìm **VBook Personal Library**.
-
-## 5. Build gói để phân phối qua GitHub
-
-Sau khi test trên thiết bị đạt yêu cầu:
-
-```bash
-node ../../vbook-tool/index.js build
-```
-
-CLI tạo `plugin.zip` trong thư mục extension. Upload file đó vào:
-
-```text
-extensions/vbook-personal-library/plugin.zip
-```
-
-Sau đó tạo root `plugin.json` từ `docs/plugin-registry.template.json`. Khi hai file đã được publish, VBook có thể cài qua Kho tiện ích.
-
-## Lưu ý
-
-- VBook CLI v2 dùng Rhino; không dùng `async/await`, optional chaining, nullish coalescing, spread hoặc default parameters trong extension.
-- `chap.js` phải trả về HTML string qua `Response.success(...)`.
-- `nextPage` phải là string hoặc `null`, không phải number.
-- Nếu `check-env` báo thiết bị không truy cập được, kiểm tra Web Server, IP, port, firewall và mạng LAN. Không đoán IP.
+Sau khi catalog có sách, tiếp tục `test-all` và `install` nếu cần. Nếu Web Server không kết nối được, vẫn có thể build và chuyển ZIP thủ công theo các bước trên.
