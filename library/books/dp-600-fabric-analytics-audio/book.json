@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "dp-600-fabric-analytics-audio",
+  "title": "DP-600: Implement analytics solutions using Microsoft Fabric (Audio)",
+  "baseTitle": "DP-600: Implement analytics solutions using Microsoft Fabric",
+  "edition": "audio",
+  "description": "Bài giảng tiếng Việt chuẩn hoá để nghe TTS cho DP-600 về Microsoft Fabric Analytics; các module được tổ chức theo Learning Path.",
+  "language": "vi",
+  "status": "ongoing",
+  "genres": [
+    "Microsoft Fabric",
+    "DP-600",
+    "Audio"
+  ],
+  "updatedAt": "2026-11-11",
+  "chapters": [],
+  "volumes": [
+    {
+      "id": "learning-path-05",
+      "title": "Learning Path 5 — Secure and govern analytics data in Microsoft Fabric",
+      "order": 5,
+      "chapters": [
+        {
+          "id": "module-01-secure-data-access",
+          "title": "LP-5 | Module 1 — Secure data access in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-05/module-01-secure-data-access.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/"
+          ]
+        },
+        {
+          "id": "module-02-secure-warehouse",
+          "title": "LP-5 | Module 2 — Secure a Microsoft Fabric data warehouse",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-05/module-02-secure-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/secure-data-warehouse-in-microsoft-fabric/"
+          ]
+        },
+        {
+          "id": "module-03-govern-analytics-data",
+          "title": "LP-5 | Module 3 — Govern analytics data in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-05/module-03-govern-analytics-data.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/fabric-govern-analytics-data/"
+          ]
+        }
+      ]
+    }
+  ]
+}
