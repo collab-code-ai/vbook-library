@@ -129,6 +129,79 @@
       ]
     },
     {
+      "id": "learning-path-04",
+      "title": "Learning Path 4 — Implement a Data Warehouse",
+      "order": 4,
+      "chapters": [
+        {
+          "id": "module-02-get-started-warehouse",
+          "title": "Module 2: Get started with data warehouses in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-02-get-started-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-data-warehouse/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/06-data-warehouse.html"
+          ]
+        },
+        {
+          "id": "module-03-load-warehouse",
+          "title": "Module 3: Load data into a Microsoft Fabric data warehouse",
+          "order": 3,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-03-load-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/load-data-into-microsoft-fabric-data-warehouse/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/06a-data-warehouse-load.html"
+          ]
+        },
+        {
+          "id": "module-04-query-warehouse",
+          "title": "Module 4: Query a data warehouse in Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-04-query-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/query-data-warehouse-microsoft-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/06b-data-warehouse-query.html"
+          ]
+        },
+        {
+          "id": "module-05-copilot-warehouse",
+          "title": "Module 5: Get started with Copilot in Microsoft Fabric for Data Warehouse",
+          "order": 5,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-05-copilot-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-copilot-fabric-data-warehouse/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/22c-copilot-fabric-data-warehouse.html"
+          ]
+        },
+        {
+          "id": "module-06-monitor-warehouse",
+          "title": "Module 6: Monitor a Microsoft Fabric data warehouse",
+          "order": 6,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-06-monitor-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/monitor-fabric-data-warehouse/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/06c-monitor-data-warehouse.html"
+          ]
+        },
+        {
+          "id": "module-07-secure-warehouse",
+          "title": "Module 7: Secure a Microsoft Fabric data warehouse",
+          "order": 7,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-07-secure-warehouse.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/secure-data-warehouse-in-microsoft-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/06d-secure-data-warehouse.html"
+          ]
+        }
+      ]
+    },
+    {
       "id": "learning-path-05",
       "title": "Learning Path 5 — Manage a Microsoft Fabric environment",
       "order": 5,
