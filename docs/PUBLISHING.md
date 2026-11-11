@@ -24,10 +24,9 @@ Extension nằm tại `extensions/vbook-personal-library/`. Quy trình build the
 
 1. Làm theo [VBOOK-CLI-SETUP.md](VBOOK-CLI-SETUP.md).
 2. Chạy `validate`.
-3. Khi có sách mẫu/dữ liệu thật và thiết bị kết nối được, chạy debug các script và `test-all`.
-4. Chạy `build` từ thư mục extension để tạo `plugin.zip`.
-5. Upload ZIP vào `extensions/vbook-personal-library/plugin.zip`.
-6. Tạo root `plugin.json` từ `docs/plugin-registry.template.json`.
-7. Kiểm tra Raw URL của root registry, ZIP và icon.
+3. Chạy `build` từ thư mục extension để tạo `plugin.zip`. Lệnh build chạy cục bộ, không cần điện thoại.
+4. Lưu ZIP vào `extensions/vbook-personal-library/plugin.zip`, chuyển sang điện thoại và dùng **Thêm extension** để chọn file.
+5. Khi có sách và thiết bị kết nối được, chạy debug các script, `test-all` và xác nhận giao diện Android.
+6. Nếu muốn dùng kho riêng để phân phối, tạo root `plugin.json` từ `docs/plugin-registry.template.json` rồi kiểm tra Raw URL của registry, ZIP và icon. Bước này không bắt buộc cho cài file ZIP.
 
 Không đánh dấu extension đã kiểm thử trên thiết bị nếu chưa có output debug/test-all từ VBook thật.
