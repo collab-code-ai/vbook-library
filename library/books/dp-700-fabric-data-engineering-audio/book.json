@@ -93,17 +93,6 @@
           ]
         },
         {
-          "id": "module-03-apache-spark",
-          "title": "LP-2 | Module 3 — Use Apache Spark in Microsoft Fabric",
-          "order": 3,
-          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-03-apache-spark.html",
-          "audioStandardVersion": "1.0",
-          "sourceUrls": [
-            "https://learn.microsoft.com/en-us/training/modules/use-apache-spark-work-files-lakehouse/",
-            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/02-analyze-spark.html"
-          ]
-        },
-        {
           "id": "module-04-delta-lake",
           "title": "LP-2 | Module 4 — Work with Delta Lake tables in Microsoft Fabric",
           "order": 4,
@@ -112,28 +101,6 @@
           "sourceUrls": [
             "https://learn.microsoft.com/en-us/training/modules/work-delta-lake-tables-fabric/",
             "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/03-delta-lake.html"
-          ]
-        },
-        {
-          "id": "module-05-dataflows-gen2",
-          "title": "LP-2 | Module 5 — Ingest Data with Dataflows Gen2 in Microsoft Fabric",
-          "order": 5,
-          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-05-dataflows-gen2.html",
-          "audioStandardVersion": "1.0",
-          "sourceUrls": [
-            "https://learn.microsoft.com/en-us/training/modules/use-dataflow-gen-2-fabric/",
-            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/05-dataflows-gen2.html"
-          ]
-        },
-        {
-          "id": "module-06-data-pipelines",
-          "title": "LP-2 | Module 6 — Orchestrate processes and data movement with Microsoft Fabric",
-          "order": 6,
-          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-06-data-pipelines.html",
-          "audioStandardVersion": "1.0",
-          "sourceUrls": [
-            "https://learn.microsoft.com/en-us/training/modules/use-data-factory-pipelines-fabric/",
-            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/04-ingest-pipeline.html"
           ]
         },
         {
@@ -177,17 +144,6 @@
           ]
         },
         {
-          "id": "module-03-eventhouse",
-          "title": "LP-3 | Module 3 — Work with real-time data in an Eventhouse in Microsoft Fabric",
-          "order": 3,
-          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-03-eventhouse.html",
-          "audioStandardVersion": "1.0",
-          "sourceUrls": [
-            "https://learn.microsoft.com/en-us/training/modules/query-data-kql-database-microsoft-fabric/",
-            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/12-query-data-in-kql-database.html"
-          ]
-        },
-        {
           "id": "module-04-dashboards",
           "title": "LP-3 | Module 4 — Create Real-Time Dashboards with Microsoft Fabric",
           "order": 4,
@@ -216,16 +172,6 @@
       "title": "Learning Path 4 — Implement a Data Warehouse",
       "order": 4,
       "chapters": [
-        {
-          "id": "module-01-end-to-end-analytics",
-          "title": "LP-4 | Module 1 — Introduction to end-to-end analytics using Microsoft Fabric",
-          "order": 1,
-          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-01-end-to-end-analytics.html",
-          "audioStandardVersion": "1.0",
-          "sourceUrls": [
-            "https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/"
-          ]
-        },
         {
           "id": "module-02-get-started-warehouse",
           "title": "LP-4 | Module 2 — Get started with data warehouses in Microsoft Fabric",
