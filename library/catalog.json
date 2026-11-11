@@ -1,37 +1,6 @@
 {
   "schemaVersion": 1,
   "libraryName": "VBook Personal Library",
-  "updatedAt": "2026-11-11T08:30:00+07:00",
-  "books": [
-    {
-      "id": "demo-ngon-den-cuoi-cung",
-      "title": "Ngọn Đèn Cuối Cùng",
-      "author": "VBook Demo Studio",
-      "description": "Một chuyến phiêu lưu kỳ ảo qua thành phố mất ánh mặt trời, nơi một ngọn hải đăng cũ giữ bí mật về bầu trời.",
-      "status": "ongoing",
-      "genres": [
-        "Phiêu lưu",
-        "Kỳ ảo",
-        "Khám phá"
-      ],
-      "updatedAt": "2026-11-11T08:30:00+07:00",
-      "latestChapter": "Tập 2 · Chương 2: Ngọn đèn cuối cùng",
-      "bookPath": "books/demo-ngon-den-cuoi-cung/book.json"
-    },
-    {
-      "id": "demo-buc-thu-trong-mua",
-      "title": "Bức Thư Trong Mưa",
-      "author": "VBook Demo Studio",
-      "description": "Một câu chuyện trinh thám nhẹ nhàng về bức thư cũ, những ký ức bị bỏ quên và bí mật của căn nhà cuối phố.",
-      "status": "completed",
-      "genres": [
-        "Bí ẩn",
-        "Trinh thám",
-        "Đời thường"
-      ],
-      "updatedAt": "2026-11-11T08:25:00+07:00",
-      "latestChapter": "Chương 3: Người đứng dưới mái hiên",
-      "bookPath": "books/demo-buc-thu-trong-mua/book.json"
-    }
-  ]
+  "updatedAt": "2026-11-11",
+  "books": []
 }
