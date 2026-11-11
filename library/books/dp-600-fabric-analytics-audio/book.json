@@ -16,6 +16,43 @@
   "chapters": [],
   "volumes": [
     {
+      "id": "learning-path-04",
+      "title": "Learning Path 4 — Prepare AI-ready analytics data in Microsoft Fabric",
+      "order": 4,
+      "chapters": [
+        {
+          "id": "module-01-prepare-semantic-ai",
+          "title": "LP-4 | Module 1 — Prepare semantic models for AI in Power BI and Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-04/module-01-prepare-semantic-ai.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/fabric-prepare-semantic-layer/"
+          ]
+        },
+        {
+          "id": "module-02-fabric-iq-fundamentals",
+          "title": "LP-4 | Module 2 — Understand Microsoft Fabric IQ fundamentals",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-04/module-02-fabric-iq-fundamentals.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/understand-fabric-iq-fundamentals/"
+          ]
+        },
+        {
+          "id": "module-03-create-ontology",
+          "title": "LP-4 | Module 3 — Create an ontology with Fabric IQ",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-04/module-03-create-ontology.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/create-ontology-with-fabric-iq/"
+          ]
+        }
+      ]
+    },
+    {
       "id": "learning-path-05",
       "title": "Learning Path 5 — Secure and govern analytics data in Microsoft Fabric",
       "order": 5,
