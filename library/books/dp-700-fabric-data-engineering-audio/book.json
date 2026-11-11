@@ -22,7 +22,7 @@
       "chapters": [
         {
           "id": "module-01-dataflows-gen2",
-          "title": "Module 1: Ingest Data with Dataflows Gen2 in Microsoft Fabric",
+          "title": "LP-1 | Module 1 — Ingest Data with Dataflows Gen2 in Microsoft Fabric",
           "order": 1,
           "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-01-dataflows-gen2.html",
           "audioStandardVersion": "1.0",
@@ -33,7 +33,7 @@
         },
         {
           "id": "module-02-data-pipelines",
-          "title": "Module 2: Orchestrate processes and data movement with Microsoft Fabric",
+          "title": "LP-1 | Module 2 — Orchestrate processes and data movement with Microsoft Fabric",
           "order": 2,
           "path": "books/dp-700-fabric-data-engineering-audio/chapters/module-02-data-pipelines.html",
           "audioStandardVersion": "1.0",
@@ -44,7 +44,7 @@
         },
         {
           "id": "module-03-apache-spark",
-          "title": "Module 3: Use Apache Spark in Microsoft Fabric",
+          "title": "LP-1 | Module 3 — Use Apache Spark in Microsoft Fabric",
           "order": 3,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-01/module-03-apache-spark.html",
           "audioStandardVersion": "1.0",
@@ -55,7 +55,7 @@
         },
         {
           "id": "module-04-eventhouse-kql",
-          "title": "Module 4: Work with real-time data in an Eventhouse in Microsoft Fabric",
+          "title": "LP-1 | Module 4 — Work with real-time data in an Eventhouse in Microsoft Fabric",
           "order": 4,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-01/module-04-eventhouse-kql.html",
           "audioStandardVersion": "1.0",
@@ -67,13 +67,96 @@
       ]
     },
     {
+      "id": "learning-path-02",
+      "title": "Learning Path 2 — Implement a Lakehouse with Microsoft Fabric",
+      "order": 2,
+      "chapters": [
+        {
+          "id": "module-01-end-to-end-analytics",
+          "title": "LP-2 | Module 1 — Introduction to end-to-end analytics using Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-01-end-to-end-analytics.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/"
+          ]
+        },
+        {
+          "id": "module-02-lakehouses",
+          "title": "LP-2 | Module 2 — Get started with lakehouses in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-02-lakehouses.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-lakehouses/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/01-lakehouse.html"
+          ]
+        },
+        {
+          "id": "module-03-apache-spark",
+          "title": "LP-2 | Module 3 — Use Apache Spark in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-03-apache-spark.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-apache-spark-work-files-lakehouse/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/02-analyze-spark.html"
+          ]
+        },
+        {
+          "id": "module-04-delta-lake",
+          "title": "LP-2 | Module 4 — Work with Delta Lake tables in Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-04-delta-lake.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/work-delta-lake-tables-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/03-delta-lake.html"
+          ]
+        },
+        {
+          "id": "module-05-dataflows-gen2",
+          "title": "LP-2 | Module 5 — Ingest Data with Dataflows Gen2 in Microsoft Fabric",
+          "order": 5,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-05-dataflows-gen2.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-dataflow-gen-2-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/05-dataflows-gen2.html"
+          ]
+        },
+        {
+          "id": "module-06-data-pipelines",
+          "title": "LP-2 | Module 6 — Orchestrate processes and data movement with Microsoft Fabric",
+          "order": 6,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-06-data-pipelines.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/use-data-factory-pipelines-fabric/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/04-ingest-pipeline.html"
+          ]
+        },
+        {
+          "id": "module-07-medallion",
+          "title": "LP-2 | Module 7 — Organize a Fabric lakehouse using medallion architecture design",
+          "order": 7,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-02/module-07-medallion.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/describe-medallion-architecture/",
+            "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/03b-medallion-lakehouse.html"
+          ]
+        }
+      ]
+    },
+    {
       "id": "learning-path-03",
       "title": "Learning Path 3 — Implement Real-Time Intelligence with Microsoft Fabric",
       "order": 3,
       "chapters": [
         {
           "id": "module-01-realtime-intelligence",
-          "title": "Module 1: Get started with Real-Time Intelligence in Microsoft Fabric",
+          "title": "LP-3 | Module 1 — Get started with Real-Time Intelligence in Microsoft Fabric",
           "order": 1,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-01-realtime-intelligence.html",
           "audioStandardVersion": "1.0",
@@ -84,7 +167,7 @@
         },
         {
           "id": "module-02-eventstream",
-          "title": "Module 2: Use Eventstream in Microsoft Fabric",
+          "title": "LP-3 | Module 2 — Use Eventstream in Microsoft Fabric",
           "order": 2,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-02-eventstream.html",
           "audioStandardVersion": "1.0",
@@ -95,7 +178,7 @@
         },
         {
           "id": "module-03-eventhouse",
-          "title": "Module 3: Work with real-time data in an Eventhouse in Microsoft Fabric",
+          "title": "LP-3 | Module 3 — Work with real-time data in an Eventhouse in Microsoft Fabric",
           "order": 3,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-03-eventhouse.html",
           "audioStandardVersion": "1.0",
@@ -106,7 +189,7 @@
         },
         {
           "id": "module-04-dashboards",
-          "title": "Module 4: Create Real-Time Dashboards with Microsoft Fabric",
+          "title": "LP-3 | Module 4 — Create Real-Time Dashboards with Microsoft Fabric",
           "order": 4,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-04-dashboards.html",
           "audioStandardVersion": "1.0",
@@ -117,7 +200,7 @@
         },
         {
           "id": "module-05-activator",
-          "title": "Module 5: Use Activator in Microsoft Fabric",
+          "title": "LP-3 | Module 5 — Use Activator in Microsoft Fabric",
           "order": 5,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-03/module-05-activator.html",
           "audioStandardVersion": "1.0",
@@ -134,8 +217,18 @@
       "order": 4,
       "chapters": [
         {
+          "id": "module-01-end-to-end-analytics",
+          "title": "LP-4 | Module 1 — Introduction to end-to-end analytics using Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-01-end-to-end-analytics.html",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/"
+          ]
+        },
+        {
           "id": "module-02-get-started-warehouse",
-          "title": "Module 2: Get started with data warehouses in Microsoft Fabric",
+          "title": "LP-4 | Module 2 — Get started with data warehouses in Microsoft Fabric",
           "order": 2,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-02-get-started-warehouse.html",
           "audioStandardVersion": "1.0",
@@ -146,7 +239,7 @@
         },
         {
           "id": "module-03-load-warehouse",
-          "title": "Module 3: Load data into a Microsoft Fabric data warehouse",
+          "title": "LP-4 | Module 3 — Load data into a Microsoft Fabric data warehouse",
           "order": 3,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-03-load-warehouse.html",
           "audioStandardVersion": "1.0",
@@ -157,7 +250,7 @@
         },
         {
           "id": "module-04-query-warehouse",
-          "title": "Module 4: Query a data warehouse in Microsoft Fabric",
+          "title": "LP-4 | Module 4 — Query a data warehouse in Microsoft Fabric",
           "order": 4,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-04-query-warehouse.html",
           "audioStandardVersion": "1.0",
@@ -168,7 +261,7 @@
         },
         {
           "id": "module-05-copilot-warehouse",
-          "title": "Module 5: Get started with Copilot in Microsoft Fabric for Data Warehouse",
+          "title": "LP-4 | Module 5 — Get started with Copilot in Microsoft Fabric for Data Warehouse",
           "order": 5,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-05-copilot-warehouse.html",
           "audioStandardVersion": "1.0",
@@ -179,7 +272,7 @@
         },
         {
           "id": "module-06-monitor-warehouse",
-          "title": "Module 6: Monitor a Microsoft Fabric data warehouse",
+          "title": "LP-4 | Module 6 — Monitor a Microsoft Fabric data warehouse",
           "order": 6,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-06-monitor-warehouse.html",
           "audioStandardVersion": "1.0",
@@ -190,7 +283,7 @@
         },
         {
           "id": "module-07-secure-warehouse",
-          "title": "Module 7: Secure a Microsoft Fabric data warehouse",
+          "title": "LP-4 | Module 7 — Secure a Microsoft Fabric data warehouse",
           "order": 7,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-04/module-07-secure-warehouse.html",
           "audioStandardVersion": "1.0",
@@ -208,7 +301,7 @@
       "chapters": [
         {
           "id": "module-01-cicd",
-          "title": "Module 1: Implement continuous integration and continuous delivery (CI/CD) in Microsoft Fabric",
+          "title": "LP-5 | Module 1 — Implement continuous integration and continuous delivery (CI/CD) in Microsoft Fabric",
           "order": 1,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-05/module-01-cicd.html",
           "audioStandardVersion": "1.0",
@@ -219,7 +312,7 @@
         },
         {
           "id": "module-02-monitor",
-          "title": "Module 2: Monitor activities in Microsoft Fabric",
+          "title": "LP-5 | Module 2 — Monitor activities in Microsoft Fabric",
           "order": 2,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-05/module-02-monitor.html",
           "audioStandardVersion": "1.0",
@@ -230,7 +323,7 @@
         },
         {
           "id": "module-03-security",
-          "title": "Module 3: Secure data access in Microsoft Fabric",
+          "title": "LP-5 | Module 3 — Secure data access in Microsoft Fabric",
           "order": 3,
           "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-05/module-03-security.html",
           "audioStandardVersion": "1.0",
