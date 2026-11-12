@@ -12,7 +12,7 @@
     "DP-700",
     "Audio"
   ],
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-12T10:08:03.677Z",
   "chapters": [],
   "volumes": [
     {
@@ -277,6 +277,21 @@
             "https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/",
             "https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/19-secure-data-access.html"
           ]
+        }
+      ]
+    },
+    {
+      "id": "learning-path-06-exam-review",
+      "title": "Tổng ôn DP-700",
+      "order": 6,
+      "chapters": [
+        {
+          "id": "dp700-exam-review-26-modules",
+          "title": "Tổng ôn DP-700 — 26 Module và những điểm cần chú ý khi thi",
+          "order": 1,
+          "path": "books/dp-700-fabric-data-engineering-audio/volumes/learning-path-06-exam-review/dp700-exam-review-26-modules.html",
+          "audioStandardVersion": "1.0",
+          "sourceDescription": "Nội dung ôn thi trong cuộc trò chuyện, dựa trên DP700-LP1.pdf đến DP700-LP5.pdf; bài tổng ôn diễn giải lại để nghe bằng TTS."
         }
       ]
     }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "libraryName": "VBook Personal Library",
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-12T10:08:03.677Z",
   "books": [
     {
       "id": "dp-700-fabric-data-engineering-audio",
@@ -10,8 +10,8 @@
       "edition": "audio",
       "description": "Bài giảng tiếng Việt chuẩn hoá để nghe TTS, theo các module DP-700 về Data Engineering trên Microsoft Fabric.",
       "status": "ongoing",
-      "updatedAt": "2026-11-11",
-      "latestChapter": "LP-5 | Module 3 — Secure data access in Microsoft Fabric",
+      "updatedAt": "2026-11-12T10:08:03.677Z",
+      "latestChapter": "Tổng ôn DP-700 — 26 Module và những điểm cần chú ý khi thi",
       "bookPath": "books/dp-700-fabric-data-engineering-audio/book.json",
       "genres": [
         "Microsoft Fabric",
