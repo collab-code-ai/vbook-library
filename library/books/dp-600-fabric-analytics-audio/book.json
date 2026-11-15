@@ -12,7 +12,7 @@
     "DP-600",
     "Audio"
   ],
-  "updatedAt": "2026-11-15T16:16:09.556Z",
+  "updatedAt": "2026-11-15T16:20:49.951Z",
   "chapters": [],
   "volumes": [
     {
@@ -136,6 +136,68 @@
           "sourceUrls": [
             "https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-tsql/"
           ]
+        }
+      ]
+    },
+    {
+      "id": "learning-path-03",
+      "title": "Learning Path 3 — Design and manage semantic models in Microsoft Fabric",
+      "order": 3,
+      "chapters": [
+        {
+          "id": "module-11-create-dax-calculations",
+          "title": "LP-3 | Module 1 — Create DAX calculations in semantic models",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-03/module-11-create-dax-calculations.html",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/dax-power-bi-create-calculations/"
+          ],
+          "sourceChapterId": "learning-path-03/module-11-create-dax-calculations",
+          "audioStandardVersion": "1.0"
+        },
+        {
+          "id": "module-12-design-semantic-models-scale",
+          "title": "LP-3 | Module 2 — Design semantic models for scale in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-03/module-12-design-semantic-models-scale.html",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/design-semantic-models-scale/"
+          ],
+          "sourceChapterId": "learning-path-03/module-12-design-semantic-models-scale",
+          "audioStandardVersion": "1.0"
+        },
+        {
+          "id": "module-13-optimize-semantic-model-performance",
+          "title": "LP-3 | Module 3 — Optimize semantic model performance",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-03/module-13-optimize-semantic-model-performance.html",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/optimize-semantic-model-performance/"
+          ],
+          "sourceChapterId": "learning-path-03/module-13-optimize-semantic-model-performance",
+          "audioStandardVersion": "1.0"
+        },
+        {
+          "id": "module-14-enforce-semantic-model-security",
+          "title": "LP-3 | Module 4 — Enforce semantic model security",
+          "order": 4,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-03/module-14-enforce-semantic-model-security.html",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/enforce-semantic-model-security/"
+          ],
+          "sourceChapterId": "learning-path-03/module-14-enforce-semantic-model-security",
+          "audioStandardVersion": "1.0"
+        },
+        {
+          "id": "module-15-manage-semantic-model-lifecycle",
+          "title": "LP-3 | Module 5 — Manage the semantic model development lifecycle",
+          "order": 5,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-03/module-15-manage-semantic-model-lifecycle.html",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/manage-semantic-model-lifecycle/"
+          ],
+          "sourceChapterId": "learning-path-03/module-15-manage-semantic-model-lifecycle",
+          "audioStandardVersion": "1.0"
         }
       ]
     },
