@@ -1,0 +1,216 @@
+<h1>Module 1 — Choose data stores in Microsoft Fabric</h1>
+<p><strong>LP2 Module 1/5 · DP-600 Module 6/21 · 8 units</strong> Microsoft Learn: https://learn.microsoft.com/en-us/training/modules/choose-data-store-fabric/</p>
+<h2>Structure check</h2>
+<table><thead><tr><th>Unit</th><th>Tên</th><th>Heading/chủ đề</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Bối cảnh chọn analytical data store</td></tr>
+<tr><td>2</td><td>Describe analytical data store options</td><td>Three analytical data stores; How data stores connect through OneLake; Decision factors; Considerations when designing for AI usage</td></tr>
+<tr><td>3</td><td>Evaluate lakehouse capabilities</td><td>Lakehouse architecture and capabilities; When to choose a lakehouse; When a lakehouse isn't the best fit; Lakehouse in the broader Fabric solution; Check your understanding</td></tr>
+<tr><td>4</td><td>Evaluate warehouse capabilities</td><td>Warehouse architecture and capabilities; When to choose a warehouse; When a warehouse isn't the best fit; Warehouse in the broader Fabric solution; Check your understanding</td></tr>
+<tr><td>5</td><td>Evaluate eventhouse capabilities</td><td>Eventhouse architecture and capabilities; When to choose an eventhouse; When an eventhouse isn't the best fit; Eventhouse in the broader Fabric solution; Check your understanding</td></tr>
+<tr><td>6</td><td>Case study: Choose data stores for an integrated analytics solution</td><td>Business scenario; Workloads 1–4; How the complete solution fits together</td></tr>
+<tr><td>7</td><td>Module assessment</td><td>5 câu</td></tr>
+<tr><td>8</td><td>Summary</td><td>Kết luận và Further reading</td></tr>
+</tbody></table>
+<p>Module này không có lab thao tác portal; Unit 6 là case study về thiết kế kiến trúc.</p>
+<h2>Unit 1 — Introduction</h2>
+<h3>Unit này dạy gì</h3>
+<p>Đặt vấn đề lựa chọn data store theo <strong>workload</strong>, không theo sở thích nhóm phát triển hoặc chỉ dựa vào tên/định dạng nguồn dữ liệu.</p>
+<h3>Nội dung chính trong unit</h3>
+<p>Một doanh nghiệp bán lẻ có ba nhu cầu: nhóm Sales muốn báo cáo doanh thu và dimension modeling; nhóm Data Science xử lý JSON, transaction files, feature engineering bằng Python; nhóm Operations muốn phát hiện bất thường từ cảm biến trong vài giây. Cả ba cùng dùng Fabric nhưng không buộc phải sử dụng một storage engine.</p>
+<p>Để lựa chọn, đối chiếu tối thiểu <strong>Data format, Query language, Write pattern, Team skills, Workload type</strong>. Lakehouse cho phép Spark xử lý đa định dạng; Warehouse phù hợp với relational BI và T-SQL DML; Eventhouse ưu tiên streaming telemetry và KQL. Một kiến trúc Production có thể kết hợp cả ba qua OneLake, Eventstream và các cơ chế truy vấn liên store.</p>
+<h2>Unit 2 — Describe analytical data store options</h2>
+<h3>Unit này dạy gì</h3>
+<p>Hiểu ba analytical stores, cơ chế kết nối qua OneLake, các tiêu chí quyết định và mối liên hệ với AI readiness.</p>
+<h3>Three analytical data stores</h3>
+<table><thead><tr><th>Đặc điểm</th><th>Lakehouse</th><th>Warehouse</th><th>Eventhouse</th></tr></thead><tbody>
+<tr><td>Điểm mạnh</td><td>Data engineering, Spark, Data Science</td><td>SQL-first BI, dimensional analytics</td><td>Real-time analytics, time series</td></tr>
+<tr><td>Ngôn ngữ chính</td><td>PySpark, Spark SQL</td><td>T-SQL</td><td>KQL</td></tr>
+<tr><td>Dữ liệu phù hợp</td><td>Structured, semi-structured, unstructured</td><td>Structured, relational</td><td>Events, telemetry, logs</td></tr>
+<tr><td>Ghi</td><td>Spark/Pipelines/Dataflows</td><td>T-SQL DML, Pipelines, Dataflows</td><td>Streaming ingestion</td></tr>
+<tr><td>SQL analytics</td><td>Lakehouse SQL analytics endpoint chủ yếu read-only</td><td>Đọc/ghi T-SQL theo phạm vi hỗ trợ</td><td>KQL, SQL hỗ trợ giới hạn</td></tr>
+<tr><td>Transaction</td><td>ACID ở cấp Delta table</td><td>Multi-table ACID</td><td>Không dành cho OLTP updates</td></tr>
+</tbody></table>
+<p><strong>Lakehouse:</strong> Kết hợp files trong Data Lake với Delta Tables, thích hợp Bronze/Silver/Gold, ML và Spark. <strong>Warehouse:</strong> Delta storage trong OneLake nhưng cung cấp T-SQL DML, tables, views, procedures và transactional analytics. <strong>Eventhouse:</strong> Một Eventhouse có thể chứa các KQL databases, tối ưu ingestion và phân tích dữ liệu chuỗi thời gian.</p>
+<p>Phân biệt với <strong>SQL database in Fabric</strong> (operational SQL workloads) và <strong>Cosmos DB in Fabric</strong> (NoSQL/ứng dụng) — không phải ba analytical choices chính của module.</p>
+<h3>How data stores connect through OneLake</h3>
+<ul>
+<li><strong>OneLake shortcuts:</strong> Tham chiếu dữ liệu ở nơi khác mà không mặc định sao chép toàn bộ dữ liệu. Dùng khi Data Science Lakehouse cần đọc dữ liệu từ Engineering Lakehouse.</li>
+<li><strong>Cross-database queries:</strong> Warehouse có thể truy vấn các Warehouse hoặc Lakehouse SQL analytics endpoints tương thích theo ngữ cảnh đặt tên 3 phần <code>Database.Schema.Table</code>.</li>
+<li><strong>Lakehouse SQL analytics endpoint:</strong> Cho phép đọc các Delta tables bằng T-SQL; không hỗ trợ ghi dữ liệu Lakehouse bằng T-SQL DML qua endpoint đó.</li>
+<li><strong>Eventhouse OneLake availability:</strong> Cho phép dữ liệu KQL được tiếp cận qua Delta representation theo cơ chế đồng bộ được hỗ trợ. Không mặc định zero latency giữa query Eventhouse và bản Delta.</li>
+</ul>
+<p>Ví dụ minh họa trong ngữ cảnh cross-database hỗ trợ:</p>
+<pre><code class="language-sql">SELECT TOP 10 *
+FROM SalesLakehouse.dbo.Customers;</code></pre>
+<h3>Decision factors</h3>
+<ol>
+<li><strong>Data format:</strong> JSON, image, PDFs và structured transaction data xử lý bằng Spark → thường Lakehouse.</li>
+<li><strong>Query language:</strong> Team có T-SQL, views, DML, stored procedures → Warehouse.</li>
+<li><strong>Write pattern:</strong> Liên tục append hàng nghìn events/giây, query trong vài giây → Eventhouse.</li>
+<li><strong>Team skills:</strong> Python/PySpark/ML → Lakehouse; SQL-first → Warehouse; KQL-first → Eventhouse.</li>
+<li><strong>Workload type:</strong> Batch engineering/feature preparation → Lakehouse; relational BI → Warehouse; IoT/log dashboards → Eventhouse.</li>
+</ol>
+<p>Không có thứ tự ưu tiên bất biến. Nếu đề thi đưa điều kiện bắt buộc như <strong>multi-table ACID T-SQL</strong> hay <strong>very-low-latency KQL event analytics</strong>, điều kiện đó thường loại nhiều đáp án nhiễu.</p>
+<h3>Considerations when designing for AI usage</h3>
+<ul>
+<li>Lakehouse giữ raw và curated data, feature engineering, model training với Spark MLlib/scikit-learn, có thể phục vụ pipeline embeddings/RAG.</li>
+<li>Warehouse tổ chức dữ liệu quan hệ, business fields và curated tables làm nền tảng cho semantic models, Copilot và data agents.</li>
+<li>Eventhouse có KQL time-series/anomaly/forecast capabilities, phù hợp AI gần thời gian thực.</li>
+<li>AI readiness đòi hỏi <strong>data quality, metadata, governance, permission và business definitions</strong>; chọn đúng store thôi chưa đủ.</li>
+</ul>
+<h2>Unit 3 — Evaluate lakehouse capabilities</h2>
+<h3>Unit này dạy gì</h3>
+<p>Khám phá kiến trúc Lakehouse, Delta Lake, hai cách truy cập Spark/SQL, các workload phù hợp và giới hạn.</p>
+<h3>Lakehouse architecture and capabilities</h3>
+<p>Lakehouse có hai vùng quan trọng: <strong>Tables</strong> (thường là managed Delta tables) và <strong>Files</strong> (CSV, JSON, Parquet, PDF, ảnh, raw data). Delta table dùng Parquet dữ liệu cùng <code>_delta_log</code> quản lý transaction/version. Delta có ACID ở <strong>cấp bảng</strong>, không đồng nghĩa multi-table ACID giống Warehouse.</p>
+<p>Spark cho phép read/write qua PySpark và Spark SQL. SQL analytics endpoint cung cấp T-SQL read-only truy vấn các Delta tables:</p>
+<pre><code class="language-python">source_df = spark.read.table(&quot;Sales&quot;)
+filtered_df = source_df.filter(source_df.Amount &gt; 1000)
+filtered_df.write.format(&quot;delta&quot;).mode(&quot;overwrite&quot;).saveAsTable(&quot;SalesFiltered&quot;)</code></pre>
+<pre><code class="language-sql">SELECT CustomerId, SUM(Amount) AS Revenue
+FROM dbo.Sales
+GROUP BY CustomerId;</code></pre>
+<p>Hai ví dụ minh họa hai engine/truy cập khác nhau tới dữ liệu trong Lakehouse.</p>
+<h3>When to choose a lakehouse</h3>
+<ul>
+<li><strong>Mixed data formats:</strong> CSV, JSON, API files, Parquet, images/tài liệu cùng tồn tại.</li>
+<li><strong>Data Science / ML:</strong> Python/Spark notebooks, training, feature engineering.</li>
+<li><strong>Medallion architecture:</strong> Bronze (raw), Silver (cleaned), Gold (business-ready). Có thể triển khai nhiều Lakehouses.</li>
+<li><strong>Evolving requirements:</strong> Schema thay đổi, raw landing linh hoạt.</li>
+<li><strong>Large-scale batch processing:</strong> Distributed Spark ETL, deduplication, joins và aggregation trên dữ liệu lớn.</li>
+</ul>
+<h3>When a lakehouse isn't the best fit</h3>
+<p>Khi bắt buộc <strong>T-SQL UPDATE/MERGE trên các bảng BI hoặc multi-table ACID transactions</strong>, Warehouse phù hợp hơn. Khi cần <strong>real-time log/telemetry queries trong vài giây</strong>, Eventhouse thường phù hợp hơn. Lakehouse vẫn có thể xử lý streaming và Delta MERGE qua Spark: phân biệt <em>có khả năng</em> và <em>được tối ưu cho workload</em>.</p>
+<h3>Lakehouse in the broader Fabric solution</h3>
+<pre><code class="language-mermaid">flowchart TD
+    A[Dataverse / SharePoint / API] --&gt; B[Data Factory]
+    B --&gt; C[Engineering Lakehouse]
+    C --&gt; D[Curated Delta]
+    D --&gt; E[Warehouse]
+    D --&gt; F[Power BI]
+    D --&gt; G[Data Science / ML]</code></pre>
+<p>Lakehouse còn có thể hỗ trợ Semantic Link (SemPy), ML preparation và làm nguồn cho AI, nhưng semantic layer và quyền truy cập vẫn phải thiết kế riêng.</p>
+<h3>Check your understanding</h3>
+<p><strong>C1.</strong> Nhóm Data Science xử lý nhiều TB CSV/JSON bằng Python notebooks để tạo ML features: <strong>Yes, Lakehouse phù hợp</strong>, vì hỗ trợ data formats linh hoạt và Spark. <strong>C2.</strong> Bộ phận Finance cần T-SQL updates vào dimensions mỗi ngày: <strong>No, ưu tiên Warehouse</strong>, bởi Lakehouse SQL endpoint read-only cho DML. Nếu scenario yêu cầu Spark-based SCD thì Lakehouse vẫn có thể phù hợp.</p>
+<h2>Unit 4 — Evaluate warehouse capabilities</h2>
+<h3>Unit này dạy gì</h3>
+<p>Warehouse cho structured analytical data, T-SQL DML, dimensional schema, transaction, cùng ưu/nhược điểm trong kiến trúc Fabric.</p>
+<h3>Warehouse architecture and capabilities</h3>
+<p>Warehouse cho phép tạo bảng và thao tác T-SQL theo cú pháp được hỗ trợ:</p>
+<pre><code class="language-sql">CREATE TABLE dbo.DimProduct
+(
+    ProductKey INT NOT NULL,
+    ProductName VARCHAR(200),
+    Category VARCHAR(100)
+);
+
+INSERT INTO dbo.DimProduct VALUES (1, 'Laptop', 'Electronics');
+UPDATE dbo.DimProduct SET Category = 'Computers' WHERE ProductKey = 1;</code></pre>
+<p>Các khả năng gồm DML <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code>; views, stored procedures; <code>COPY INTO</code>, CTAS; multi-table explicit transactions theo phạm vi hỗ trợ. Warehouse không hỗ trợ <em>toàn bộ</em> T-SQL của SQL Server. Schema-on-write giúp kiểm soát datatype.</p>
+<p><strong>PK/FK/UNIQUE trong Fabric Warehouse dùng NOT ENFORCED</strong> trong phạm vi hỗ trợ; ETL vẫn phải tự bảo vệ uniqueness và referential integrity.</p>
+<p>Ví dụ transaction:</p>
+<pre><code class="language-sql">BEGIN TRANSACTION;
+UPDATE dbo.DimProduct SET Category = 'Computers' WHERE ProductKey = 1;
+UPDATE dbo.FactSales SET Amount = 1500 WHERE SalesKey = 100;
+COMMIT TRANSACTION;</code></pre>
+<p>Trong production phải thêm TRY/CATCH và ROLLBACK nếu xảy ra lỗi.</p>
+<h3>When to choose a warehouse</h3>
+<ol>
+<li><strong>SQL-first teams:</strong> Quen SQL Server, T-SQL, stored procedures.</li>
+<li><strong>Transactional write patterns:</strong> Cập nhật/ghép dimensions, fact corrections, nhiều bảng cần nhất quán.</li>
+<li><strong>Star schema / dimensional modeling:</strong> FactSales, DimDate, DimProduct, DimCustomer.</li>
+<li><strong>Strict schema governance:</strong> Types, managed relational structures; lưu ý constraints NOT ENFORCED.</li>
+<li><strong>Complex analytical queries:</strong> JOIN, GROUP BY, Window Functions.</li>
+</ol>
+<pre><code class="language-sql">SELECT p.Category, SUM(f.Amount) AS Revenue
+FROM dbo.FactSales AS f
+JOIN dbo.DimProduct AS p ON f.ProductKey = p.ProductKey
+GROUP BY p.Category;</code></pre>
+<h3>When a warehouse isn't the best fit</h3>
+<p>Không phải môi trường Spark-native cho batch ML training, file hình/JSON raw hoặc evolving semi-structured schema. Với luồng IoT cần cực thấp latency, Eventhouse phù hợp hơn.</p>
+<h3>Warehouse in the broader Fabric solution</h3>
+<p>Warehouse thường là curated serving layer. Lakehouse/Dataflows/Pipelines xử lý raw; Warehouse lưu fact/dimension; Power BI semantic model bổ sung relationships, DAX measures, role security. Dữ liệu cấu trúc rõ ràng cũng hỗ trợ Copilot/data agents, nhưng không đồng nghĩa Warehouse chính là semantic model.</p>
+<h3>Check your understanding</h3>
+<p><strong>C1.</strong> SQL-first BI team cần cập nhật dimensions hằng ngày và nhiều JOIN: <strong>Yes, Warehouse</strong>. <strong>C2.</strong> Muốn dùng T-SQL truy vấn Warehouse khác và Lakehouse mà tránh sao chép: <strong>Yes</strong>, dùng cross-database querying phù hợp; không nhầm read query với ghi cross-database hoặc materialize tự động.</p>
+<h2>Unit 5 — Evaluate eventhouse capabilities</h2>
+<h3>Unit này dạy gì</h3>
+<p>Eventhouse/KQL databases hỗ trợ ingest, truy vấn nhanh events và time-series, real-time monitoring, anomaly detection.</p>
+<h3>Eventhouse architecture and capabilities</h3>
+<p>Một Eventhouse có thể chứa nhiều <strong>KQL databases</strong>, sử dụng engine tối ưu dữ liệu append-heavy, telemetry và logs. Nguồn nạp gồm Eventstream, Kafka, SDK, Logstash và cơ chế batch phù hợp. KQL là ngôn ngữ truy vấn chính:</p>
+<pre><code class="language-kusto">SensorReadings
+| where Timestamp &gt; ago(1h)
+| summarize AvgTemp = avg(Temperature) by DeviceId, bin(Timestamp, 5m)
+| order by Timestamp asc</code></pre>
+<p>Các hàm quan trọng: <code>make-series</code>, <code>series_decompose</code>, <code>series_decompose_anomalies</code>, <code>series_decompose_forecast</code>. Thích hợp với event ingestion rates lớn và time-window analysis.</p>
+<h3>When to choose an eventhouse</h3>
+<ul>
+<li>IoT telemetry/sensors.</li>
+<li>Application/system/security logs.</li>
+<li>Real-Time Dashboards với latency thấp.</li>
+<li>Time-series anomaly, trend, forecast.</li>
+<li>High-volume streaming ingestion.</li>
+</ul>
+<p>Always-On/Capacity Planner có thể ảnh hưởng chi phí và latency; không bật mặc định cho mọi workload nếu không có SLA phù hợp.</p>
+<h3>When an eventhouse isn't the best fit</h3>
+<p>Không ưu tiên với star-schema BI, T-SQL UPDATEs hoặc traditional transactional modeling; không phải Spark ML training environment. Nếu dữ liệu log chỉ phân tích batch tuần và không cần tra cứu KQL nhanh, Lakehouse có thể hợp lý hơn.</p>
+<h3>Eventhouse in the broader Fabric solution</h3>
+<pre><code class="language-mermaid">flowchart TB
+    A[IoT / POS events] --&gt; B[Eventstream]
+    B --&gt; C[Eventhouse]
+    B --&gt; D[Lakehouse]
+    C --&gt; E[Real-Time Dashboards]
+    D --&gt; F[Historical Analytics]</code></pre>
+<p>Eventhouse có OneLake availability để chia sẻ dữ liệu với downstream workloads qua Delta representation; cần lưu ý cơ chế batching và độ trễ đồng bộ.</p>
+<h3>Check your understanding</h3>
+<p><strong>C1.</strong> Daily-refresh star-schema T-SQL sales BI: <strong>No, Warehouse phù hợp hơn</strong>. <strong>C2.</strong> Logs được thu liên tục nhưng chỉ phân tích hằng tuần: <strong>không mặc định phải Eventhouse</strong>; nếu không có nhu cầu điều tra thời gian thực, Lakehouse/batch có thể đủ. Nếu cần KQL log search quy mô lớn hoặc latency thấp, Eventhouse vẫn có lợi.</p>
+<h2>Unit 6 — Case study: Choose data stores for an integrated analytics solution</h2>
+<h3>Unit này dạy gì</h3>
+<p>Thiết kế cho <strong>Contoso Corporation</strong>, doanh nghiệp bán lẻ giả định có <strong>500 cửa hàng tại Bắc Mỹ</strong> và bốn workload: Data Engineering, BI, Real-time Inventory, ML.</p>
+<h3>Business scenario và lựa chọn</h3>
+<p><strong>Workload 1 — Data engineering:</strong> Mirrored SQL databases, CSV, JSON APIs, Parquet, khoảng <strong>5 TB dữ liệu mới/ngày</strong>, schema thay đổi, Python/PySpark, batch cleaning. <strong>Recommendation: Engineering Lakehouse.</strong> Dùng Spark và Delta cho Bronze/Silver/curated outputs.</p>
+<p><strong>Workload 2 — Business Intelligence:</strong> Star schema, SCD updates, T-SQL DML, views, multi-table transactions, Power BI dashboards, đọc dữ liệu Engineering Lakehouse. <strong>Recommendation: Warehouse.</strong> Có thể dùng cross-database queries hoặc materialize fact/dimension thực tế khi cần.</p>
+<p><strong>Workload 3 — Real-time inventory:</strong> POS phát khoảng <strong>50.000 events/giây</strong>, append-only, kiểm tra rolling 15-minute windows và phát hiện stockout trong vài giây. <strong>Recommendation: Eventhouse.</strong> Eventstream cung cấp Eventhouse cho real-time dashboard và có thể đưa cùng luồng vào Lakehouse cho lịch sử.</p>
+<pre><code class="language-kusto">InventoryEvents
+| where Timestamp &gt; ago(15m)
+| summarize UnitsSold = sum(Quantity) by StoreId, ProductId
+| where UnitsSold &gt; 50</code></pre>
+<p><strong>Workload 4 — Machine learning:</strong> Customer churn/product recommendation, dữ liệu từ Warehouse/Lakehouse + kinh tế bên ngoài, trên 100 GB feature engineering, Python/scikit-learn/Spark. <strong>Recommendation: Dedicated Data Science Lakehouse</strong> với shortcuts phù hợp để tách dữ liệu thử nghiệm khỏi Engineering data. Nếu dùng chung Fabric capacity thì không mặc định compute-isolated.</p>
+<h3>Integrated architecture</h3>
+<pre><code class="language-mermaid">flowchart TB
+    S[Mirrored SQL / CSV / JSON / Parquet] --&gt; L[Engineering Lakehouse]
+    L --&gt; W[Warehouse]
+    W --&gt; M[Power BI Semantic Model]
+    M --&gt; P[Power BI Reports]
+    POS[POS Events] --&gt; E[Eventstream]
+    E --&gt; K[Eventhouse]
+    E --&gt; L
+    K --&gt; R[Real-Time Dashboards]
+    L -. OneLake shortcuts .-&gt; DS[Data Science Lakehouse]
+    W -. Shared data .-&gt; DS
+    DS --&gt; ML[ML Models]</code></pre>
+<p>Cần nhận diện: <strong>OneLake shortcuts, cross-database queries, Eventstreams, Direct Lake, Mirroring</strong>. Không coi bất kỳ cơ chế nào là bảo đảm dữ liệu luôn zero-copy/zero-latency trong mọi trường hợp.</p>
+<h2>Unit 7 — Module assessment (5 câu)</h2>
+<ol>
+<li><strong>Data store hỗ trợ multi-table ACID transactions bằng T-SQL?</strong> — <strong>Warehouse.</strong> Lakehouse Delta ACID chủ yếu cấp bảng; Eventhouse không dành cho transaction updates.</li>
+<li><strong>Python notebooks khám phá structured transactions + semi-structured web logs?</strong> — <strong>Lakehouse.</strong> Spark và mixed data phù hợp hơn Warehouse/Eventhouse.</li>
+<li><strong>Ngôn ngữ chính của Eventhouse cho time-series analytics?</strong> — <strong>KQL.</strong> Không phải Spark SQL hay T-SQL.</li>
+<li><strong>Star schema với frequently updated dimensions qua T-SQL?</strong> — <strong>Warehouse.</strong> Lakehouse có thể lưu star schema nhưng SQL endpoint read-only.</li>
+<li><strong>Access across Fabric stores without copying?</strong> — <strong>Cross-database queries và OneLake shortcuts.</strong> Pipelines chủ yếu orchestration/data movement, streaming ingestion là nhận sự kiện.</li>
+</ol>
+<h2>Unit 8 — Summary</h2>
+<ul>
+<li><strong>Lakehouse:</strong> Spark, mixed formats, flexible data processing, feature engineering và ML.</li>
+<li><strong>Warehouse:</strong> Structured relational BI, T-SQL DML, multi-table ACID, dimensional models.</li>
+<li><strong>Eventhouse:</strong> Real-time logs/IoT/time-series, KQL, rapid event ingestion.</li>
+<li>OneLake shortcuts/cross-database queries/Eventstream giúp kết hợp nhiều store trong một kiến trúc.</li>
+<li>AI readiness yêu cầu data quality, metadata, governance, business semantics, không chỉ storage.</li>
+</ul>
+<h3>Further reading</h3>
+<ul>
+<li>https://learn.microsoft.com/en-us/fabric/fundamentals/decision-guide-data-store</li>
+<li>https://learn.microsoft.com/en-us/fabric/fundamentals/decision-guide-lakehouse-warehouse</li>
+<li>https://learn.microsoft.com/en-us/fabric/real-time-intelligence/eventhouse</li>
+</ul>
+<h3>Coverage check — Module 1</h3>
+<p><strong>8/8 units</strong>: Introduction; Analytical store options; Lakehouse; Warehouse; Eventhouse; Integrated case study (4 workloads); Assessment (5 câu); Summary. Đã giải thích các decision factors, transaction constraints, read/write modes, AI readiness và cơ chế chia sẻ qua OneLake. Không có portal lab chính thức; case study được xử lý theo recommendation. <strong>Phần luyện kỹ:</strong> Lakehouse SQL endpoint vs Warehouse T-SQL, multi-table ACID, KQL/time-series, shortcuts vs cross-database queries.</p>
+<hr>

@@ -1,0 +1,245 @@
+<h1>Module 3 — Transform data using Dataflows Gen2 in Microsoft Fabric</h1>
+<p><strong>LP2 Module 3/5 · DP-600 Module 8/21 · 7 units</strong> Microsoft Learn: https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-dataflows/</p>
+<h2>Structure check</h2>
+<table><thead><tr><th>Unit</th><th>Tên</th><th>Heading/chủ đề</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Vai trò của low-code ETL</td></tr>
+<tr><td>2</td><td>Understand Dataflows Gen2</td><td>What are Dataflows Gen2?; Capabilities; Output destinations; Dataflow types comparison; When to use; Other approaches; Intelligent data platform</td></tr>
+<tr><td>3</td><td>Transform data with Power Query</td><td>Create; Power Query Editor; Common transformations; Clean and standardize; M language; Copilot; Export query results</td></tr>
+<tr><td>4</td><td>Optimize Dataflows Gen2 performance</td><td>Modern Query Evaluator; Query folding; Check Folding; Folding-friendly patterns; Preview-only steps; Best practices</td></tr>
+<tr><td>5</td><td>Exercise: Transform data with Dataflows Gen2</td><td>Setup; Create Dataflow; Power Query transformations; Copilot optional; Cleanup</td></tr>
+<tr><td>6</td><td>Knowledge check</td><td>5 câu về Dataflow purpose, Folding, Merge, kiểm tra folding, Notebook alternative</td></tr>
+<tr><td>7</td><td>Summary</td><td>Tổng kết và Learn more</td></tr>
+</tbody></table>
+<h2>Unit 1 — Introduction</h2>
+<h3>Unit này dạy gì</h3>
+<p>Tại sao cần Dataflows Gen2 để làm sạch/chuẩn hóa data từ nhiều nguồn trước khi ghi Lakehouse hoặc Warehouse, đặc biệt khi nhóm quen Power Query và không muốn code Spark/SQL cho mọi thao tác.</p>
+<h3>Nội dung chính trong unit</h3>
+<p>Một doanh nghiệp kết hợp Orders từ SQL Server, Product Catalog từ SharePoint, Sales CSV. Các kiểu Date/Text/Number khác nhau, null hoặc duplicates làm báo cáo sai. Dataflow tạo quy trình <strong>Extract → Transform → Load</strong>: kết nối nguồn, chọn cột, chuẩn hóa type, Remove Duplicates, Merge, tính derived columns, ghi destination. Transformation tập trung dùng chung thay vì mỗi Power BI report tự xử lý lại một cách khác nhau. Dữ liệu sạch giúp semantic models và AI agents hiểu chính xác hơn.</p>
+<pre><code class="language-mermaid">flowchart LR
+    A[SQL Server] --&gt; D[Dataflow Gen2]
+    B[SharePoint] --&gt; D
+    C[CSV / Excel] --&gt; D
+    D --&gt; E[Power Query Transformations]
+    E --&gt; F[Lakehouse / Warehouse]
+    F --&gt; G[Power BI / AI]</code></pre>
+<h2>Unit 2 — Understand Dataflows Gen2</h2>
+<h3>Unit này dạy gì</h3>
+<p>Hiểu Power Query Online-based ETL, những capability hiện có, destination/update methods, Gen1/Gen2 differences và khi nào chuyển sang Notebook/T-SQL.</p>
+<h3>What are Dataflows Gen2?</h3>
+<p>Dataflow Gen2 là managed cloud ETL trong Fabric, dùng giao diện Power Query Online và <strong>M language</strong>. Một query đọc source, định nghĩa Applied Steps và có thể được gắn data destination. Query helper chỉ để Merge/Reference có thể không cần output destination.</p>
+<p>Nguồn on-premises thường cần On-premises Data Gateway cùng permission/credentials; các nguồn cloud phù hợp có thể kết nối trực tiếp theo connector.</p>
+<h3>Dataflows Gen2 capabilities</h3>
+<ol>
+<li><strong>Hundreds of connectors:</strong> SQL, SharePoint, CSV, Excel, cloud services, APIs, Lakehouse/Warehouse và các connector hỗ trợ khác.</li>
+<li><strong>300+ Power Query transformations:</strong> Filter, Group, Merge/Append, Pivot/Unpivot, Clean, Split, Rename, calculated columns.</li>
+<li><strong>Multiple destinations:</strong> Nạp dữ liệu đầu ra cho các Fabric items hoặc external stores phù hợp.</li>
+<li><strong>AutoSave/background publishing:</strong> Lưu thao tác khi tác giả làm việc; vẫn kiểm tra publish/refresh success.</li>
+<li><strong>Schedule/automate:</strong> Manual/scheduled refresh, Pipeline activity, failure notifications.</li>
+<li><strong>AI assistance &amp; portability:</strong> Copilot transformation; Git/CI-CD, Public Parameters, Variable Libraries trong các phiên bản hỗ trợ.</li>
+</ol>
+<p><strong>Đổi sản phẩm:</strong> Dataflows Gen2 Classic không hỗ trợ CI/CD không còn được tạo mới từ tháng 4/2026 theo thông tin đã học. Dataflows Gen2 mới dùng phiên bản hỗ trợ Git/CI-CD; các Classic đã tồn tại có thể hoạt động và được chuyển qua Save As theo khả năng hiện hành.</p>
+<h3>Output destinations</h3>
+<p>Những destination được giới thiệu: Fabric Lakehouse, Fabric Warehouse, Azure Data Lake Storage Gen2, Azure SQL Database, Fabric SQL database, SharePoint Files, Azure Data Explorer/KQL database, Snowflake. Khả năng format/schema/update method thay đổi theo loại destination.</p>
+<p><strong>Replace:</strong> Thay snapshot cũ bằng dữ liệu của lần refresh mới, phù hợp bảng hiện hành như Product Catalog. <strong>Append:</strong> Bổ sung dòng mà không xóa lịch sử; không tự chống duplicate nếu batch chạy lại. <strong>Incremental Refresh:</strong> Xử lý các khoảng thời gian cần refresh dựa trên DateTime policy, thay vì nạp toàn bộ lịch sử. Không đồng nghĩa tự động thực hiện Business Key MERGE/SCD2.</p>
+<table><thead><tr><th>Yêu cầu</th><th>Update method</th></tr></thead><tbody>
+<tr><td>Snapshot mới thay toàn bộ dữ liệu đích</td><td>Replace</td></tr>
+<tr><td>Mỗi lần nhận thêm event mới, không cần sửa cũ</td><td>Append</td></tr>
+<tr><td>Refresh những khoảng ngày có thể thay đổi</td><td>Incremental Refresh</td></tr>
+</tbody></table>
+<h3>Dataflow types comparison</h3>
+<table><thead><tr><th>Loại</th><th>Vai trò</th></tr></thead><tbody>
+<tr><td>Dataflows Gen2</td><td>Fabric ETL, hỗ trợ destinations trong Fabric/external stores</td></tr>
+<tr><td>Dataflows Gen1</td><td>Power BI service data preparation theo kiến trúc cũ</td></tr>
+<tr><td>Power Platform Dataflows</td><td>Power Apps/Power Platform data preparation</td></tr>
+</tbody></table>
+<p>Dataflow Gen2 khác <strong>Power Automate Cloud Flow</strong>: cùng có chữ Flow nhưng workload/engine khác hẳn.</p>
+<h3>When to use dataflows</h3>
+<p>Low-code team, quen Power Query/Excel/Power BI, transformation mức đơn giản đến vừa, reusable logic và load tới nhiều destinations theo cấu hình hỗ trợ.</p>
+<h3>When to consider other approaches</h3>
+<ul>
+<li><strong>Spark Notebook:</strong> Large-scale distributed computation, Python ML, complex transformations/algorithms.</li>
+<li><strong>T-SQL:</strong> SQL-first Warehouse, stored procedures, T-SQL UPDATE/MERGE/multi-table transactions.</li>
+<li><strong>Pipeline:</strong> Orchestration nhiều activities; có thể gọi Dataflow, Notebook hoặc stored procedures.</li>
+</ul>
+<h3>How dataflows support the intelligent data platform</h3>
+<p>Khi CustomerName có spaces thừa, Amount là text hay OrderDate sai định dạng, Copilot/agents và BI có thể trả lời sai. Dataflows giúp chuẩn hóa schema, values, measures nền và business rules nhưng không tự tạo semantic meaning đầy đủ.</p>
+<h2>Unit 3 — Transform data with Power Query</h2>
+<h3>Unit này dạy gì</h3>
+<p>Tạo Dataflow, làm việc với Queries/Applied Steps/Data Preview, xử lý Data Quality, M language, Copilot và export validation.</p>
+<h3>Create a dataflow</h3>
+<ul>
+<li><code>Fabric Portal → Workspace → New item → Dataflow Gen2</code>.</li>
+<li>Hoặc <code>Lakehouse → Get data → New Dataflow Gen2</code> để bắt đầu với Lakehouse làm destination mặc định trong trường hợp tương ứng.</li>
+<li><code>Power Query Editor → Get data → Connector → Authentication/Connection</code>.</li>
+</ul>
+<p><strong>Query</strong> là logic lấy/chuyển dữ liệu; <strong>Destination</strong> là nơi kết quả được lưu. Không phải mọi query phải có output riêng.</p>
+<h3>Navigate the Power Query editor</h3>
+<p><strong>Ribbon:</strong> Home, Transform, Add Column, View. <strong>Queries Pane:</strong> Danh sách queries và Duplicate/Reference/Load. <strong>Data Preview:</strong> Sample tại Applied Step đang chọn, không nhất thiết toàn bộ source. <strong>Query Settings:</strong> Applied Steps và Parameters. <strong>Diagram View:</strong> Xem trực quan luồng query, dependencies, steps.</p>
+<p>Ví dụ sequence:</p>
+<pre><code class="language-text">Source → Navigation → Removed Other Columns → Filtered Rows
+      → Changed Type → Renamed Columns → Added Custom</code></pre>
+<p>Một bước có thể có bánh răng chỉnh cấu hình. Nếu không có, chỉnh M hoặc thay bước phù hợp.</p>
+<h3>Apply common transformations</h3>
+<table><thead><tr><th>Transform</th><th>Chức năng</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Filter Rows</td><td>Giữ dòng hợp lệ</td><td>Quantity &gt; 0</td></tr>
+<tr><td>Select/Remove Columns</td><td>Giảm số cột</td><td>Giữ Date/Customer/Amount</td></tr>
+<tr><td>Change Data Types</td><td>Text→Date/Number</td><td>OrderDate</td></tr>
+<tr><td>Split Columns</td><td>Tách cột</td><td>FullName → First/Last</td></tr>
+<tr><td>Merge Columns</td><td>Ghép cột</td><td>First + Last</td></tr>
+<tr><td>Pivot</td><td>Values ở rows thành columns</td><td>Quarter columns</td></tr>
+<tr><td>Unpivot</td><td>Columns thành rows</td><td>Jan/Feb/Mar → Month, Value</td></tr>
+<tr><td>Group By</td><td>Tổng hợp theo nhóm</td><td>Sales by Region</td></tr>
+<tr><td>Add Calculated</td><td>Tạo Profit</td><td>Revenue − Cost</td></tr>
+<tr><td>Merge Queries</td><td>JOIN hai queries theo keys</td><td>Orders + Customers</td></tr>
+<tr><td>Append Queries</td><td>Nối rows từ nhiều queries</td><td>Sales2025 + Sales2026</td></tr>
+</tbody></table>
+<p><strong>Merge Queries vs Append Queries:</strong> Merge tương tự JOIN theo CustomerID; Append tương tự UNION ALL, nối các dòng của những dataset tương thích. Không dùng Append để bổ sung CustomerName từ bảng Customer theo key. Không dùng Merge để ghép các file Sales theo năm nếu schema giống nhau và mục đích là nối các bản ghi.</p>
+<p><strong>Pivot/Unpivot:</strong> Excel bảng cột Jan, Feb, Mar thích hợp Unpivot thành Month/Revenue để có long format dễ báo cáo. Pivot làm ngược lại; cần aggregation nếu nhiều giá trị tại cùng giao điểm.</p>
+<h3>Clean and standardize data</h3>
+<ul>
+<li><strong>Null:</strong> Xóa, thay bằng default hoặc giữ như trạng thái hợp lệ. <code>DeliveryDate=NULL</code> có thể nghĩa chưa giao, không phải lỗi.</li>
+<li><strong>Remove Duplicates:</strong> Phải chọn đúng uniqueness grain; không chọn riêng OrderID nếu một Order có nhiều Lines.</li>
+<li><strong>Trim:</strong> <code>&quot;  Contoso  &quot; → &quot;Contoso&quot;</code> để tránh Merge mismatch.</li>
+<li><strong>Standardize case:</strong> <code>hanoi/HANOI/HaNoi</code> → <code>HANOI</code> nếu business rules cho phép.</li>
+<li><strong>Errors:</strong> <code>N/A</code> chuyển Number có thể lỗi; Remove Errors/Replace Errors hoặc M try/otherwise. Không tự thay doanh thu lỗi bằng 0 nếu cần đối soát tài chính.</li>
+</ul>
+<h3>Work with the M language</h3>
+<p>M là functional language; query gồm <code>let</code> khai báo nhiều bước, <code>in</code> chỉ kết quả trả về.</p>
+<pre><code class="language-powerquery">let
+    Source = #table({&quot;CustomerName&quot;}, {{&quot;  contoso  &quot;},{&quot;  fabrikam &quot;}}),
+    CleanNames = Table.TransformColumns(
+        Source,
+        {{&quot;CustomerName&quot;, each Text.Upper(Text.Trim(_)), type text}}
+    )
+in
+    CleanNames</code></pre>
+<p>Hàm dùng lại:</p>
+<pre><code class="language-powerquery">(inputText as text) as text =&gt; Text.Upper(Text.Trim(inputText))</code></pre>
+<p>Parameterized query:</p>
+<pre><code class="language-powerquery">Table.SelectRows(Source, each [OrderDate] &gt;= MinimumDate)</code></pre>
+<p>Try/otherwise:</p>
+<pre><code class="language-powerquery">try Number.FromText([Amount]) otherwise null</code></pre>
+<p><code>Advanced Editor</code> giúp xem/sửa code do UI tạo. Kết quả NULL khi lỗi chỉ là một chiến lược; nên đưa bad records vào error log nếu dữ liệu Production có yêu cầu kiểm soát.</p>
+<h3>Use Copilot for Dataflow Gen2</h3>
+<p>Từ Power Query Editor → Copilot, có thể yêu cầu “Remove rows where Status is null”, “Add Profit = Revenue - Cost”, “Group by Customer, count orders”, hoặc giải thích Applied Steps. Kiểm tra lại kết quả, business rules và datatype.</p>
+<p>Điều kiện được giảng: paid Fabric capacity <strong>F2+</strong> hoặc <strong>P1+</strong>, tenant Copilot enabled, supported region/cấu hình xử lý dữ liệu. <strong>Fabric Trial thông thường không hỗ trợ Copilot</strong> trong ngữ cảnh học này; lab core vẫn làm được không cần AI. Quản trị viên cần đánh giá geographic/compliance boundary trước khi bật xử lý ngoài vùng.</p>
+<h3>Export query results for validation</h3>
+<p><code>Queries Pane → Query → Home → Export data</code> để kiểm tra một sample CSV/Excel theo tính năng hỗ trợ. Validation sample không thay thế full refresh QA hoặc đối soát bảng destination.</p>
+<h2>Unit 4 — Optimize Dataflows Gen2 performance</h2>
+<h3>Unit này dạy gì</h3>
+<p>Giảm refresh duration/capacity consumption bằng Modern Query Evaluator, Query Folding và best practices.</p>
+<h3>Modern Query Evaluator</h3>
+<p>Engine mặc định cho Gen2 giúp xử lý phức hợp JOIN/GROUP/type conversion hiệu quả hơn. Không cần tự tạo cluster, nhưng không chữa được mọi vấn đề như overfetch, poor connectors, expensive cross-source Merge hay không folding.</p>
+<h3>Understand query folding</h3>
+<p><strong>Folding:</strong> Đẩy một phần hoặc toàn bộ transformation về engine nguồn dữ liệu. Nếu SQL Server có 10 triệu rows và chỉ cần 100 nghìn rows năm 2026, Filter folding giúp SQL Server trả về tập đã lọc thay vì tải hết rows rồi lọc trong Power Query.</p>
+<pre><code class="language-powerquery">Table.SelectRows(Orders, each [OrderDate] &gt;= #date(2026,1,1))</code></pre>
+<p>Có thể được chuyển sang native SQL tương đương:</p>
+<pre><code class="language-sql">SELECT * FROM dbo.Orders WHERE OrderDate &gt;= '2026-01-01';</code></pre>
+<p>Ba kết quả: <strong>Full Folding</strong>, <strong>Partial Folding</strong>, <strong>No Folding</strong>. CSV/Excel thường không có SQL query engine cho Folding; SQL Server/Azure SQL và một số OData/structured sources có thể folding tùy connector/operation.</p>
+<h3>Check if a step folds</h3>
+<p>Power Query Online: chọn Applied Step → <code>View Native Query</code> nếu connector hỗ trợ; kiểm tra <strong>Folding Indicators</strong> và <strong>Query Plan</strong>. View Native Query bị disable không phải lúc nào cũng chứng minh không có folding. Engine có thể reorder/optimize transformations nên một step ở giữa không folding không nhất thiết là mọi bước sau vĩnh viễn không folding.</p>
+<h3>Apply folding-friendly patterns</h3>
+<p>Thường thuận lợi: Filter (<code>WHERE</code>), Select Columns (<code>SELECT</code>), Sort (<code>ORDER BY</code>), Group By, Merge same-source (<code>JOIN</code>), type casts/rename nếu connector hỗ trợ. Các thao tác như complex custom M, cross-source merges, <code>Table.Buffer</code>, Pivot/Unpivot phức tạp có thể phá hoặc hạn chế folding.</p>
+<p><strong>Filter early + Select required columns early</strong> thường hữu ích để giảm network/data size, nhưng phải giữ đúng business logic. Không bỏ cột business key cần chống trùng.</p>
+<h3>Use preview-only steps for efficient iteration</h3>
+<p><code>Applied Steps → Right click → Enable only in previews</code> ở giao diện hỗ trợ. Preview-only filter giúp xem 100 dòng để debug, <strong>không áp dụng trong production refresh</strong>. Không nhầm với Incremental Refresh (chiến lược làm mới dữ liệu thực tế theo kỳ).</p>
+<h3>Follow performance best practices</h3>
+<ol>
+<li><strong>Filter early.</strong> Giảm rows không cần thiết.</li>
+<li><strong>Select columns early.</strong> Giảm data size.</li>
+<li><strong>Disable unnecessary loads.</strong> Helper queries không cần destination.</li>
+<li><strong>Staging Dataflows.</strong> Tách landing raw và curated transform: Source → Staging Dataflow → Raw Lakehouse → Transformation Dataflow → Curated Lakehouse/Warehouse.</li>
+<li><strong>Parameterize for reuse.</strong> Public Parameters hoặc Fabric Variable Libraries cho Dev/Test/Prod configuration ở các trường được hỗ trợ.</li>
+<li><strong>Monitor refresh.</strong> Refresh history, Monitoring Hub, capacity use; tìm nguyên nhân từ volume tăng, poor folding, cross-source Merge, full reread, capacity saturation.</li>
+</ol>
+<p><strong>Production limitations đã thảo luận:</strong> Tối đa 50 queries có staging/destination trong một Dataflow Gen2 theo tài liệu đương thời; helper queries không load không tính cùng giới hạn. Lưu ý tên cột/bảng đặc biệt tại Lakehouse destination, gateway version, Workspace constraints và Guest cross-tenant connections. Không tự sửa/xóa internal staging items do Fabric quản lý.</p>
+<h2>Unit 5 — Exercise: Transform data with Dataflows Gen2</h2>
+<p><strong>Lab:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/26b-transform-data-dataflows.html <strong>Sample CSV:</strong> https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/orders.csv</p>
+<h3>Unit này dạy gì</h3>
+<p>Tạo Dataflow Gen2 kết nối CSV công khai, chọn/chuẩn hóa cột, lọc dòng, tạo Unit Price, ghi Lakehouse và kiểm tra refresh.</p>
+<h3>Chuẩn bị</h3>
+<ul>
+<li>Work/school account; Workspace với Fabric Trial hoặc Paid Capacity và quyền tạo Lakehouse/Dataflow.</li>
+<li><code>https://app.fabric.microsoft.com</code>; không cần Gateway cho CSV công khai, authentication <code>Anonymous</code>.</li>
+<li>Workspace riêng <code>DP600-LP2-DataflowsLab</code>, Lakehouse <code>SalesLakehouse</code>.</li>
+<li>Copilot optional cần license/tenant settings phù hợp.</li>
+</ul>
+<h3>Bước 1–3: Workspace, Lakehouse, Dataflow</h3>
+<p><code>Workspaces → New workspace → New item → Lakehouse → SalesLakehouse → Get data → New Dataflow Gen2</code>.</p>
+<p><code>Import from a Text/CSV file → Link to file → https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/orders.csv → Create new connection → Authentication Anonymous → Next → Create</code>.</p>
+<p>Raw columns:</p>
+<pre><code class="language-text">SalesOrderID, OrderDate, CustomerID, LineItem,
+ProductID, OrderQty, LineItemTotal</code></pre>
+<h3>Bước 4: Choose Columns</h3>
+<p>Giữ <code>OrderDate</code>, <code>CustomerID</code>, <code>LineItem</code>, <code>OrderQty</code>, <code>LineItemTotal</code>; bỏ hai cột còn lại trong lab. Trong Production, cân nhắc giữ SalesOrderID/ProductID nếu cần grain/reconciliation.</p>
+<h3>Bước 5: Filter Rows</h3>
+<ul>
+<li><code>OrderDate → Filter → Remove empty</code>.</li>
+<li><code>OrderQty → Number Filters → Greater Than → 0</code>.</li>
+</ul>
+<p>Bước Quantity &gt; 0 tránh chia cho 0 trong UnitPrice, nhưng trong nghiệp vụ hoàn trả hàng, negative quantity có thể hợp lệ và không nên xóa mặc định.</p>
+<h3>Bước 6: Set Data Types</h3>
+<p><code>OrderDate</code>: Date; <code>OrderQty</code>: Whole Number; <code>LineItemTotal</code>: Decimal Number. Khi là financial data Production, cân nhắc fixed decimal/precision và locale.</p>
+<h3>Bước 7: Rename Columns</h3>
+<p><code>OrderQty → Quantity</code>, <code>LineItemTotal → Line Total</code>, <code>LineItem → Item</code> theo bài gốc.</p>
+<h3>Bước 8: Add Calculated Column</h3>
+<p><code>Add Column → Custom Column → New Column Name Unit Price → [Line Total] / [Quantity]</code>; kết quả là đơn giá từng dòng. Khi chia phải bảo đảm Quantity != 0. Nếu Lakehouse destination không chấp nhận spaces trong tên cột, dùng <code>LineTotal</code> và <code>UnitPrice</code> ở bảng đích.</p>
+<h3>Bước 9: Review Applied Steps, Diagram, Publish</h3>
+<p>Kiểm tra <code>Source → Promoted Headers → Choose Columns → Filtered Rows → Changed Type → Renamed Columns → Added Custom</code>. Bật Diagram View nếu cần. <code>Home → Save and run</code>, theo dõi Recent runs/refresh status, kiểm tra <code>SalesLakehouse → Tables → orders</code>.</p>
+<h3>Bước 10: Round Unit Price, rerun, verify</h3>
+<p><code>Unit Price → Transform → Rounding → Round → 2 decimal places</code>, Save and run. M tương ứng:</p>
+<pre><code class="language-powerquery">Number.Round([UnitPrice], 2)</code></pre>
+<h3>M code tổng hợp minh họa</h3>
+<p>Đây là ví dụ luyện tập không chứa spaces ở tên cột đích:</p>
+<pre><code class="language-powerquery">let
+    Source = Csv.Document(
+        Web.Contents(&quot;https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/orders.csv&quot;),
+        [Delimiter=&quot;,&quot;, Encoding=65001, QuoteStyle=QuoteStyle.Csv]
+    ),
+    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    KeepColumns = Table.SelectColumns(Headers,
+        {&quot;OrderDate&quot;,&quot;CustomerID&quot;,&quot;LineItem&quot;,&quot;OrderQty&quot;,&quot;LineItemTotal&quot;}),
+    ChangeTypes = Table.TransformColumnTypes(KeepColumns,
+        {{&quot;OrderDate&quot;,type date},{&quot;CustomerID&quot;,Int64.Type},
+         {&quot;LineItem&quot;,Int64.Type},{&quot;OrderQty&quot;,Int64.Type},
+         {&quot;LineItemTotal&quot;,type number}}, &quot;en-US&quot;),
+    FilterRows = Table.SelectRows(ChangeTypes,
+        each [OrderDate] &lt;&gt; null and [OrderQty] &lt;&gt; null and [OrderQty] &gt; 0),
+    RenameColumns = Table.RenameColumns(FilterRows,
+        {{&quot;LineItem&quot;,&quot;Item&quot;},{&quot;OrderQty&quot;,&quot;Quantity&quot;},
+         {&quot;LineItemTotal&quot;,&quot;LineTotal&quot;}}),
+    AddUnitPrice = Table.AddColumn(RenameColumns,&quot;UnitPrice&quot;,
+        each Number.Round([LineTotal]/[Quantity],2), type number)
+in
+    AddUnitPrice</code></pre>
+<h3>Copilot Optional</h3>
+<p>Prompts: “Remove rows where OrderDate is empty”, “Add UnitPrice by dividing LineTotal by Quantity”. Kiểm tra Applied Steps. Trial không bảo đảm có Copilot.</p>
+<h3>Lỗi và cleanup</h3>
+<ul>
+<li>Connection URL/authentication sai → kiểm tra nguồn và Anonymous.</li>
+<li>DataFormat.Error → kiểm tra locale, datatype và giá trị bẩn.</li>
+<li>Division by zero → filter/conditional calculation.</li>
+<li>Missing target table → kiểm tra refresh success và Lakehouse Explorer.</li>
+<li>Destination schema spaces/unsupported characters → đổi tên columns theo hạn chế hiện hành.</li>
+<li>Append duplicate → xác định update method và chống trùng.</li>
+<li>Cleanup chỉ xóa Workspace lab sau khi hoàn thành.</li>
+</ul>
+<h2>Unit 6 — Knowledge check (5 câu)</h2>
+<ol>
+<li><strong>Primary purpose of Dataflow? — Low-code Extract/Transform/Load qua Power Query.</strong> Không phải Power BI visualization hoặc workspace security.</li>
+<li><strong>Query Folding? — Push transformations xuống source engine.</strong> Không phải gộp query trong GUI hay sắp xếp Applied Steps.</li>
+<li><strong>JOIN hai queries theo common key? — Merge Queries.</strong> Append nối rows; Group By tổng hợp.</li>
+<li><strong>Cách kiểm tra folding trong connector phù hợp? — View Native Query ở Applied Step</strong>, kết hợp Query Plan/Folding Indicators; không chỉ đọc Advanced Editor hoặc Refresh History.</li>
+<li><strong>Khi nào Notebook tốt hơn Dataflow? — Complex logic / large-scale distributed Spark processing.</strong> Low-code filter/rename đơn giản vẫn ưu tiên Dataflows.</li>
+</ol>
+<h2>Unit 7 — Summary</h2>
+<ul>
+<li>Dataflows Gen2 là low-code Fabric ETL sử dụng Power Query M, có multiple destinations và refresh/orchestration.</li>
+<li>Phân biệt Merge vs Append, Pivot vs Unpivot, Type conversion, Error handling, parameters và Copilot.</li>
+<li>Performance cần Query Folding, early filtering/projection, preview-only dev, staging, refresh monitoring.</li>
+<li>Chọn Notebook/T-SQL khi workload yêu cầu distributed Python, transaction SQL hoặc stored procedures.</li>
+</ul>
+<p><strong>Further reading:</strong> https://learn.microsoft.com/en-us/fabric/data-factory/dataflows-gen2-overview và https://learn.microsoft.com/en-us/power-query/power-query-folding</p>
+<h3>Coverage check — Module 3</h3>
+<p><strong>7/7 units:</strong> Introduction; Dataflows Gen2 (7 headings); Power Query (7 headings, 11 transformations); Performance (6 headings); Exercise; Knowledge Check (5 câu); Summary. Lab có chuẩn bị, UI operations, validation, lỗi và cleanup; M script minh họa đã ghi nhưng chưa chạy trên Fabric tenant. AI/Copilot, capacity, gateway, permissions, constraints đã được đề cập; RLS/OLS không phải một unit của module này. <strong>Phần luyện kỹ:</strong> Merge/Append, Query Folding diagnostics, Replace/Append/Incremental, Notebook vs Dataflow, Preview-only.</p>
+<hr>

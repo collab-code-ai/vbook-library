@@ -1,0 +1,338 @@
+<h1>Module 2 — Design dimensional models for analytics in Microsoft Fabric</h1>
+<p><strong>LP2 Module 2/5 · DP-600 Module 7/21 · 8 units</strong> Microsoft Learn: https://learn.microsoft.com/en-us/training/modules/design-dimensional-models-fabric/</p>
+<h2>Structure check</h2>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/chủ đề</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Mục tiêu dimensional modeling</td></tr>
+<tr><td>2</td><td>Describe dimensional schema types</td><td>Understand dimensional modeling; Compare schema types; Choose a schema type; Dimensional models as a foundation for AI</td></tr>
+<tr><td>3</td><td>Design fact tables</td><td>Fact structure; Grain; Fact types; Measure types; Naming conventions; Factless facts; Aggregate facts</td></tr>
+<tr><td>4</td><td>Design dimension tables</td><td>Structure; Surrogate keys; Common dimensions; Denormalization; Hierarchies; Conformed; Role-playing; Junk; Naming</td></tr>
+<tr><td>5</td><td>Implement slowly changing dimensions</td><td>SCD Types 0/1/2/3/6; Choose SCD; Tradeoffs</td></tr>
+<tr><td>6</td><td>Exercise: Design and implement a dimensional model</td><td>Warehouse; fact/dimension tables; constraints; sample data; analytical queries; SCD 1/2; verification</td></tr>
+<tr><td>7</td><td>Knowledge check</td><td>5 câu về star schema, grain, surrogate key, SCD, semi-additive measure</td></tr>
+<tr><td>8</td><td>Summary</td><td>Tổng kết và tài liệu mở rộng</td></tr>
+</tbody></table>
+<h2>Unit 1 — Introduction</h2>
+<h3>Unit này dạy gì</h3>
+<p>Vì sao OLTP data models không phải cấu trúc lý tưởng cho analytics; chuyển từ các bảng giao dịch chuẩn hóa sang fact/dimension được tổ chức theo business processes.</p>
+<h3>Nội dung chính trong unit</h3>
+<p>Ứng dụng OLTP có Orders, OrderDetails, Customers, Products, Categories, Addresses. Mục tiêu là xử lý INSERT/UPDATE nhanh và giảm dữ liệu dư thừa. BI lại phải trả lời các câu như doanh thu theo tháng/vùng/sản phẩm, xu hướng phân khúc khách hàng hoặc hiệu suất nhân viên. JOIN quá nhiều bảng và thay đổi thuộc tính lịch sử thường làm truy vấn phức tạp. <strong>Dimensional modeling</strong> dùng Fact Tables lưu sự kiện/measures và Dimension Tables cung cấp ngữ cảnh để lọc, phân tích, drill-down.</p>
+<pre><code class="language-mermaid">flowchart TB
+    A[Operational Databases] --&gt; B[Data Integration / Transformation]
+    B --&gt; C[Dimensional Model]
+    C --&gt; D[Power BI / Analytics / AI]</code></pre>
+<h2>Unit 2 — Describe dimensional schema types</h2>
+<h3>Unit này dạy gì</h3>
+<p>So sánh Star Schema và Snowflake Schema, chọn theo yêu cầu BI và hiểu vai trò nền tảng của dimensional model đối với semantic models/AI.</p>
+<h3>Understand dimensional modeling</h3>
+<p>Một <strong>Fact</strong> trả lời “điều gì đã xảy ra, đo bao nhiêu?”; một <strong>Dimension</strong> trả lời “ai, cái gì, ở đâu, khi nào, thuộc nhóm nào?”. FactSales có DateKey, ProductKey, StoreKey, Quantity, Revenue. DimProduct có ProductKey, Name, Category. Khi JOIN, có thể tính Sales theo Product Category mà không lưu tên Category lặp trong từng dòng Fact.</p>
+<h3>Compare schema types</h3>
+<p><strong>Star Schema:</strong> FactSales nằm ở trung tâm, DimDate/DimCustomer/DimProduct/DimStore liên kết trực tiếp. Các cấp Product → Subcategory → Category được đặt chung trong DimProduct (denormalized). Đơn giản cho người dùng BI, ít JOIN, phù hợp semantic models. Nhược điểm là dimension descriptive values có thể lặp.</p>
+<pre><code class="language-mermaid">flowchart TB
+    D[DimDate] --&gt; F[FactSales]
+    P[DimProduct] --&gt; F
+    C[DimCustomer] --&gt; F
+    S[DimStore] --&gt; F</code></pre>
+<pre><code class="language-sql">SELECT p.Category, SUM(f.Revenue) AS TotalRevenue
+FROM dbo.FactSales AS f
+JOIN dbo.DimProduct AS p ON f.ProductKey = p.ProductKey
+GROUP BY p.Category;</code></pre>
+<p><strong>Snowflake Schema:</strong> Một số dimension được chuẩn hóa thành DimProduct → DimSubcategory → DimCategory. Giảm thuộc tính lặp và có thể thuận lợi quản lý các hierarchy lớn/dùng chung, nhưng tăng JOIN và độ phức tạp semantic model.</p>
+<pre><code class="language-mermaid">flowchart TB
+    D[DimDate] --&gt; F[FactSales]
+    P[DimProduct] --&gt; F
+    S[DimSubcategory] --&gt; P
+    C[DimCategory] --&gt; S</code></pre>
+<pre><code class="language-sql">SELECT c.CategoryName, SUM(f.Revenue) AS TotalRevenue
+FROM dbo.FactSales f
+JOIN dbo.DimProduct p ON f.ProductKey = p.ProductKey
+JOIN dbo.DimSubcategory s ON p.SubcategoryKey = s.SubcategoryKey
+JOIN dbo.DimCategory c ON s.CategoryKey = c.CategoryKey
+GROUP BY c.CategoryName;</code></pre>
+<h3>Choose a schema type</h3>
+<table><thead><tr><th>Tiêu chí</th><th>Star</th><th>Snowflake</th></tr></thead><tbody>
+<tr><td>Dimension</td><td>Thường denormalized</td><td>Normalized</td></tr>
+<tr><td>JOIN</td><td>Ít</td><td>Nhiều</td></tr>
+<tr><td>Dễ dùng BI</td><td>Cao</td><td>Phức tạp hơn</td></tr>
+<tr><td>Redundant descriptions</td><td>Có thể nhiều</td><td>Ít hơn</td></tr>
+<tr><td>Recommended default</td><td>Đa số analytics workloads</td><td>Khi normalization/hierarchy có lý do rõ ràng</td></tr>
+</tbody></table>
+<p>Nhiều fact tables dùng chung DimDate, DimProduct không nhất thiết là Snowflake; đó có thể là các stars với <strong>conformed dimensions</strong>.</p>
+<h3>Dimensional models as a foundation for AI</h3>
+<p>Copilot in Power BI dễ hiểu ngữ nghĩa khi FactSales, DimDate, DimProduct, relationships và Revenue measures rõ ràng. Fabric IQ Ontology có thể biểu diễn <code>Customer</code>, <code>Product</code> như <strong>entity types</strong>, thuộc tính như <strong>properties</strong>, các liên kết là <strong>relationships</strong>. Star Schema và Ontology không phải một thứ. Metadata, security, business definitions, DAX measures và data quality đều ảnh hưởng AI.</p>
+<p><strong>Exam:</strong> “Most analytical workload / simple Power BI model” → Star; “normalized shared hierarchy” → Snowflake nếu có bằng chứng; “multiple facts share dimension” → Conformed dimension.</p>
+<h2>Unit 3 — Design fact tables</h2>
+<h3>Unit này dạy gì</h3>
+<p>Thiết kế Fact Tables đúng grain, phân loại facts/measures và lựa chọn mẫu bảng phù hợp với business process.</p>
+<h3>Understand fact table structure</h3>
+<p>Fact thường có: <strong>dimension keys</strong> (DateKey, ProductKey, CustomerKey), <strong>measures</strong> (Quantity, Revenue, Cost) và <strong>degenerate dimension</strong> như OrderNumber/OrderLineNumber khi không cần một dimension riêng.</p>
+<pre><code class="language-sql">CREATE TABLE dbo.FactSales
+(
+    DateKey INT NOT NULL,
+    ProductKey INT NOT NULL,
+    CustomerKey INT NOT NULL,
+    OrderNumber VARCHAR(30),
+    OrderLineNumber INT,
+    Quantity INT,
+    Revenue DECIMAL(18,2),
+    Cost DECIMAL(18,2)
+);</code></pre>
+<h3>Define the grain</h3>
+<p><strong>Grain:</strong> Một dòng Fact đại diện chính xác cho điều gì. Ví dụ:</p>
+<ul>
+<li>Transaction line: một dòng sản phẩm trong một order.</li>
+<li>Daily product sales: một product × store × date.</li>
+<li>Monthly store sales: một store × month.</li>
+</ul>
+<p>Nếu một Order có 3 items, lặp <strong>Order-level Revenue</strong> ở 3 dòng item rồi SUM gây nhân ba. Phải phân bổ đúng Revenue về item grain hoặc thiết kế Fact khác. Chọn grain chi tiết nhất <strong>cần thiết</strong> cho báo cáo, đồng thời xét data volume/cost.</p>
+<h3>Identify fact table types</h3>
+<ol>
+<li><strong>Transaction Fact:</strong> Một dòng trên một sự kiện giao dịch, thường append; <code>FactSalesOrderLine</code>, PaymentEvent; dễ drill-down.</li>
+<li><strong>Periodic Snapshot Fact:</strong> Một dòng cho mỗi object/period, chẳng hạn tồn kho cuối ngày, số dư cuối tháng. Thường chứa semi-additive measures; có thể cộng tại một thời điểm nhưng không cộng qua tất cả các ngày.</li>
+<li><strong>Accumulating Snapshot Fact:</strong> Một dòng theo dõi toàn bộ process instance với nhiều milestones (<code>CreatedDate</code>, <code>ApprovedDate</code>, <code>ShippedDate</code>, <code>DeliveredDate</code>) và cập nhật khi tiến trình phát triển; phù hợp đo thời gian xử lý phê duyệt/fulfillment.</li>
+</ol>
+<h3>Choose measure types</h3>
+<ul>
+<li><strong>Additive:</strong> SUM theo các dimension hợp lệ, ví dụ Quantity và Revenue trong cùng đơn vị tiền tệ.</li>
+<li><strong>Semi-additive:</strong> Inventory/Account Balance có thể SUM theo Store/Account <strong>tại cùng thời điểm</strong>, không SUM trực tiếp qua Time.</li>
+<li><strong>Non-additive:</strong> Ratio, Unit Price, Percentage, Temperature thường không cộng trực tiếp có ý nghĩa.</li>
+</ul>
+<p>Ví dụ nên lưu <code>DiscountAmount</code>, <code>GrossSalesAmount</code> rồi tính tỷ lệ theo grain mong muốn:</p>
+<p>\[ DiscountRate = \frac{\sum DiscountAmount}{\sum GrossSalesAmount} \]</p>
+<p>Không SUM các discount percentages và không tự lấy AVG percentages nếu weights khác nhau.</p>
+<h3>Apply naming conventions</h3>
+<p>Dùng <code>FactSales</code> / <code>f_Sales</code> và <code>DimDate</code> / <code>d_Date</code> nhất quán; tên thể hiện business process, tránh chung chung như <code>Data1</code>.</p>
+<h3>Consider factless fact tables</h3>
+<p>Một fact không cần measure số học, chẳng hạn bảng <code>StudentKey, ClassKey, DateKey</code> lưu participation; đếm event bằng <code>COUNT(*)</code>. Phù hợp enrollment, attendance, customer-campaign participation.</p>
+<h3>Consider aggregate fact tables</h3>
+<p>Bảng tổng hợp sẵn theo grain cao hơn, ví dụ <code>FactMonthlySales(MonthKey, StoreKey, ProductKey, Revenue)</code> từ 100 triệu order lines. Cải thiện truy vấn dashboard tháng, nhưng mất chi tiết drill-down nếu không giữ fact gốc. Cần kiểm soát aggregation logic tránh double counting.</p>
+<p><strong>Exam:</strong> Đọc scenario và trả lời ba câu: (1) Một dòng là gì? (2) Fact type nào? (3) Measure cộng theo dimension nào?</p>
+<h2>Unit 4 — Design dimension tables</h2>
+<h3>Unit này dạy gì</h3>
+<p>Thiết kế descriptive attributes, surrogate keys, common dimensions, denormalization và các dạng shared/role-playing/junk/hierarchies.</p>
+<h3>Understand dimension table structure</h3>
+<p>Dimension gồm <strong>Surrogate Key</strong> do analytical platform quản lý, <strong>Natural/Business Key</strong> từ nguồn, và descriptive attributes.</p>
+<table><thead><tr><th>CustomerKey</th><th>CustomerCode</th><th>CustomerName</th><th>Region</th></tr></thead><tbody>
+<tr><td>101</td><td>C001</td><td>An Phát</td><td>North</td></tr>
+<tr><td>102</td><td>C002</td><td>Bình Minh</td><td>South</td></tr>
+</tbody></table>
+<h3>Use surrogate keys</h3>
+<p>Hai nguồn CRM có thể cùng CustomerCode <code>C001</code> nhưng biểu diễn hai customers khác nhau. Tạo CustomerKey riêng tránh collision. Surrogate Key giúp tách data warehouse khỏi thay đổi source keys, tối ưu fact references và đặc biệt quan trọng cho nhiều version SCD Type 2. Natural Key vẫn cần lưu để lookup.</p>
+<p>Date Dimension thường dùng integer date key <code>YYYYMMDD</code> như <code>20261111</code>, một ngoại lệ phổ biến.</p>
+<p><strong>Fabric Warehouse IDENTITY:</strong> Sử dụng <code>BIGINT IDENTITY</code> (không giả định <code>IDENTITY(1,1)</code> như SQL Server). Giá trị tự sinh là unique nhưng không bắt buộc tuần tự hoặc gap-free.</p>
+<h3>Design common dimensions</h3>
+<table><thead><tr><th>Dimension</th><th>Thuộc tính tiêu biểu</th></tr></thead><tbody>
+<tr><td>Date</td><td>Year, Quarter, Month, FiscalYear, Holiday</td></tr>
+<tr><td>Customer</td><td>Name, Segment, Region, Loyalty Tier</td></tr>
+<tr><td>Product</td><td>SKU, ProductName, Brand, Category</td></tr>
+<tr><td>Geography</td><td>City, State, Country, PostalCode</td></tr>
+<tr><td>Employee</td><td>Department, JobTitle, Manager, HireDate</td></tr>
+</tbody></table>
+<h3>Denormalize for performance</h3>
+<p>Star dimension có thể lưu <code>ProductName, Subcategory, Category</code> chung một bảng, chấp nhận lặp Category để giảm JOIN và đơn giản hóa reporting.</p>
+<h3>Include hierarchies</h3>
+<ul>
+<li><strong>Balanced:</strong> Mọi nhánh có cùng số cấp (Year → Quarter → Month → Day).</li>
+<li><strong>Unbalanced:</strong> Độ sâu nhánh khác nhau (organizational hierarchy).</li>
+<li><strong>Ragged:</strong> Có nhánh bỏ qua một hoặc nhiều cấp, chẳng hạn hệ địa lý không có State ở một số khu vực.</li>
+</ul>
+<p>Power BI có thể cần xử lý blank hierarchy levels cho ragged hierarchies.</p>
+<h3>Use conformed dimensions</h3>
+<p>Một <code>DimProduct</code> dùng chung cho <code>FactSales</code> và <code>FactInventory</code>; định nghĩa category, SKU nhất quán qua business processes. FactSales có thể ở transaction grain và FactInventory ở daily-snapshot grain.</p>
+<h3>Apply role-playing dimensions</h3>
+<p><code>FactOrders</code> có <code>OrderDateKey</code>, <code>ShipDateKey</code>, <code>DeliveryDateKey</code> đều tham chiếu logic DimDate với các vai trò khác nhau. Power BI có thể triển khai inactive relationships + USERELATIONSHIP hoặc các Date role dimensions, tùy yêu cầu filter đồng thời.</p>
+<h3>Understand junk dimensions</h3>
+<p>Gộp một số cờ/thuộc tính phân loại thấp cardinality (<code>IsGift</code>, <code>IsOnline</code>, <code>PaymentType</code>) vào DimOrderFlags và Fact lưu FlagsKey. Không nên gộp quá nhiều thuộc tính cardinality cao vì số tổ hợp tăng mạnh.</p>
+<h3>Apply naming conventions</h3>
+<p>Dùng <code>DimCustomer</code>, <code>DimProduct</code>, <code>DimDate</code> hoặc <code>d_Customer</code>, <code>d_Product</code>, <code>d_Date</code> nhất quán.</p>
+<h2>Unit 5 — Implement slowly changing dimensions</h2>
+<h3>Unit này dạy gì</h3>
+<p>Xử lý thuộc tính Dimension thay đổi theo thời gian sao cho báo cáo lịch sử không bị ghi đè sai.</p>
+<h3>Understand SCD types</h3>
+<table><thead><tr><th>Type</th><th>Hành vi</th><th>Trường hợp</th></tr></thead><tbody>
+<tr><td><strong>0</strong></td><td>Giữ nguyên giá trị gốc</td><td>OriginalLaunchDate, initial value</td></tr>
+<tr><td><strong>1</strong></td><td>Overwrite, không giữ lịch sử</td><td>Sửa typo ProductName/email</td></tr>
+<tr><td><strong>2</strong></td><td>Thêm version row có surrogate key riêng</td><td>Region tại thời điểm Sales</td></tr>
+<tr><td><strong>3</strong></td><td>Cột Current và Previous</td><td>So sánh trạng thái hiện tại vs ngay trước</td></tr>
+<tr><td><strong>6</strong></td><td>Hybrid 1+2+3</td><td>Đồng thời current/historical/previous attributes</td></tr>
+</tbody></table>
+<p><strong>Type 0:</strong> OriginalCreditScore ban đầu 720 không bị thay bởi điểm cập nhật. <strong>Type 1:</strong> Sửa email <code>old@example.com</code> → <code>new@example.com</code> trên cùng row. Báo cáo lịch sử sẽ nhìn theo giá trị mới nếu dùng thuộc tính đã overwrite. <strong>Type 2:</strong> Employee chuyển North sang South, giữ row cũ và tạo row mới:</p>
+<table><thead><tr><th>EmployeeKey</th><th>EmployeeCode</th><th>Region</th><th>ValidFrom</th><th>ValidTo</th><th>IsCurrent</th></tr></thead><tbody>
+<tr><td>101</td><td>E001</td><td>North</td><td>2025-01-01</td><td>2026-07-01</td><td>0</td></tr>
+<tr><td>205</td><td>E001</td><td>South</td><td>2026-07-01</td><td>9999-12-31</td><td>1</td></tr>
+</tbody></table>
+<p>Fact bán hàng tháng 4 dùng <code>EmployeeKey=101</code>, tháng 8 dùng <code>EmployeeKey=205</code>. Lookup theo version effective time:</p>
+<pre><code class="language-sql">SELECT f.OrderNumber, d.EmployeeKey, d.Region
+FROM dbo.StagingSales f
+JOIN dbo.DimEmployee d
+  ON f.EmployeeCode = d.EmployeeCode
+ AND f.OrderDate &gt;= d.ValidFrom
+ AND f.OrderDate &lt; d.ValidTo;</code></pre>
+<p>Khoảng nửa mở <code>[ValidFrom,ValidTo)</code> tránh đụng boundary. Các version cần non-overlapping.</p>
+<p><strong>Type 3:</strong> <code>CurrentRegion=South</code>, <code>PreviousRegion=North</code>; khi chuyển thêm lần nữa, thông tin cũ hơn có thể bị mất. <strong>Type 6:</strong> Có HistoricalRegion trên mỗi version (Type 2), CurrentRegion được đồng bộ cả history rows (Type 1 tại cột riêng), PreviousRegion để so sánh (Type 3). ETL phức tạp hơn, không mặc định nên chọn.</p>
+<h3>Choose the right SCD type</h3>
+<p>Không phải mọi thuộc tính trong một dimension phải cùng SCD type. Ví dụ sửa lỗi ProductName → Type 1, giữ giá vốn lịch sử phục vụ margin → Type 2, OriginalLaunchDate → Type 0.</p>
+<h3>Consider implementation tradeoffs</h3>
+<ul>
+<li>Type 2 làm số version rows tăng.</li>
+<li>Lookup fact phải dùng version đúng thời điểm giao dịch, không mặc định <code>IsCurrent=1</code> cho historical facts.</li>
+<li>Xử lý late-arriving facts, late dimension changes, duplicates, retry và concurrency.</li>
+<li>Có thể phải cập nhật surrogate key của fact khi phát hiện nghiệp vụ lịch sử được sửa muộn.</li>
+</ul>
+<p><strong>Exam:</strong> “historical attributes at time of transaction” → Type 2. “Correct bad name, don't keep history” → Type 1.</p>
+<h2>Unit 6 — Exercise: Design and implement a dimensional model</h2>
+<p><strong>Lab chính thức:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/26-design-dimensional-models.html</p>
+<h3>Unit này dạy gì</h3>
+<p>Tạo 1 Fact/4 Dimensions trong Fabric Warehouse, nạp mẫu, thêm constraints, truy vấn phân tích và mô phỏng SCD Type 1/2.</p>
+<h3>Chuẩn bị</h3>
+<ul>
+<li>Work/school account, Workspace có quyền Contributor trở lên, Fabric Trial hoặc Paid Capacity.</li>
+<li>Portal https://app.fabric.microsoft.com; tạo Workspace <code>DP600-LP2-DimensionalLab</code> và Warehouse <code>ContosoDW</code>.</li>
+<li>Sample rows có thể tạo trực tiếp qua SQL; không cần dataset khác. Dùng tài nguyên lab riêng để có thể cleanup.</li>
+</ul>
+<h3>Bước 1–2: Tạo Workspace và Warehouse</h3>
+<p><code>Fabric Portal → Workspaces → New workspace → New item → Warehouse → ContosoDW → New SQL query</code>.</p>
+<h3>Bước 3–4: Tạo Fact/Dimensions</h3>
+<p>Grain <code>f_Sales</code>: một dòng giao dịch bán hàng. <code>d_Date</code>, <code>d_Store</code>, <code>d_Product</code>, <code>d_Customer</code> là Dimensions.</p>
+<pre><code class="language-sql">CREATE TABLE dbo.d_Date
+(
+  DateKey INT NOT NULL, FullDate DATE NOT NULL,
+  CalendarYear INT NOT NULL, CalendarQuarter INT NOT NULL,
+  CalendarMonth INT NOT NULL, MonthName VARCHAR(20) NOT NULL,
+  FiscalYear INT NOT NULL, FiscalQuarter INT NOT NULL, IsHoliday BIT NOT NULL
+);
+CREATE TABLE dbo.d_Store
+(
+  StoreKey INT NOT NULL, StoreCode VARCHAR(20) NOT NULL,
+  StoreName VARCHAR(100) NOT NULL, Region VARCHAR(50) NOT NULL,
+  ValidFrom DATE NOT NULL, ValidTo DATE NOT NULL, IsCurrent BIT NOT NULL
+);
+CREATE TABLE dbo.d_Product
+(
+  ProductKey INT NOT NULL, ProductCode VARCHAR(20) NOT NULL,
+  ProductName VARCHAR(100) NOT NULL, Category VARCHAR(50) NOT NULL,
+  UnitCost DECIMAL(18,2) NOT NULL, ValidFrom DATE NOT NULL,
+  ValidTo DATE NOT NULL, IsCurrent BIT NOT NULL
+);
+CREATE TABLE dbo.d_Customer
+(
+  CustomerKey INT NOT NULL, CustomerName VARCHAR(100) NOT NULL,
+  Segment VARCHAR(50) NOT NULL, LoyaltyTier VARCHAR(20) NOT NULL
+);
+CREATE TABLE dbo.f_Sales
+(
+  DateKey INT NOT NULL, StoreKey INT NOT NULL,
+  ProductKey INT NOT NULL, CustomerKey INT NOT NULL,
+  Quantity INT NOT NULL, UnitPrice DECIMAL(18,2) NOT NULL,
+  SalesAmount DECIMAL(18,2) NOT NULL, DiscountAmount DECIMAL(18,2) NOT NULL
+);</code></pre>
+<h3>Bước 5: NOT ENFORCED constraints</h3>
+<pre><code class="language-sql">ALTER TABLE dbo.d_Date ADD CONSTRAINT PK_Date
+ PRIMARY KEY NONCLUSTERED(DateKey) NOT ENFORCED;
+ALTER TABLE dbo.d_Store ADD CONSTRAINT PK_Store
+ PRIMARY KEY NONCLUSTERED(StoreKey) NOT ENFORCED;
+ALTER TABLE dbo.d_Product ADD CONSTRAINT PK_Product
+ PRIMARY KEY NONCLUSTERED(ProductKey) NOT ENFORCED;
+ALTER TABLE dbo.d_Customer ADD CONSTRAINT PK_Customer
+ PRIMARY KEY NONCLUSTERED(CustomerKey) NOT ENFORCED;
+ALTER TABLE dbo.f_Sales ADD CONSTRAINT FK_Sales_Date
+ FOREIGN KEY(DateKey) REFERENCES dbo.d_Date(DateKey) NOT ENFORCED;
+ALTER TABLE dbo.f_Sales ADD CONSTRAINT FK_Sales_Store
+ FOREIGN KEY(StoreKey) REFERENCES dbo.d_Store(StoreKey) NOT ENFORCED;
+ALTER TABLE dbo.f_Sales ADD CONSTRAINT FK_Sales_Product
+ FOREIGN KEY(ProductKey) REFERENCES dbo.d_Product(ProductKey) NOT ENFORCED;
+ALTER TABLE dbo.f_Sales ADD CONSTRAINT FK_Sales_Customer
+ FOREIGN KEY(CustomerKey) REFERENCES dbo.d_Customer(CustomerKey) NOT ENFORCED;</code></pre>
+<p>Metadata constraints không tự bảo đảm data quality; trong Production cần check duplicates/orphan keys.</p>
+<h3>Bước 6: Load sample data</h3>
+<pre><code class="language-sql">INSERT INTO dbo.d_Date VALUES
+(20260112,'2026-01-12',2026,1,1,'January',2026,3,0),
+(20260209,'2026-02-09',2026,1,2,'February',2026,3,0),
+(20260504,'2026-05-04',2026,2,5,'May',2026,4,0);
+INSERT INTO dbo.d_Store VALUES
+(1,'ST01','Contoso Downtown','West','2026-01-01','9999-12-31',1),
+(2,'ST02','Contoso Central','Central','2026-01-01','9999-12-31',1);
+INSERT INTO dbo.d_Product VALUES
+(1,'BIKE01','Trail Bike Pro','Bikes',1200.00,'2026-01-01','9999-12-31',1),
+(2,'HELMET01','Cycling Helmet','Accessories',25.00,'2026-01-01','9999-12-31',1),
+(3,'BOTTLE01','Steel Bottle','Accessories',5.00,'2026-01-01','9999-12-31',1);
+INSERT INTO dbo.d_Customer VALUES
+(1,'Customer A','Premium','Gold'),
+(2,'Customer B','Standard','Silver');
+INSERT INTO dbo.f_Sales VALUES
+(20260112,1,1,1,1,1500.00,1500.00,0.00),
+(20260112,1,2,2,2,35.00,70.00,5.00),
+(20260209,2,1,2,1,1500.00,1500.00,50.00),
+(20260209,1,3,1,3,8.00,24.00,0.00);</code></pre>
+<p>Expected counts: d_Date 3, d_Store 2, d_Product 3, d_Customer 2, f_Sales 4.</p>
+<h3>Bước 7: Analytical queries</h3>
+<pre><code class="language-sql">SELECT d.MonthName, p.Category,
+       SUM(f.SalesAmount) AS TotalSales,
+       SUM(f.Quantity) AS TotalQuantity,
+       SUM(f.DiscountAmount) AS TotalDiscount
+FROM dbo.f_Sales f
+JOIN dbo.d_Date d ON f.DateKey=d.DateKey
+JOIN dbo.d_Product p ON f.ProductKey=p.ProductKey
+GROUP BY d.CalendarMonth,d.MonthName,p.Category
+ORDER BY d.CalendarMonth,p.Category;</code></pre>
+<p>Mong đợi January Accessories=70, Bikes=1500; February Accessories=24, Bikes=1500. Có thể JOIN Store và Customer để tính TotalSales theo Region/Segment.</p>
+<h3>Bước 8: SCD Type 2</h3>
+<p>Product BIKE01 thay UnitCost 1200→1350 từ 01/03/2026. Đóng version cũ và tạo version mới với ProductKey 4:</p>
+<pre><code class="language-sql">BEGIN TRANSACTION;
+UPDATE dbo.d_Product
+SET ValidTo='2026-03-01',IsCurrent=0
+WHERE ProductCode='BIKE01' AND IsCurrent=1;
+INSERT INTO dbo.d_Product VALUES
+(4,'BIKE01','Trail Bike Pro','Bikes',1350.00,
+ '2026-03-01','9999-12-31',1);
+COMMIT TRANSACTION;
+INSERT INTO dbo.f_Sales VALUES
+(20260504,1,4,1,1,1500.00,1500.00,0.00);</code></pre>
+<p>Fact tháng 1/2 vẫn dùng ProductKey 1; Fact tháng 5 dùng ProductKey 4. Kiểm tra:</p>
+<pre><code class="language-sql">SELECT ProductKey, ProductCode, UnitCost, ValidFrom, ValidTo, IsCurrent
+FROM dbo.d_Product WHERE ProductCode='BIKE01' ORDER BY ValidFrom;</code></pre>
+<p><strong>Lưu ý trong lab gốc:</strong> Có ví dụ giao dịch phát sinh sau ngày hiệu lực nhưng vẫn trỏ version cũ; SQL JOIN chạy được không có nghĩa lịch sử đúng nghiệp vụ. Khi triển khai thực tế, lookup SCD2 theo event date.</p>
+<h3>Bước 9: SCD Type 1</h3>
+<pre><code class="language-sql">UPDATE dbo.d_Product
+SET ProductName='Insulated Steel Bottle'
+WHERE ProductCode='BOTTLE01';</code></pre>
+<p>Chỉ overwrite tên; không cần tạo version mới.</p>
+<h3>Bước 10: Verify, optional Copilot, cleanup</h3>
+<pre><code class="language-sql">SELECT d.FullDate,s.StoreName,p.ProductName,c.CustomerName,
+       f.Quantity,f.UnitPrice,f.SalesAmount
+FROM dbo.f_Sales f
+JOIN dbo.d_Date d ON f.DateKey=d.DateKey
+JOIN dbo.d_Store s ON f.StoreKey=s.StoreKey
+JOIN dbo.d_Product p ON f.ProductKey=p.ProductKey
+JOIN dbo.d_Customer c ON f.CustomerKey=c.CustomerKey
+ORDER BY d.FullDate,s.StoreName;</code></pre>
+<p>Sau SCD2 có 5 sales rows nếu không bị orphan keys. Kiểm tra uniqueness current versions, duplicate ProductKeys và Fact thiếu Product dimension. Copilot optional hỗ trợ sinh SQL, không thay thế kiểm tra grain/lookup. Cleanup: xóa đúng Workspace lab khi hoàn thành, không xóa Production workspace.</p>
+<h3>Lỗi thường gặp</h3>
+<table><thead><tr><th>Triệu chứng</th><th>Xử lý</th></tr></thead><tbody>
+<tr><td>Không tạo Warehouse</td><td>Kiểm tra capacity và Workspace permissions</td></tr>
+<tr><td>CREATE TABLE SQL lỗi</td><td>Đảm bảo chạy trên Warehouse, không phải Lakehouse SQL endpoint</td></tr>
+<tr><td>PRIMARY KEY syntax lỗi</td><td>Dùng <code>PRIMARY KEY NONCLUSTERED ... NOT ENFORCED</code></td></tr>
+<tr><td>JOIN thiếu dòng</td><td>Kiểm tra business key và surrogate key</td></tr>
+<tr><td>SCD hiển thị sai Region/Cost lịch sử</td><td>Lookup đúng version theo valid-time</td></tr>
+<tr><td>Chạy lại INSERT bị duplicate</td><td>Chỉ chạy seed trên DB mới hoặc có idempotency logic</td></tr>
+</tbody></table>
+<h2>Unit 7 — Knowledge check (5 câu)</h2>
+<ol>
+<li><strong>Schema nên chọn mặc định cho đa số analytics workloads? — Star Schema.</strong> Snowflake phù hợp khi hierarchy normalization có lý do, normalized OLTP schema không phải mặc định cho BI.</li>
+<li><strong>Quyết định quan trọng nhất khi tạo Fact? — Define the grain.</strong> Grain đi trước các measures/naming conventions.</li>
+<li><strong>Vì sao dùng surrogate keys? — Tách khỏi source identifiers và hỗ trợ lịch sử SCD.</strong> Không phải để chứa business-readable values hoặc loại bỏ nhu cầu natural key.</li>
+<li><strong>Phân tích sales theo vùng mà salesperson thuộc về lúc mỗi sale phát sinh? — SCD Type 2.</strong> Type 1 overwrite lịch sử; Type 3 chỉ giữ previous.</li>
+<li><strong>Daily inventory balance thuộc loại measure nào? — Semi-additive.</strong> Cộng theo Product/Store tại một ngày có nghĩa, cộng qua nhiều ngày thì không.</li>
+</ol>
+<h2>Unit 8 — Summary</h2>
+<ul>
+<li>Dimensional modeling biến dữ liệu nguồn thành mô hình dễ phân tích bằng Fact + Dimension.</li>
+<li>Star Schema thường phù hợp nhất; Snowflake là lựa chọn có điều kiện.</li>
+<li>Xác định Fact grain trước; phân biệt Transaction/Periodic/Accumulating; additive/semi-/non-additive.</li>
+<li>Dùng surrogate keys, hierarchies, conformed, role-playing và junk dimensions đúng tình huống.</li>
+<li>SCD 0/1/2/3/6 giải quyết các yêu cầu lịch sử khác nhau.</li>
+<li>Một dimensional model với business definitions tốt giúp Power BI, Copilot và Fabric IQ sử dụng dữ liệu đáng tin cậy hơn.</li>
+</ul>
+<p><strong>Further reading:</strong> https://learn.microsoft.com/en-us/fabric/data-warehouse/dimensional-modeling-overview</p>
+<h3>Coverage check — Module 2</h3>
+<p><strong>8/8 units:</strong> Introduction, Schema Types (4 headings), Fact Tables (7), Dimension Tables (9), SCD (3), Exercise, Knowledge Check (5 câu), Summary. Lab hướng dẫn tạo 5 bảng, <code>NOT ENFORCED</code> constraints, dữ liệu mẫu, queries, SCD1/SCD2 và cleanup. Không thực thi trên tenant. <strong>Phần luyện kỹ:</strong> Grain, SCD Type 1 vs 2, Fact variants, Semi-additive, Role-playing vs Conformed, surrogate key lookup. AI đã đề cập semantic model/Fabric IQ ở mức module; RLS/OLS chuyên sâu không thuộc phạm vi.</p>
+<hr>

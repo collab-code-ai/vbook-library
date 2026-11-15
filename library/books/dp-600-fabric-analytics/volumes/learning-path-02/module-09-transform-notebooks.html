@@ -1,0 +1,396 @@
+<h1>Module 4 — Transform data using notebooks in Microsoft Fabric</h1>
+<p><strong>LP2 Module 4/5 · DP-600 Module 9/21 · 8 units</strong> Microsoft Learn: https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-notebooks/</p>
+<h2>Structure check</h2>
+<table><thead><tr><th>Unit</th><th>Tên</th><th>Heading/chủ đề</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Từ raw data tới clean/enriched Delta Tables bằng Spark</td></tr>
+<tr><td>2</td><td>Describe notebooks in Fabric</td><td>What are Fabric notebooks; Key concepts; Notebooks vs Dataflows; Data stores accessed; Development patterns</td></tr>
+<tr><td>3</td><td>Shape and clean data</td><td>Read; Deduplicate; Nulls; Filter; Select/Rename; Calculated; Conditional; Data type; Cleaned dataset</td></tr>
+<tr><td>4</td><td>Combine and aggregate data</td><td>Join; Group; Window functions; CTE; Pivot</td></tr>
+<tr><td>5</td><td>Write and size Delta tables</td><td>Write; Modes; Partition; Files; Delta features</td></tr>
+<tr><td>6</td><td>Exercise: Transform data with notebooks</td><td>Setup; Sample data; Clean; Join/Aggregate; Windows; Delta output; Cleanup</td></tr>
+<tr><td>7</td><td>Knowledge check</td><td>5 câu: %%sql; fillna; Overwrite; Window; OPTIMIZE</td></tr>
+<tr><td>8</td><td>Summary</td><td>Tổng kết và tài liệu mở rộng</td></tr>
+</tbody></table>
+<h2>Unit 1 — Introduction</h2>
+<h3>Unit này dạy gì</h3>
+<p>Notebook là giải pháp <strong>code-first</strong> dùng Apache Spark để transform dữ liệu lớn, phức tạp hoặc cần Python/SQL kết hợp. Module nối tiếp Dataflows Gen2 low-code và chuẩn bị tables cho Power BI/AI.</p>
+<h3>Nội dung chính trong unit</h3>
+<p>Giả sử Lakehouse có <code>raw_sales</code>, <code>customers</code>, <code>products</code>: duplicate rows, missing region, inconsistent column names và chưa có Revenue/Running Total. Notebook thực hiện cleaning, joins, aggregation, windows và ghi <code>gold_sales</code> Delta table. Spark SQL và PySpark cùng dùng Spark execution engine, nhưng cú pháp/nguồn API khác. Quy trình:</p>
+<pre><code class="language-mermaid">flowchart TB
+    A[raw_sales] --&gt; D[Fabric Notebook]
+    B[customers] --&gt; D
+    C[products] --&gt; D
+    D --&gt; E[Clean and Standardize]
+    E --&gt; F[Join and Aggregate]
+    F --&gt; G[Gold Delta Tables]
+    G --&gt; H[Power BI / Semantic Models]</code></pre>
+<h2>Unit 2 — Describe notebooks in Fabric</h2>
+<h3>Unit này dạy gì</h3>
+<p>Hiểu Spark sessions, cell types, default Lakehouse, magic commands, multiple data stores, interactive/parameterized/pipeline patterns.</p>
+<h3>What are Fabric notebooks?</h3>
+<p>Notebook là môi trường dạng Jupyter trong Fabric có <strong>Code Cells</strong> và <strong>Markdown Cells</strong>, hỗ trợ PySpark (Python), Spark SQL, Scala, R. Spark session giữ variables/temp views khi chạy, nhưng không giữ sau khi session restart. Delta Tables ghi vào OneLake tồn tại độc lập với session.</p>
+<pre><code class="language-python">sales_df = spark.table(&quot;raw_sales&quot;)
+sales_df.limit(5).show()</code></pre>
+<p>Cell sau có thể dùng <code>sales_df</code> nếu Cell trước đã thực thi và session còn sống. Trình tự chạy rất quan trọng.</p>
+<h3>Key notebook concepts</h3>
+<ul>
+<li><strong>Cells:</strong> Chạy từng cell với Shift+Enter; kết hợp code và Markdown mô tả business rules.</li>
+<li><strong>Lakehouse attachment:</strong> <code>Notebook Explorer → Add data items → Add Lakehouse</code>, đặt Default Lakehouse nếu muốn đọc <code>spark.table(&quot;raw_sales&quot;)</code> mà không chỉ full path.</li>
+<li><strong>Magic commands:</strong> <code>%%sql</code> chọn Spark SQL cho một cell; không phải T-SQL Warehouse. Có thể dùng <code>%%pyspark</code> cho PySpark theo môi trường hỗ trợ.</li>
+</ul>
+<pre><code class="language-sql">%%sql
+SELECT * FROM raw_sales LIMIT 10;</code></pre>
+<p>Phân biệt Spark SQL chạy Spark engine và T-SQL trong Warehouse SQL Query Editor: chúng không hỗ trợ hoàn toàn cùng syntax, stored procedures hay transaction semantics.</p>
+<h3>When to use notebooks versus Dataflows Gen2</h3>
+<table><thead><tr><th>Notebook</th><th>Dataflows Gen2</th></tr></thead><tbody>
+<tr><td>Code-first, Python/SQL/Scala/R</td><td>Low-code Power Query M</td></tr>
+<tr><td>Distributed Spark transformations</td><td>Managed Power Query transformations</td></tr>
+<tr><td>Complex ETL, advanced Python, huge joins</td><td>Common preparation, SQL/CSV/SharePoint cleanup</td></tr>
+<tr><td>Cần quản lý dependencies/code/logs</td><td>Thuận tiện cho analyst quen Excel/Power BI</td></tr>
+</tbody></table>
+<p>Không chọn Notebook chỉ vì “mạnh hơn”; đánh đổi là công sức bảo trì code và điều hành Spark.</p>
+<h3>What data stores can notebooks access</h3>
+<p><strong>Lakehouse</strong> (Delta native), <strong>Warehouse</strong> (read/access qua cơ chế supported, chú ý write limitations), <strong>KQL Database/Eventhouse</strong> (Kusto/Spark connectors), <strong>External sources</strong> (JDBC, ADLS, Blob, REST nếu hỗ trợ). Cần permission và connector phù hợp, không áp dụng một lệnh write cho mọi store.</p>
+<h3>Common development patterns</h3>
+<ul>
+<li><strong>Interactive:</strong> Code → Inspect schema/rows → Debug → Transformation.</li>
+<li><strong>Parameterized:</strong> Cell Parameters, được Pipeline truyền giá trị runtime (<code>run_date</code>, <code>environment</code>).</li>
+<li><strong>Pipeline integration:</strong> <code>Copy Data → Notebook Transform → Data Quality Check → Semantic Model Refresh</code>. Pipeline giải quyết orchestration/dependencies/retries, Notebook xử lý transformation.</li>
+<li><strong>Copilot assistance:</strong> Có thể giúp viết/explain/debug Spark code nhưng cần kiểm chứng dữ liệu và licensing phù hợp.</li>
+</ul>
+<h2>Unit 3 — Shape and clean data</h2>
+<h3>Unit này dạy gì</h3>
+<p>Sử dụng DataFrame API và Spark SQL để đọc, deduplicate, handle nulls, filter, select/rename, calculated/conditional columns và cast types.</p>
+<h3>Read data from a lakehouse table</h3>
+<pre><code class="language-python">df = spark.table(&quot;raw_sales&quot;)
+df.printSchema()
+df.show(10)
+df.count()</code></pre>
+<p><code>df.filter(...)</code> là lazy transformation, còn <code>count()</code>/<code>show()</code> kích hoạt Spark actions. Không lạm dụng <code>collect()</code> với dữ liệu lớn vì đưa kết quả về driver.</p>
+<pre><code class="language-sql">%%sql
+SELECT * FROM raw_sales;</code></pre>
+<h3>Remove duplicate rows</h3>
+<pre><code class="language-sql">%%sql
+SELECT DISTINCT * FROM raw_sales;</code></pre>
+<pre><code class="language-python">deduped_df = df.dropDuplicates()</code></pre>
+<p>Để chọn <strong>latest row by business key</strong>, không dùng <code>dropDuplicates([&quot;OrderID&quot;])</code> nếu muốn chắc chắn record có UpdatedAt mới nhất; dùng Window:</p>
+<pre><code class="language-sql">%%sql
+WITH ranked AS (
+  SELECT *,
+    ROW_NUMBER() OVER (
+      PARTITION BY OrderID ORDER BY UpdatedAt DESC, SequenceNo DESC
+    ) AS rn
+  FROM raw_orders
+)
+SELECT * FROM ranked WHERE rn=1;</code></pre>
+<pre><code class="language-python">from pyspark.sql import Window
+from pyspark.sql.functions import col, row_number
+w = Window.partitionBy(&quot;OrderID&quot;).orderBy(col(&quot;UpdatedAt&quot;).desc())
+latest_df = orders_df.withColumn(&quot;rn&quot;, row_number().over(w)).filter(col(&quot;rn&quot;)==1).drop(&quot;rn&quot;)</code></pre>
+<p>Nếu nhiều rows cùng UpdatedAt phải thêm stable tie-breaker phù hợp.</p>
+<h3>Handle null values</h3>
+<pre><code class="language-sql">%%sql
+SELECT order_id, COALESCE(region,'Unknown') AS region,
+       COALESCE(discount,0) AS discount
+FROM raw_sales;</code></pre>
+<pre><code class="language-python">clean_df = df.fillna({&quot;region&quot;:&quot;Unknown&quot;, &quot;discount&quot;:0})
+required_df = df.dropna(subset=[&quot;customer_id&quot;])</code></pre>
+<p>Không mọi null đều là lỗi (<code>DeliveryDate=NULL</code> có thể đang xử lý). Thay null bằng 0 ở Amount khi thiếu dữ liệu có thể gây báo cáo sai; cân nhắc error/unknown dimension rows.</p>
+<h3>Filter rows</h3>
+<pre><code class="language-sql">%%sql
+SELECT * FROM raw_sales
+WHERE order_date &gt;= DATE '2026-01-01'
+  AND order_date &lt; DATE '2027-01-01'
+  AND amount &gt; 0;</code></pre>
+<pre><code class="language-python">from pyspark.sql.functions import col
+filtered_df = clean_df.filter(
+    (col(&quot;order_date&quot;) &gt;= &quot;2026-01-01&quot;) &amp;
+    (col(&quot;order_date&quot;) &lt; &quot;2027-01-01&quot;) &amp;
+    (col(&quot;amount&quot;) &gt; 0)
+)</code></pre>
+<p>PySpark dùng <code>&amp;</code>, <code>|</code>, <code>~</code> với Column expressions, đặt ngoặc từng điều kiện; Python <code>and</code> không thay thế cho column conjunction. Quantity âm có thể là returns, không mặc định loại.</p>
+<h3>Select and rename columns</h3>
+<pre><code class="language-sql">%%sql
+SELECT order_id, cust_id AS customer_id,
+       prod_code AS product_id, amount
+FROM raw_sales;</code></pre>
+<pre><code class="language-python">result_df = df.select(
+    &quot;order_id&quot;, col(&quot;cust_id&quot;).alias(&quot;customer_id&quot;),
+    col(&quot;prod_code&quot;).alias(&quot;product_id&quot;), &quot;amount&quot;
+)
+# Chỉ đổi tên:
+renamed_df = df.withColumnRenamed(&quot;cust_id&quot;,&quot;customer_id&quot;)</code></pre>
+<h3>Add calculated columns</h3>
+<pre><code class="language-sql">%%sql
+SELECT *, quantity * unit_price AS line_total,
+       YEAR(order_date) AS order_year,
+       MONTH(order_date) AS order_month
+FROM clean_sales;</code></pre>
+<pre><code class="language-python">from pyspark.sql.functions import year, month
+result_df = (clean_df
+   .withColumn(&quot;line_total&quot;,col(&quot;quantity&quot;)*col(&quot;unit_price&quot;))
+   .withColumn(&quot;order_year&quot;,year(col(&quot;order_date&quot;)))
+   .withColumn(&quot;order_month&quot;,month(col(&quot;order_date&quot;))))</code></pre>
+<p>DataFrames là immutable transformations về mặt API: <code>.withColumn</code> trả DataFrame mới; không trực tiếp ghi lại source table cho tới khi gọi write.</p>
+<h3>Create conditional columns</h3>
+<pre><code class="language-sql">%%sql
+SELECT *, CASE
+  WHEN line_total &gt; 500 THEN 'High'
+  WHEN line_total &gt; 100 THEN 'Medium'
+  ELSE 'Low' END AS value_tier
+FROM clean_sales;</code></pre>
+<pre><code class="language-python">from pyspark.sql.functions import when
+result_df = result_df.withColumn(&quot;value_tier&quot;,
+  when(col(&quot;line_total&quot;)&gt;500,&quot;High&quot;)
+  .when(col(&quot;line_total&quot;)&gt;100,&quot;Medium&quot;)
+  .otherwise(&quot;Low&quot;))</code></pre>
+<p>Đặt điều kiện theo business threshold; phân biệt &gt; và &gt;= ở boundary.</p>
+<h3>Convert data types</h3>
+<pre><code class="language-sql">%%sql
+SELECT CAST(amount AS DECIMAL(18,2)) AS amount,
+       CAST(quantity AS INT) AS quantity,
+       CAST(order_date AS DATE) AS order_date
+FROM raw_sales;</code></pre>
+<pre><code class="language-python">typed_df = (df
+   .withColumn(&quot;amount&quot;,col(&quot;amount&quot;).cast(&quot;decimal(18,2)&quot;))
+   .withColumn(&quot;quantity&quot;,col(&quot;quantity&quot;).cast(&quot;int&quot;))
+   .withColumn(&quot;order_date&quot;,col(&quot;order_date&quot;).cast(&quot;date&quot;)))</code></pre>
+<p>Với text lỗi <code>&quot;unknown&quot;</code>, cast có thể fail hoặc ra null tùy ANSI mode; Spark SQL có <code>try_cast</code> trong các ngữ cảnh được hỗ trợ. DECIMAL phù hợp hơn floating-point cho currency/precision cố định.</p>
+<h3>The cleaned dataset</h3>
+<p>Đầu ra mong muốn của ví dụ Unit: 11 raw rows có một duplicate → 10 unique, NULL region được xử lý, column names/types chuẩn, có LineTotal/Year/Month/ValueTier. Thứ tự bước không phải bất biến; có thể cần cast trước filter.</p>
+<h2>Unit 4 — Combine and aggregate data</h2>
+<h3>Unit này dạy gì</h3>
+<p>JOIN tables, Group By, Window Functions, CTE và Pivot để tạo enriched/aggregated datasets đúng grain.</p>
+<h3>Join tables</h3>
+<pre><code class="language-sql">%%sql
+SELECT s.OrderID,s.Amount,c.CustomerName
+FROM Sales s
+INNER JOIN Customers c ON s.CustomerID=c.CustomerID;</code></pre>
+<pre><code class="language-python">joined_df = sales_df.join(customers_df,on=&quot;CustomerID&quot;,how=&quot;inner&quot;)</code></pre>
+<p><strong>INNER</strong> chỉ match; <strong>LEFT</strong> giữ mọi dòng bên trái; <strong>RIGHT</strong> giữ mọi dòng bên phải; <strong>FULL OUTER</strong> giữ tất cả; <strong>CROSS</strong> tất cả tổ hợp. Với Fact-to-Dimension, INNER có thể làm mất orphan transactions; LEFT JOIN thuận tiện audit. Nếu dimension business key không unique, JOIN nhân bản sales rows và SUM bị thổi phồng.</p>
+<h3>Aggregate data with grouping</h3>
+<pre><code class="language-sql">%%sql
+SELECT Region, COUNT(*) AS OrderCount,
+       SUM(Amount) AS TotalSales, AVG(Amount) AS AvgSales
+FROM Sales
+GROUP BY Region
+HAVING SUM(Amount)&gt;1000;</code></pre>
+<pre><code class="language-python">from pyspark.sql.functions import count, sum as spark_sum, avg
+agg_df = sales_df.groupBy(&quot;Region&quot;).agg(
+    count(&quot;*&quot;).alias(&quot;OrderCount&quot;),
+    spark_sum(&quot;Amount&quot;).alias(&quot;TotalSales&quot;),
+    avg(&quot;Amount&quot;).alias(&quot;AvgSales&quot;))
+high_df = agg_df.filter(col(&quot;TotalSales&quot;)&gt;1000)</code></pre>
+<p>WHERE lọc rows trước aggregation; HAVING lọc groups sau aggregation. Group By Region làm grain thành 1 row/Region; Group By Region+Month làm grain thành 1 row/Region+Month.</p>
+<h3>Apply window functions</h3>
+<p>Window Function tính toán trong nhóm nhưng <strong>giữ rows</strong>, ví dụ Running Total per Customer:</p>
+<pre><code class="language-sql">%%sql
+SELECT CustomerID,OrderID,OrderDate,Amount,
+  ROW_NUMBER() OVER (
+    PARTITION BY CustomerID ORDER BY OrderDate,OrderID
+  ) AS OrderSequence,
+  SUM(Amount) OVER (
+    PARTITION BY CustomerID ORDER BY OrderDate,OrderID
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS RunningTotal
+FROM Sales;</code></pre>
+<pre><code class="language-python">from pyspark.sql import Window
+from pyspark.sql.functions import row_number
+w = (Window.partitionBy(&quot;CustomerID&quot;)
+  .orderBy(&quot;OrderDate&quot;,&quot;OrderID&quot;)
+  .rowsBetween(Window.unboundedPreceding,Window.currentRow))
+result_df = sales_df.withColumn(&quot;RunningTotal&quot;,spark_sum(&quot;Amount&quot;).over(w))</code></pre>
+<p>Functions: ROW_NUMBER, RANK, LAG, LEAD, SUM OVER, AVG OVER, COUNT OVER. ORDER BY nên có stable tie-breaker để tránh không ổn định khi có nhiều giao dịch cùng ngày. Window có thể cần shuffle/sort, không mặc định nhanh hơn GROUP BY.</p>
+<h3>Use common table expressions</h3>
+<pre><code class="language-sql">%%sql
+WITH monthly_sales AS (
+  SELECT YEAR(OrderDate) AS SalesYear,
+         MONTH(OrderDate) AS SalesMonth,
+         SUM(Amount) AS TotalSales
+  FROM Sales
+  GROUP BY YEAR(OrderDate),MONTH(OrderDate)
+), ranked AS (
+  SELECT *, RANK() OVER (ORDER BY TotalSales DESC) AS SalesRank
+  FROM monthly_sales
+)
+SELECT * FROM ranked WHERE SalesRank&lt;=5;</code></pre>
+<p>CTE giúp chia query thành bước có tên, không tự materialize thành permanent table. RANK có ties nên lọc SalesRank&lt;=5 có thể trả hơn năm rows.</p>
+<h3>Pivot data</h3>
+<pre><code class="language-sql">%%sql
+SELECT * FROM (
+  SELECT Product,Quarter,Amount FROM Sales
+) PIVOT (SUM(Amount) FOR Quarter IN ('Q1','Q2'));</code></pre>
+<pre><code class="language-python">pivot_df = sales_df.groupBy(&quot;Product&quot;).pivot(&quot;Quarter&quot;,[&quot;Q1&quot;,&quot;Q2&quot;]).sum(&quot;Amount&quot;)</code></pre>
+<p>Khi biết trước quarter values nên truyền list để giảm việc Spark phải tự xác định distinct pivot values.</p>
+<h2>Unit 5 — Write and size Delta tables</h2>
+<h3>Unit này dạy gì</h3>
+<p>Ghi Delta Tables vĩnh viễn, chọn mode, partition đúng, tối ưu small files và hiểu ACID/Schema Enforcement/V-Order.</p>
+<h3>Write transformed data to tables</h3>
+<pre><code class="language-sql">%%sql
+CREATE OR REPLACE TABLE gold_sales
+USING DELTA
+AS SELECT * FROM transformed_sales;</code></pre>
+<pre><code class="language-python">result_df.write.format(&quot;delta&quot;).mode(&quot;overwrite&quot;).saveAsTable(&quot;gold_sales&quot;)</code></pre>
+<p>DataFrame variable/temporary view mất khi session kết thúc; managed Delta Table trong Lakehouse vẫn tồn tại. Với schema-enabled Lakehouse dùng <code>schema.table</code> phù hợp.</p>
+<h3>Choose a write mode</h3>
+<ul>
+<li><strong>Overwrite:</strong> Thay toàn bộ data cho full rebuild, cẩn thận source có đủ dữ liệu.</li>
+<li><strong>Append:</strong> Thêm rows, không tự chống duplicate khi retry.</li>
+<li><strong>MERGE:</strong> Bổ sung pattern insert/update theo business key; cần nguồn unique để không một target match nhiều source rows.</li>
+</ul>
+<pre><code class="language-sql">%%sql
+MERGE INTO gold_sales AS target
+USING staging_sales AS source
+ON target.OrderID=source.OrderID
+WHEN MATCHED THEN UPDATE SET target.Amount=source.Amount
+WHEN NOT MATCHED THEN INSERT (OrderID,Amount)
+ VALUES (source.OrderID,source.Amount);</code></pre>
+<p>SCD Type 2 yêu cầu historical-version logic riêng, không chỉ overwrite bằng MERGE Type 1.</p>
+<h3>Partition tables for query performance</h3>
+<pre><code class="language-sql">%%sql
+CREATE OR REPLACE TABLE fact_sales
+USING DELTA
+PARTITIONED BY (year,month)
+AS SELECT * FROM transformed_sales;</code></pre>
+<pre><code class="language-python">result_df.write.format(&quot;delta&quot;).partitionBy(&quot;year&quot;,&quot;month&quot;) \
+    .mode(&quot;overwrite&quot;).saveAsTable(&quot;fact_sales&quot;)</code></pre>
+<p>Partition pruning giúp tránh đọc partitions ngoài predicate nhưng over-partitioning tạo nhiều files/metadata. Hướng dẫn tham khảo trong module: xem xét partition với bảng lớn (khoảng &gt;1 TB) có filter thường xuyên theo partition; nhắm partition đủ lớn (khoảng &gt;=1 GB); tránh high cardinality CustomerID, Year/Month/Region thường thích hợp hơn tùy data profile.</p>
+<h3>Manage file sizes</h3>
+<p>Small-files problem: Append nhỏ liên tục khiến quá nhiều Parquet files. <strong>OPTIMIZE</strong> compact files, <strong>VACUUM</strong> dọn files cũ không còn được tham chiếu theo retention. Không nhầm hai lệnh:</p>
+<pre><code class="language-sql">%%sql
+OPTIMIZE gold_sales;</code></pre>
+<pre><code class="language-sql">%%sql
+VACUUM gold_sales;</code></pre>
+<p>Mục tiêu file sizes tham khảo trong module là 128 MB–1 GB tùy workload. Optimize Write giúp giảm nhiều file nhỏ khi ghi. VACUUM có thể làm mất khả năng Time Travel tới versions cũ sau retention; phải xét policy/readers/rollback trước khi dùng.</p>
+<h3>Use Delta table features</h3>
+<ul>
+<li><strong>ACID transactions:</strong> Nhất quán ở cấp Delta table; không suy ra multi-table ACID tự động.</li>
+<li><strong>Schema Enforcement:</strong> Từ chối incompatible writes; Schema Evolution chỉ khi được cấu hình/cho phép.</li>
+<li><strong>V-Order:</strong> Tối ưu layout Parquet cho read-heavy analytics/Direct Lake. Workspace mới mặc định tắt theo tài liệu đã học để ưu tiên writes; không bật mọi nơi.</li>
+</ul>
+<pre><code class="language-python">spark.conf.set(&quot;spark.sql.parquet.vorder.default&quot;,&quot;true&quot;)</code></pre>
+<p>Cấu hình cũ <code>spark.sql.parquet.vorder.enable</code> không còn dùng trong Fabric Runtime 1.3+ theo nội dung đã thảo luận.</p>
+<h2>Unit 6 — Exercise: Transform data with notebooks</h2>
+<p><strong>Lab:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/26c-transform-data-notebooks.html <strong>Notebook:</strong> https://github.com/MicrosoftLearning/mslearn-fabric/blob/main/Allfiles/Labs/26c/Sales%20Data%20Transformation.ipynb</p>
+<h3>Unit này dạy gì</h3>
+<p>Tạo dữ liệu mẫu, chuyển đổi bằng Spark SQL, JOIN và aggregation, Window Functions rồi ghi <code>gold_sales</code> thành managed Delta Table.</p>
+<h3>Chuẩn bị</h3>
+<ul>
+<li>Fabric Trial/Paid Fabric Capacity, Workspace có quyền tạo Notebook/Lakehouse.</li>
+<li>Tạo <code>DP600-LP2-NotebookLab</code>, Lakehouse <code>Sales</code>.</li>
+<li>Import <code>Sales Data Transformation.ipynb</code>; <code>Notebook Explorer → Add → Lakehouse Sales</code>, đặt default.</li>
+<li>Không cần CSV bên ngoài. Copilot là optional, quyền/capacity phù hợp; cleanup Workspace lab.</li>
+</ul>
+<h3>Bước 1: Generate sample data</h3>
+<p>Notebook nguồn có 22 cells: PySpark tạo ba bảng:</p>
+<table><thead><tr><th>Table</th><th>Rows</th></tr></thead><tbody>
+<tr><td>raw_sales</td><td>11</td></tr>
+<tr><td>customers</td><td>5</td></tr>
+<tr><td>products</td><td>5</td></tr>
+</tbody></table>
+<p><code>raw_sales</code> cố tình trùng toàn bộ <code>order_id=10</code> và <code>order_id=6</code> có NULL region. Một số sale values:</p>
+<pre><code class="language-python">from pyspark.sql.types import StructType,StructField,StringType,IntegerType,DoubleType,DateType
+from datetime import date
+sales_data = [
+  (1,&quot;C001&quot;,&quot;P001&quot;,5,29.99,date(2026,1,15),&quot;East&quot;),
+  (2,&quot;C002&quot;,&quot;P002&quot;,2,49.99,date(2026,1,20),&quot;West&quot;),
+  (3,&quot;C001&quot;,&quot;P003&quot;,1,199.99,date(2026,2,10),&quot;East&quot;),
+  (4,&quot;C003&quot;,&quot;P001&quot;,10,29.99,date(2026,2,14),&quot;North&quot;),
+  (5,&quot;C002&quot;,&quot;P004&quot;,3,15.99,date(2026,3,1),&quot;West&quot;),
+  (6,&quot;C004&quot;,&quot;P002&quot;,1,49.99,date(2026,3,5),None),
+  (7,&quot;C001&quot;,&quot;P001&quot;,4,29.99,date(2026,3,15),&quot;East&quot;),
+  (8,&quot;C005&quot;,&quot;P003&quot;,2,199.99,date(2026,4,1),&quot;South&quot;),
+  (9,&quot;C003&quot;,&quot;P005&quot;,6,9.99,date(2026,4,10),&quot;North&quot;),
+  (10,&quot;C002&quot;,&quot;P001&quot;,3,29.99,date(2026,4,20),&quot;West&quot;),
+  (10,&quot;C002&quot;,&quot;P001&quot;,3,29.99,date(2026,4,20),&quot;West&quot;)
+]</code></pre>
+<p>Chạy cell tạo tables trong Notebook chính thức (có cả schemas và dữ liệu customers/products), sau đó Refresh Tables trong Lakehouse Explorer.</p>
+<h3>Bước 2: Shape and clean</h3>
+<pre><code class="language-sql">%%sql
+CREATE OR REPLACE TEMP VIEW clean_sales AS
+SELECT DISTINCT
+  order_id,customer_id,product_id,quantity,unit_price,order_date,
+  COALESCE(region,'Unknown') AS region,
+  ROUND(quantity*unit_price,2) AS line_total,
+  CASE
+    WHEN quantity*unit_price &gt; 100 THEN 'High'
+    WHEN quantity*unit_price &gt; 50 THEN 'Medium'
+    ELSE 'Low'
+  END AS value_tier
+FROM raw_sales;</code></pre>
+<pre><code class="language-sql">%%sql
+SELECT * FROM clean_sales ORDER BY order_id;</code></pre>
+<p><strong>Mong đợi:</strong> 10 rows, OrderID 10 không trùng, OrderID 6 Region = Unknown, có LineTotal/ValueTier. Lưu ý threshold lab là High &gt;100/Medium &gt;50, không phải threshold minh họa khác trong phần lý thuyết.</p>
+<h3>Bước 3: Join and aggregate</h3>
+<pre><code class="language-sql">%%sql
+CREATE OR REPLACE TEMP VIEW enriched_sales AS
+SELECT s.order_id,s.order_date,c.customer_name,p.product_name,
+       p.category,s.quantity,s.unit_price,s.line_total,
+       s.value_tier,s.region
+FROM clean_sales s
+INNER JOIN customers c ON s.customer_id=c.customer_id
+INNER JOIN products p ON s.product_id=p.product_id;</code></pre>
+<pre><code class="language-sql">%%sql
+SELECT region, COUNT(*) AS order_count,
+  ROUND(SUM(line_total),2) AS total_revenue,
+  ROUND(AVG(line_total),2) AS avg_order_value
+FROM enriched_sales
+GROUP BY region
+ORDER BY total_revenue DESC;</code></pre>
+<p>Dữ liệu mẫu gốc có 10 Orders được phân loại thành các Region: East, West, North, South, Unknown. Khi tính đối chiếu cần dùng đầy đủ dataset source, không chỉ các dòng ví dụ.</p>
+<h3>Bước 4: Apply window functions</h3>
+<pre><code class="language-sql">%%sql
+SELECT customer_name,order_date,line_total,
+  SUM(line_total) OVER (
+    PARTITION BY customer_name ORDER BY order_date
+  ) AS running_total,
+  ROW_NUMBER() OVER (
+    PARTITION BY customer_name ORDER BY order_date
+  ) AS order_sequence
+FROM enriched_sales
+ORDER BY customer_name,order_date;</code></pre>
+<p>Đầu ra vẫn 10 rows nhưng có RunningTotal và OrderSequence. Production nên partition theo CustomerID và ORDER BY thêm OrderID để tránh cùng tên/cùng ngày.</p>
+<h3>Bước 5: Write results to Delta</h3>
+<pre><code class="language-sql">%%sql
+CREATE OR REPLACE TABLE gold_sales AS
+SELECT * FROM enriched_sales;</code></pre>
+<p>Refresh Lakehouse Tables và kiểm tra:</p>
+<pre><code class="language-sql">%%sql
+SELECT category,region,COUNT(*) AS orders,
+       ROUND(SUM(line_total),2) AS revenue
+FROM gold_sales
+GROUP BY category,region
+ORDER BY revenue DESC;</code></pre>
+<p><code>gold_sales</code> là bảng bền vững, khác với <code>clean_sales</code>/<code>enriched_sales</code> TEMP VIEWS.</p>
+<h3>Copilot optional</h3>
+<p>Notebook nguồn có bốn prompts: tạo <code>is_discounted</code> (<code>unit_price &lt; 20</code>), group Revenue theo Category, rank Revenue theo Region, lọc High Value Orders từ gold_sales. Không cần Copilot để hoàn thành lab core.</p>
+<h3>Lỗi thường gặp, kiểm tra và cleanup</h3>
+<ul>
+<li>Spark session không khởi động → kiểm tra capacity/session logs.</li>
+<li>TABLE_OR_VIEW_NOT_FOUND → kiểm tra execution order và Default Lakehouse.</li>
+<li>NameError → chạy lại Python dependency cells.</li>
+<li>JOIN count không đúng → kiểm tra uniqueness và keys.</li>
+<li>Missing gold_sales → kiểm tra write output, refresh Explorer.</li>
+<li>Pipeline Notebook identity: xem quyền tài khoản chạy Pipeline; không giả định giống interactive author.</li>
+<li>Cleanup đúng Workspace riêng.</li>
+</ul>
+<h2>Unit 7 — Knowledge check (5 câu)</h2>
+<ol>
+<li><strong>Run Spark SQL inside PySpark notebook? — <code>%%sql</code> ở đầu cell.</strong> Không dùng <code>%%pyspark</code> để chuyển sang SQL.</li>
+<li><strong>Replace null discount with zero? — <code>df.fillna({&quot;discount&quot;:0})</code>.</strong> <code>dropna</code>/<code>isNotNull</code> xóa rows.</li>
+<li><strong>Replace entire Gold Delta Table each night? — Overwrite.</strong> Append làm trùng nếu chạy lại; MERGE dành cho key-matching upsert.</li>
+<li><strong>Running Total while retaining transaction rows? — Window Function.</strong> GROUP BY giảm rows; không mặc định window luôn nhanh hơn.</li>
+<li><strong>Compact many small Parquet files? — OPTIMIZE.</strong> VACUUM xóa old unreferenced files, ANALYZE TABLE không compact.</li>
+</ol>
+<h2>Unit 8 — Summary</h2>
+<ul>
+<li>Notebook fundamentals: cells, sessions, default Lakehouse, language magic, parameters, pipelines.</li>
+<li>Cleaning: dedup, null, filters, calculated/conditional, type conversion.</li>
+<li>Combining: joins, GROUP BY/HAVING, Window Functions, CTE, Pivot.</li>
+<li>Delta output: Overwrite/Append/MERGE, partition, OPTIMIZE/VACUUM, ACID/Schema Enforcement, V-Order.</li>
+<li>Dùng Spark khi cần distributed/code-first transformation; kiểm tra grain/semantics thay vì chỉ kiểm tra syntax.</li>
+</ul>
+<p><strong>Further reading:</strong> https://learn.microsoft.com/en-us/fabric/data-engineering/how-to-use-notebook https://learn.microsoft.com/en-us/fabric/data-engineering/delta-optimization-and-v-order https://learn.microsoft.com/en-us/fabric/data-engineering/spark-compute</p>
+<h3>Coverage check — Module 4</h3>
+<p><strong>8/8 units:</strong> Introduction; Notebook overview (5 headings); Shape/Clean (9); Combine/Aggregate (5); Delta Tables (5); Exercise; Knowledge Check (5 câu); Summary. SQL/PySpark, ACID, window details, Copilot optional, Spark session/permission/cleanup và production caveats có trong bài. Chưa chạy Notebook ở tenant. <strong>Phần luyện kỹ:</strong> Latest-record dedup vs dropDuplicates, Window vs GROUP BY, Spark SQL vs Warehouse T-SQL, Append vs MERGE, OPTIMIZE vs VACUUM, over-partitioning.</p>
+<hr>

@@ -1,0 +1,472 @@
+<h1>Module 5 — Transform data using T-SQL in Microsoft Fabric</h1>
+<p><strong>LP2 Module 5/5 · DP-600 Module 10/21 · 8 units</strong> Microsoft Learn: https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-tsql/</p>
+<h2>Structure check</h2>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/chủ đề</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>T-SQL trong Fabric Warehouse, vai trò reusable transformation</td></tr>
+<tr><td>2</td><td>Transform data with T-SQL queries</td><td>Query; Filter/Shape; Joins/Aggregations; Window; CTE; CTAS</td></tr>
+<tr><td>3</td><td>Create views for reusable logic</td><td>What views provide; Create views; Common view patterns; Views vs tables</td></tr>
+<tr><td>4</td><td>Build stored procedures</td><td>What stored procedures provide; Create; Loading patterns; Pipeline integration</td></tr>
+<tr><td>5</td><td>Implement dimensional tables</td><td>Create dimensions; Create facts; Load dimensions; Load facts; Table clones</td></tr>
+<tr><td>6</td><td>Exercise: Transform data with T-SQL</td><td>Setup; Query; View; Procedure; Dimensional tables; Verify; Cleanup</td></tr>
+<tr><td>7</td><td>Knowledge check</td><td>5 câu: Window, View, period refresh, IsCurrent, Clone</td></tr>
+<tr><td>8</td><td>Summary</td><td>Tổng kết và Learn more</td></tr>
+</tbody></table>
+<h2>Unit 1 — Introduction</h2>
+<h3>Unit này dạy gì</h3>
+<p>Sử dụng SQL-first transformations trong Fabric Warehouse để chuẩn hóa staging data, tập trung business logic, tạo các đối tượng phục vụ semantic model và nạp dimensional tables.</p>
+<h3>Nội dung chính trong unit</h3>
+<p>Nguồn <code>staging.orders</code>, <code>staging.customers</code>, <code>staging.products</code>, <code>staging.dates</code> có Orders Pending, Discount NULL, thiếu Revenue calculation, cần JOIN và các lịch sử. Nếu nhiều report tự viết SQL, một báo cáo tính gross revenue, một báo cáo trừ Discount, báo cáo khác bao gồm Pending → KPI mâu thuẫn.</p>
+<p>Giải pháp: <code>SELECT</code> (query/transform), <code>CTAS</code> (persist results), <code>VIEW</code> (reuse read logic), <code>STORED PROCEDURE</code> (repeatable multi-step write logic), <code>INSERT/UPDATE/DELETE/MERGE</code> (change tables), Fact/Dimension implementation. Lakehouse SQL endpoint là read-only DML, còn Warehouse hỗ trợ ghi T-SQL theo phạm vi sản phẩm hiện hành.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[Staging Data] --&gt; B[T-SQL Transformations]
+    B --&gt; C[Views and Stored Procedures]
+    C --&gt; D[Fact/Dimension Tables]
+    D --&gt; E[Power BI Semantic Models]
+    E --&gt; F[Reports and AI]</code></pre>
+<h2>Unit 2 — Transform data with T-SQL queries</h2>
+<h3>Unit này dạy gì</h3>
+<p>Sử dụng SQL Query Editor, Visual Query Editor, calculated columns, null handling, joins, aggregations, window functions, CTEs và CTAS.</p>
+<h3>Query data in the warehouse</h3>
+<p><code>Fabric Portal → Workspace → Warehouse → New SQL query</code>. Ngoài Portal có thể kết nối qua SQL Server Management Studio hoặc VS Code MSSQL extension bằng Warehouse endpoint và quyền phù hợp.</p>
+<p><code>Warehouse → New visual query</code> cho phép chọn bảng, JOIN, Filter/Aggregate bằng GUI và View SQL. Visual Query Editor phù hợp khám phá trực quan; code editor có kiểm soát tốt hơn với CTE, Window, DDL và Procedures.</p>
+<h3>Filter and shape data</h3>
+<pre><code class="language-sql">SELECT order_id,quantity,unit_price
+FROM staging.orders
+WHERE status='Completed';</code></pre>
+<p>Calculated column:</p>
+<pre><code class="language-sql">SELECT order_id,quantity,unit_price,
+       quantity*unit_price AS line_total
+FROM staging.orders;</code></pre>
+<p>NULL handling:</p>
+<pre><code class="language-sql">SELECT order_id,
+       ISNULL(discount,0) AS discount,
+       quantity*unit_price-ISNULL(discount,0) AS net_amount
+FROM staging.orders;</code></pre>
+<p><code>ISNULL(a,b)</code> thay NULL của a bằng b; <code>COALESCE(a,b,c)</code> lấy giá trị đầu tiên không null. Chúng có khác biệt datatype/nullability ở T-SQL, cần kiểm tra khi dùng trong schema expressions.</p>
+<p>Conditional column:</p>
+<pre><code class="language-sql">SELECT order_id,
+  quantity*unit_price AS line_total,
+  CASE WHEN quantity*unit_price&gt;200 THEN 'High'
+       WHEN quantity*unit_price&gt;100 THEN 'Medium'
+       ELSE 'Standard' END AS order_tier
+FROM staging.orders;</code></pre>
+<p>Datatype conversion:</p>
+<pre><code class="language-sql">SELECT CAST(order_date_text AS DATE) AS order_date,
+       CONVERT(DECIMAL(18,2),amount_text) AS amount
+FROM staging.raw_orders;</code></pre>
+<p>Khi source có invalid strings, cân nhắc <code>TRY_CAST</code>/<code>TRY_CONVERT</code> và error handling. Dữ liệu tài chính cần precision thống nhất.</p>
+<h3>Combine data with joins and aggregations</h3>
+<pre><code class="language-sql">SELECT c.region,
+       COUNT(*) AS order_count,
+       SUM(o.quantity*o.unit_price) AS total_sales
+FROM staging.orders o
+JOIN staging.customers c ON o.customer_id=c.customer_id
+WHERE o.status='Completed'
+GROUP BY c.region
+HAVING SUM(o.quantity*o.unit_price)&gt;500;</code></pre>
+<p>WHERE lọc order rows trước GROUP, HAVING lọc region groups sau aggregation. INNER JOIN có thể loại orphan Orders, vì vậy để audit unmatched customer nên LEFT JOIN và tìm keys NULL. Dimension duplicates có thể nhân bản rows sau JOIN.</p>
+<h3>Apply window functions</h3>
+<pre><code class="language-sql">SELECT customer_id,order_id,order_date,
+       quantity*unit_price AS amount,
+       ROW_NUMBER() OVER(
+         PARTITION BY customer_id ORDER BY order_date,order_id
+       ) AS order_sequence,
+       SUM(quantity*unit_price) OVER(
+         PARTITION BY customer_id ORDER BY order_date,order_id
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+       ) AS running_total,
+       LAG(quantity*unit_price) OVER(
+         PARTITION BY customer_id ORDER BY order_date,order_id
+       ) AS previous_order_amount
+FROM staging.orders
+WHERE status='Completed';</code></pre>
+<p>ROW_NUMBER (sequence/latest record), RANK/DENSE_RANK (ranking), LAG/LEAD (prior/next), SUM/AVG OVER (running/moving aggregate). ORDER BY với tie-breaker giúp ổn định. Window giữ rows, GROUP BY gộp rows.</p>
+<h3>Structure complex queries with CTEs</h3>
+<pre><code class="language-sql">WITH monthly_totals AS (
+  SELECT YEAR(order_date) AS sales_year,
+         MONTH(order_date) AS sales_month,
+         SUM(quantity*unit_price) AS monthly_total
+  FROM staging.orders
+  WHERE status='Completed'
+  GROUP BY YEAR(order_date),MONTH(order_date)
+)
+SELECT sales_year,sales_month,monthly_total,
+       SUM(monthly_total) OVER(
+         PARTITION BY sales_year ORDER BY sales_month
+         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+       ) AS ytd_total
+FROM monthly_totals
+ORDER BY sales_year,sales_month;</code></pre>
+<p>CTE chỉ tồn tại trong SQL statement, không materialize mặc định thành table. Window partition theo sales_year giúp YTD reset qua năm.</p>
+<h3>Persist results with CREATE TABLE AS SELECT</h3>
+<pre><code class="language-sql">CREATE TABLE gold.regional_sales_summary AS
+SELECT c.region,YEAR(o.order_date) AS sales_year,
+       MONTH(o.order_date) AS sales_month,
+       SUM(o.quantity*o.unit_price) AS total_sales
+FROM staging.orders o
+JOIN staging.customers c ON o.customer_id=c.customer_id
+WHERE o.status='Completed'
+GROUP BY c.region,YEAR(o.order_date),MONTH(o.order_date);</code></pre>
+<p>CTAS <strong>tạo mới bảng vật lý và ghi kết quả</strong>. Dữ liệu nguồn thay đổi không tự làm bảng CTAS refresh; cần ETL refresh/update. Không chạy lại CREATE TABLE với tên đã tồn tại nếu chưa có chiến lược recreate.</p>
+<h2>Unit 3 — Create views for reusable logic</h2>
+<h3>Unit này dạy gì</h3>
+<p>View đóng gói SQL read logic, hỗ trợ reusable transformation, abstraction và kiểm soát exposure kết hợp SQL permissions.</p>
+<h3>What views provide</h3>
+<ul>
+<li><strong>Reusability:</strong> 15 reports dùng chung định nghĩa Revenue.</li>
+<li><strong>Abstraction:</strong> Người dùng không cần biết mọi staging tables và JOIN keys.</li>
+<li><strong>Security:</strong> Có thể chỉ expose một số rows/columns qua View, nhưng phải kiểm tra permissions/source access; View không tự thay thế RLS/OLS.</li>
+</ul>
+<h3>Create views in a warehouse</h3>
+<pre><code class="language-sql">CREATE VIEW gold.vw_monthly_sales AS
+SELECT d.calendar_year,d.calendar_month,p.category,
+       SUM(o.quantity*o.unit_price) AS total_sales,
+       COUNT(*) AS order_count
+FROM staging.orders o
+JOIN staging.dates d ON o.order_date=d.calendar_date
+JOIN staging.products p ON o.product_id=p.product_id
+WHERE o.status='Completed'
+GROUP BY d.calendar_year,d.calendar_month,p.category;</code></pre>
+<pre><code class="language-sql">SELECT * FROM gold.vw_monthly_sales;</code></pre>
+<p>Nếu muốn thay business logic, dùng <code>ALTER VIEW</code> hoặc cơ chế deployment phù hợp. View thông thường không lưu một bản sao dữ liệu vật lý; query đọc dữ liệu nguồn tại thời điểm thực thi.</p>
+<h3>Common view patterns</h3>
+<ol>
+<li><strong>Transformation View:</strong> Clean/filter + derived columns; ví dụ <code>vw_clean_orders</code> xử lý ISNULL Discount và NetAmount.</li>
+<li><strong>Aggregation View:</strong> <code>vw_customer_revenue</code> COUNT/Revenue theo customer, có thể đọc <code>vw_clean_orders</code>.</li>
+<li><strong>Denormalized View:</strong> <code>vw_sales_details</code> JOIN Sales, Customer, Product để expose tên/Region/Category.</li>
+</ol>
+<p>Ví dụ:</p>
+<pre><code class="language-sql">CREATE VIEW gold.vw_clean_orders AS
+SELECT order_id,customer_id,quantity,unit_price,
+       ISNULL(discount,0) AS discount,
+       quantity*unit_price-ISNULL(discount,0) AS net_amount
+FROM staging.orders
+WHERE status='Completed';</code></pre>
+<pre><code class="language-sql">CREATE VIEW gold.vw_customer_revenue AS
+SELECT customer_id,COUNT(*) AS order_count,
+       SUM(net_amount) AS total_revenue
+FROM gold.vw_clean_orders
+GROUP BY customer_id;</code></pre>
+<h3>Choose between views and tables</h3>
+<table><thead><tr><th>View</th><th>Table</th></tr></thead><tbody>
+<tr><td>Lưu SQL definition, không lưu result thông thường</td><td>Lưu dữ liệu</td></tr>
+<tr><td>Thể hiện thay đổi nguồn khi query lại</td><td>Cần refresh/update table</td></tr>
+<tr><td>Thích hợp business logic chung</td><td>Thích hợp expensive aggregations/materialization</td></tr>
+<tr><td>Query cost phụ thuộc underlying joins</td><td>Có thể giúp giảm repeated computation</td></tr>
+</tbody></table>
+<p><strong>Exam:</strong> Reusable logic + current source data → View. Expensive repeated calculations + physical persisted result → Table/CTAS + refresh. View không tự enforce referential integrity.</p>
+<h2>Unit 4 — Build stored procedures</h2>
+<h3>Unit này dạy gì</h3>
+<p>Stored Procedures cung cấp reusable multi-step T-SQL với write, parameters, error handling và khả năng gọi từ Pipelines.</p>
+<h3>What stored procedures provide</h3>
+<p><strong>Write operations</strong>, <strong>Parameters</strong>, <strong>Multi-step logic</strong>, <strong>TRY/CATCH error handling</strong>. Một Monthly Sales refresh cần xóa dữ liệu cũ của tháng và INSERT aggregate mới. View đơn thuần không làm nhiệm vụ này.</p>
+<h3>Create a stored procedure</h3>
+<pre><code class="language-sql">CREATE TABLE gold.monthly_sales
+(
+  calendar_year INT,calendar_month INT,
+  category VARCHAR(50),total_sales DECIMAL(18,2)
+);</code></pre>
+<pre><code class="language-sql">CREATE PROCEDURE gold.usp_refresh_monthly_sales
+  @year INT,@month INT
+AS
+BEGIN
+  DELETE FROM gold.monthly_sales
+  WHERE calendar_year=@year AND calendar_month=@month;
+
+  INSERT INTO gold.monthly_sales
+    (calendar_year,calendar_month,category,total_sales)
+  SELECT d.calendar_year,d.calendar_month,p.category,
+         SUM(o.quantity*o.unit_price)
+  FROM staging.orders o
+  JOIN staging.dates d ON o.order_date=d.calendar_date
+  JOIN staging.products p ON o.product_id=p.product_id
+  WHERE o.status='Completed'
+    AND d.calendar_year=@year AND d.calendar_month=@month
+  GROUP BY d.calendar_year,d.calendar_month,p.category;
+END;</code></pre>
+<pre><code class="language-sql">EXEC gold.usp_refresh_monthly_sales @year=2026,@month=4;</code></pre>
+<p>Xóa kỳ rồi nạp lại giúp chạy lại một month mà không append duplicate; nhưng nếu lỗi giữa DELETE/INSERT có thể mất dữ liệu kỳ đó.</p>
+<p><strong>Production transaction / error handling</strong>:</p>
+<pre><code class="language-sql">CREATE PROCEDURE gold.usp_replace_month
+  @year INT,@month INT
+AS
+BEGIN
+  SET XACT_ABORT ON;
+  BEGIN TRY
+    BEGIN TRANSACTION;
+    DELETE FROM gold.monthly_sales
+     WHERE calendar_year=@year AND calendar_month=@month;
+    INSERT INTO gold.monthly_sales
+      (calendar_year,calendar_month,category,total_sales)
+    SELECT calendar_year,calendar_month,category,total_sales
+    FROM gold.vw_monthly_sales
+    WHERE calendar_year=@year AND calendar_month=@month;
+    COMMIT TRANSACTION;
+  END TRY
+  BEGIN CATCH
+    IF @@TRANCOUNT&gt;0 ROLLBACK TRANSACTION;
+    THROW;
+  END CATCH;
+END;</code></pre>
+<p>Đây là ví dụ bổ sung hướng Production; không giả định mọi lệnh SQL Server đều được Fabric Warehouse hỗ trợ. THROW giúp Pipeline nhận failure thay vì nuốt lỗi.</p>
+<h3>Choose a loading pattern</h3>
+<ol>
+<li><strong>Full Refresh:</strong> Reload toàn bảng hoặc toàn kỳ; dễ hiểu, có thể tốn công lớn.</li>
+<li><strong>Incremental Load:</strong> Xử lý chỉ những rows mới/changed từ Watermark. Phải xử lý đồng timestamp, late arrivals và chỉ cập nhật watermark sau khi load thành công.</li>
+<li><strong>MERGE/Upsert:</strong> Matching business keys để INSERT new và UPDATE existing. Dedupe source trước khi MERGE; Type 1 overwrites không tạo Type 2 version history.</li>
+</ol>
+<pre><code class="language-sql">SELECT * FROM staging.orders
+WHERE modified_date &gt; @last_watermark;</code></pre>
+<p>Type 2 cần detect changes, close old version, insert new version, correct valid-time boundaries và surrogate keys.</p>
+<h3>Run stored procedures from pipelines</h3>
+<pre><code class="language-mermaid">flowchart TB
+    A[Copy Data to Staging] --&gt; B[Update Customer Dimension]
+    B --&gt; C[Refresh Facts]
+    C --&gt; D[Validate Counts and Keys]
+    D --&gt; E[Downstream Analytics]</code></pre>
+<p>Data Pipeline orchestration gọi Warehouse procedure bằng activity/cấu hình supported, cung cấp parameters, dependencies, retries và monitoring. SQL transformation business logic vẫn sống trong Procedure.</p>
+<h2>Unit 5 — Implement dimensional tables</h2>
+<h3>Unit này dạy gì</h3>
+<p>Tạo và load Fact/Dimension Tables, SCD columns, Surrogate Keys và sử dụng Table Clones cho Development/Testing an toàn.</p>
+<h3>Create dimension tables</h3>
+<pre><code class="language-sql">CREATE TABLE dim.customer
+(
+  customer_key BIGINT IDENTITY,
+  customer_id VARCHAR(20) NOT NULL,
+  customer_name VARCHAR(100),
+  segment VARCHAR(50),
+  region VARCHAR(50),
+  effective_date DATE,
+  end_date DATE,
+  is_current BIT
+);</code></pre>
+<p><strong>Fabric-specific:</strong> <code>BIGINT IDENTITY</code> được hỗ trợ; không dùng máy móc <code>INT IDENTITY(1,1)</code>. Không giả định DEFAULT constraint như SQL Server ở ví dụ; cung cấp IsCurrent khi load.</p>
+<h3>Create fact tables</h3>
+<pre><code class="language-sql">CREATE TABLE fact.sales
+(
+  sales_key BIGINT IDENTITY,
+  date_key BIGINT NOT NULL,
+  customer_key BIGINT NOT NULL,
+  product_key BIGINT NOT NULL,
+  quantity INT,
+  unit_price DECIMAL(10,2),
+  sales_amount DECIMAL(18,2)
+);</code></pre>
+<p>PK/FK Fabric Warehouse dùng metadata <code>NOT ENFORCED</code>; không tự kiểm tra orphan facts hay duplicate keys. ETL cần validation. Grain phải được xác định từ đầu (ví dụ một line transaction).</p>
+<h3>Load dimension tables</h3>
+<pre><code class="language-sql">INSERT INTO dim.customer
+ (customer_id,customer_name,segment,region,effective_date,is_current)
+SELECT customer_id,customer_name,segment,region,
+       CAST(GETDATE() AS DATE),1
+FROM staging.customers;</code></pre>
+<p><strong>SCD Type 1:</strong> UPDATE giá trị hiện hành để sửa lỗi. <strong>SCD Type 2:</strong> Khi thuộc tính lịch sử đổi, đóng valid period cũ, IsCurrent=0, INSERT row mới với Surrogate Key mới. Tránh chồng lấn periods.</p>
+<h3>Load fact tables</h3>
+<pre><code class="language-sql">INSERT INTO fact.sales
+ (date_key,customer_key,product_key,quantity,unit_price,sales_amount)
+SELECT d.date_key,c.customer_key,p.product_key,
+       o.quantity,o.unit_price,o.quantity*o.unit_price
+FROM staging.orders o
+JOIN dim.date d ON o.order_date=d.calendar_date
+JOIN dim.customer c ON o.customer_id=c.customer_id
+  AND c.is_current=1
+JOIN dim.product p ON o.product_id=p.product_id
+WHERE o.status='Completed';</code></pre>
+<p><strong>Rủi ro trong historical BI:</strong> <code>is_current=1</code> dùng Customer version hiện tại, không bảo toàn Region tại lúc giao dịch. Nếu yêu cầu historical accuracy, lookup theo <code>order_date &gt;= effective_date AND (order_date &lt; end_date OR end_date IS NULL)</code>. Nếu cùng source batch được INSERT lại, Fact bị duplicate; thiết kế idempotent load và lưu transaction business keys.</p>
+<h3>Use table clones for development and testing</h3>
+<pre><code class="language-sql">CREATE TABLE fact.sales_dev AS CLONE OF fact.sales;</code></pre>
+<p>Zero-copy clone ban đầu chia sẻ dữ liệu nền, có thể thử update/delete trên clone mà không sửa bảng gốc; khi thay đổi bắt đầu phát sinh lưu trữ riêng. Tính năng Clone có giới hạn về Warehouse/Workspace và permissions, không tự áp dụng cho Lakehouse SQL endpoint.</p>
+<pre><code class="language-sql">DELETE FROM fact.sales_dev WHERE sales_amount &lt; 100;</code></pre>
+<p><strong>Exam:</strong> “Test production-like table changes without modifying original, minimize initial storage” → Table Clone. View không tạo bảng độc lập để DELETE thử.</p>
+<h2>Unit 6 — Exercise: Transform data with T-SQL</h2>
+<p><strong>Lab chính thức:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/26d-transform-data-tsql.html <strong>SQL scripts:</strong> https://github.com/MicrosoftLearning/mslearn-fabric/blob/main/Allfiles/Labs/26d/26d-snippets.txt</p>
+<h3>Unit này dạy gì</h3>
+<p>Trong Fabric Warehouse, chuẩn bị staging schemas, chạy T-SQL transformations, tạo View, Stored Procedure có tham số và Fact/Dimension model, cuối cùng xác minh 11 objects.</p>
+<h3>Chuẩn bị</h3>
+<ul>
+<li>Work/school account, Fabric Trial hoặc Paid Capacity hợp lệ, quyền Contributor+.</li>
+<li><code>Fabric Portal → Workspaces → New workspace</code> tên <code>DP600-LP2-TSQLLab</code>.</li>
+<li><code>Workspace → Create → Warehouse</code> tên <code>DP600_TSQL_Lab</code>.</li>
+<li>Không cần gateway/external datasource, script lab tự nạp mẫu; Copilot optional (Trial không bảo đảm).</li>
+<li>Sau lab xóa đúng workspace dành cho thực hành.</li>
+</ul>
+<h3>Bước 1: Create schemas</h3>
+<pre><code class="language-sql">CREATE SCHEMA staging;
+GO
+CREATE SCHEMA dim;
+GO
+CREATE SCHEMA fact;
+GO
+CREATE SCHEMA gold;
+GO</code></pre>
+<p>Schema phân chia chức năng, không tự tạo security boundary nếu chưa cấu hình quyền.</p>
+<h3>Bước 2: Create staging tables &amp; load sample</h3>
+<p>Tạo <code>staging.customers</code> (5 rows), <code>staging.products</code> (5), <code>staging.orders</code> (12), <code>staging.dates</code> (12) bằng file SQL chính thức.</p>
+<pre><code class="language-sql">CREATE TABLE staging.orders
+(
+  order_id INT NOT NULL,
+  customer_id VARCHAR(20),product_id VARCHAR(20),
+  order_date DATE,quantity INT,unit_price DECIMAL(10,2),
+  discount DECIMAL(10,2),status VARCHAR(20)
+);</code></pre>
+<p>Nạp mẫu gốc bằng script (không trộn seed của module khác). Dữ liệu có <strong>11 Completed và 1 Pending</strong>. Kiểm tra:</p>
+<pre><code class="language-sql">SELECT status,COUNT(*) AS order_count
+FROM staging.orders GROUP BY status;</code></pre>
+<h3>Bước 3: Transform with T-SQL queries</h3>
+<p><strong>Task 1:</strong> Completed Orders và các cột LineTotal, Discount, NetAmount, OrderTier.</p>
+<pre><code class="language-sql">SELECT order_id,customer_id,quantity,unit_price,
+       quantity*unit_price AS line_total,
+       ISNULL(discount,0) AS discount,
+       quantity*unit_price-ISNULL(discount,0) AS net_amount,
+       CASE WHEN quantity*unit_price&gt;200 THEN 'High'
+            WHEN quantity*unit_price&gt;100 THEN 'Medium'
+            ELSE 'Standard' END AS order_tier
+FROM staging.orders
+WHERE status='Completed';</code></pre>
+<p>OrderID 2 trong mẫu giảng: Quantity=5, UnitPrice=45, Discount=10 → Gross=225, Net=215, Tier=High. Mong đợi <strong>11 Completed rows</strong>.</p>
+<p><strong>Task 2:</strong> JOIN Orders với Customers, GROUP BY Region/Segment tính Count/SUM/AVG:</p>
+<pre><code class="language-sql">SELECT c.region,c.segment,COUNT(*) AS order_count,
+       SUM(o.quantity*o.unit_price) AS total_sales,
+       AVG(o.quantity*o.unit_price) AS avg_order_value
+FROM staging.orders o
+JOIN staging.customers c ON o.customer_id=c.customer_id
+WHERE o.status='Completed'
+GROUP BY c.region,c.segment;</code></pre>
+<p>Lưu ý query này báo cáo <strong>Gross Sales</strong>, chưa trừ Discount. Production cần business KPI definition rõ ràng.</p>
+<p><strong>Task 3:</strong> Window <code>ROW_NUMBER()</code>, <code>SUM() OVER</code>, <code>LAG()</code> cho 11 completed rows, giữ nguyên detail. <strong>Task 4:</strong> CTE group Monthly Revenue rồi Window tính YTD; partition theo Year để reset YTD khi đổi năm.</p>
+<h3>Bước 4: Create View</h3>
+<p>Dùng scripts tạo <code>gold.vw_monthly_sales</code> từ <code>staging.orders</code>, <code>staging.dates</code>, <code>staging.products</code>, GROUP BY Year/Month/Category. Sau đó:</p>
+<pre><code class="language-sql">SELECT * FROM gold.vw_monthly_sales
+ORDER BY calendar_year,calendar_month,category;</code></pre>
+<p>View lưu logic, không tạo tự động physical summary table.</p>
+<h3>Bước 5: Stored Procedure with Parameters</h3>
+<p>Tạo <code>gold.monthly_sales</code> và <code>gold.usp_refresh_monthly_sales(@year,@month)</code> theo logic DELETE selected month + INSERT summary.</p>
+<pre><code class="language-sql">EXEC gold.usp_refresh_monthly_sales @year=2026,@month=1;
+EXEC gold.usp_refresh_monthly_sales @year=2026,@month=2;
+EXEC gold.usp_refresh_monthly_sales @year=2026,@month=3;
+EXEC gold.usp_refresh_monthly_sales @year=2026,@month=4;</code></pre>
+<pre><code class="language-sql">SELECT * FROM gold.monthly_sales
+ORDER BY calendar_year,calendar_month,category;</code></pre>
+<p>Kết quả mẫu chính thức dự kiến sáu nhóm Month/Category trong bốn tháng. Chạy lại month 1: rows của kỳ được thay, không cộng thêm bản sao. Production cần transaction/TRY-CATCH/concurrency controls bổ sung.</p>
+<h3>Bước 6: Create and load Dimensional Tables</h3>
+<ul>
+<li><code>dim.date</code>: DateKey BIGINT IDENTITY, CalendarDate/Year/Month/Quarter; nạp 12 Date rows.</li>
+<li><code>dim.customer</code>: CustomerKey BIGINT IDENTITY, business key, Name/Segment/Region, EffectiveDate/EndDate/IsCurrent; nạp 5 initial version rows.</li>
+<li><code>dim.product</code>: ProductKey, ProductID, Name, Category, UnitPrice; nạp 5 Products.</li>
+<li><code>fact.sales</code>: SalesKey, DateKey, CustomerKey, ProductKey, Quantity, UnitPrice, SalesAmount; nạp 11 Completed Orders bằng JOIN lookup keys.</li>
+</ul>
+<p>Lab dựng SCD2-compatible schema nhưng <strong>không</strong> thực hiện một lần thay đổi customer Region tạo historical version mới; vì vậy chưa được coi đã test đầy đủ SCD2 implementation.</p>
+<p>Verify Star Schema:</p>
+<pre><code class="language-sql">SELECT d.calendar_date,c.customer_name,p.product_name,p.category,
+       f.quantity,f.sales_amount
+FROM fact.sales f
+JOIN dim.date d ON f.date_key=d.date_key
+JOIN dim.customer c ON f.customer_key=c.customer_key
+JOIN dim.product p ON f.product_key=p.product_key
+ORDER BY d.calendar_date;</code></pre>
+<h3>Bước 7: Verify final state</h3>
+<pre><code class="language-sql">SELECT TABLE_SCHEMA AS schema_name,
+       TABLE_NAME AS object_name,
+       TABLE_TYPE AS object_type
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA IN ('staging','dim','fact','gold')
+UNION ALL
+SELECT ROUTINE_SCHEMA,ROUTINE_NAME,ROUTINE_TYPE
+FROM INFORMATION_SCHEMA.ROUTINES
+WHERE ROUTINE_SCHEMA IN ('staging','dim','fact','gold')
+ORDER BY schema_name,object_type,object_name;</code></pre>
+<p>Expected <strong>11 objects</strong>:</p>
+<table><thead><tr><th>Schema</th><th>Objects</th></tr></thead><tbody>
+<tr><td>staging</td><td>customers, products, orders, dates (4 tables)</td></tr>
+<tr><td>dim</td><td>date, customer, product (3 tables)</td></tr>
+<tr><td>fact</td><td>sales (1 table)</td></tr>
+<tr><td>gold</td><td>monthly_sales (table), vw_monthly_sales (view), usp_refresh_monthly_sales (procedure)</td></tr>
+</tbody></table>
+<h3>Copilot Optional, errors, cleanup</h3>
+<p>Optional prompts: Top3 Customers by Sales; Customer Summary View; Top5 Customers Procedure(year); Sales by Category/Quarter. Kiểm tra business logic và permissions trước khi thực thi SQL do AI tạo.</p>
+<p><strong>Lỗi thường gặp:</strong></p>
+<table><thead><tr><th>Triệu chứng</th><th>Cách xử lý</th></tr></thead><tbody>
+<tr><td>Warehouse create thất bại</td><td>Kiểm tra Capacity/Workspace role</td></tr>
+<tr><td>Invalid object name</td><td>Kiểm tra Schema/Table, chạy seed đúng thứ tự</td></tr>
+<tr><td>IDENTITY syntax error</td><td>Dùng <code>BIGINT IDENTITY</code>, không <code>INT IDENTITY(1,1)</code></td></tr>
+<tr><td>DEFAULT constraint error</td><td>Gán giá trị khi INSERT, không copy máy móc SQL Server pattern</td></tr>
+<tr><td>CREATE VIEW/PROCEDURE already exists</td><td>ALTER hoặc triển khai lại có kiểm soát</td></tr>
+<tr><td>Fact row count thấp</td><td>Kiểm tra dimension keys và INNER JOIN</td></tr>
+<tr><td>Fact bị duplicate khi run again</td><td>Cần idempotent ETL</td></tr>
+<tr><td>SCD historical report sai</td><td>Lookup version theo effective dating, không chỉ IsCurrent</td></tr>
+<tr><td>DELETE thành công nhưng INSERT fail</td><td>Transaction + TRY/CATCH + ROLLBACK</td></tr>
+</tbody></table>
+<p>Cleanup: <code>Workspace settings → General → Remove this workspace</code> chỉ với Workspace lab.</p>
+<h2>Unit 7 — Knowledge check (5 câu)</h2>
+<ol>
+<li><strong>Running Total per customer nhưng giữ mọi Order row? — Window SUM OVER.</strong> GROUP BY gộp rows, CTE chỉ tổ chức query.</li>
+<li><strong>Nhiều reports cùng dùng JOIN+aggregation logic? — View.</strong> View lưu reusable SQL definition, không tự materialize hay enforce FK.</li>
+<li><strong>Procedure DELETE selected month rồi INSERT summary mới là pattern gì? — Full Refresh of a period/partition.</strong> Không phải incremental watermark hoặc MERGE Upsert.</li>
+<li><strong>Condition <code>c.is_current=1</code> trong Fact load làm gì? — Lấy current Customer version.</strong> Không lọc Orders mới nhất và không chống duplicate Facts. Historical facts cần valid-time lookup.</li>
+<li><strong>Test table updates against Production-like data, minimal initial storage, no impact original? — Table Clone.</strong> View không cho bảng độc lập để DELETE thử, transaction commit trên bảng gốc vẫn tác động gốc.</li>
+</ol>
+<h2>Unit 8 — Summary</h2>
+<ul>
+<li>T-SQL Queries giúp làm sạch, JOIN, GROUP BY, Window, CTE, CTAS.</li>
+<li>Views tái sử dụng read logic, không vật lý hóa dữ liệu thông thường.</li>
+<li>Stored Procedures hỗ trợ parameters, repeatable ETL, transactions và orchestration.</li>
+<li>Dimensional tables: surrogate keys, SCD, fact lookups, table clones.</li>
+<li>Warehouse hỗ trợ T-SQL writes; Lakehouse SQL analytics endpoint chủ yếu read-only DML.</li>
+</ul>
+<p><strong>Further reading:</strong> https://learn.microsoft.com/en-us/fabric/data-warehouse/query-warehouse https://learn.microsoft.com/en-us/fabric/data-warehouse/tables https://learn.microsoft.com/en-us/fabric/data-warehouse/clone-table</p>
+<h3>Coverage check — Module 5</h3>
+<p><strong>8/8 units:</strong> Introduction; T-SQL Queries (6 headings); Views (4); Stored Procedures (4); Dimensional Tables (5); Exercise (7 stages); Knowledge Check (5 câu); Summary. Đã đề cập Copilot optional, IDENTITY syntax differences, constraints NOT ENFORCED, security, transaction, clone limits, Watermark và SCD history accuracy. Lab cần chạy file seed SQL chính thức để có dataset đầy đủ; chưa thực thi trên tenant. <strong>Phần luyện kỹ:</strong> CTE/View/CTAS/Procedure, GROUP BY/Window, Full Refresh/Incremental/MERGE, SCD Type 1/2, Table Clone.</p>
+<hr>
+<h1>Tổng kết Learning Path 2</h1>
+<h2>Kiểm tra chương trình</h2>
+<p><strong>Đã hợp nhất 5/5 modules và 39/39 units</strong> của Learning Path 2 theo thứ tự khóa học DP-600. Nội dung bao gồm Structure check, bài giảng theo unit/heading, ví dụ, SQL/M/PySpark/KQL, bài lab, assessment kèm giải thích, Summary và Coverage check.</p>
+<table><thead><tr><th>Module</th><th>Units</th><th>Chủ đề chính</th><th>Lab/Case study</th></tr></thead><tbody>
+<tr><td>Choose data stores</td><td>8</td><td>Lakehouse vs Warehouse vs Eventhouse</td><td>Case study 4 workloads</td></tr>
+<tr><td>Design dimensional models</td><td>8</td><td>Star/Snowflake, grain, Fact/Dimension, SCD</td><td>Fabric Warehouse dimensional model</td></tr>
+<tr><td>Transform with Dataflows Gen2</td><td>7</td><td>Power Query, M, Query Folding, Destinations</td><td>CSV → Dataflow → Lakehouse</td></tr>
+<tr><td>Transform with Notebooks</td><td>8</td><td>Spark SQL, PySpark, Windows, Delta</td><td>raw_sales → gold_sales</td></tr>
+<tr><td>Transform with T-SQL</td><td>8</td><td>CTAS, Views, Procedures, MERGE, Fact/Dim</td><td>Staging → Warehouse dimensional model</td></tr>
+</tbody></table>
+<h2>So sánh ba cách transform data</h2>
+<table><thead><tr><th>Yêu cầu</th><th>Dataflows Gen2</th><th>Fabric Notebook</th><th>Warehouse T-SQL</th></tr></thead><tbody>
+<tr><td>Kiểu phát triển</td><td>Low-code</td><td>Code-first</td><td>SQL-first</td></tr>
+<tr><td>Ngôn ngữ</td><td>Power Query M</td><td>PySpark/Spark SQL, Python</td><td>T-SQL</td></tr>
+<tr><td>Nguồn dữ liệu hỗn hợp dễ tạo GUI</td><td>Mạnh</td><td>Có thể lập trình</td><td>Cần source/query access phù hợp</td></tr>
+<tr><td>Phân tán xử lý Spark quy mô lớn</td><td>Không phải lựa chọn chính</td><td>Mạnh</td><td>Không phải Spark engine</td></tr>
+<tr><td>T-SQL DML/stored procedures</td><td>Không phải cơ chế chính</td><td>Không phải T-SQL Warehouse</td><td>Mạnh</td></tr>
+<tr><td>Query Folding nguồn SQL</td><td>Có, theo connector/step</td><td>Khái niệm optimization khác</td><td>Query engine của Warehouse</td></tr>
+<tr><td>Delta Lake operations</td><td>Ghi qua Destination</td><td>Spark-native read/write/MERGE</td><td>Warehouse SQL trong phạm vi hỗ trợ</td></tr>
+<tr><td>Tính toán phức tạp, ML</td><td>Giới hạn hơn</td><td>Ưu tiên</td><td>Không phải Python ML runtime</td></tr>
+<tr><td>Orchestrate nhiều công việc</td><td>Gọi qua Pipeline</td><td>Gọi qua Pipeline</td><td>Gọi procedure qua Pipeline</td></tr>
+</tbody></table>
+<h2>Bảng nhận diện scenario</h2>
+<table><thead><tr><th>Keyword</th><th>Hướng phân tích</th></tr></thead><tbody>
+<tr><td>Mixed JSON/CSV + PySpark</td><td>Lakehouse</td></tr>
+<tr><td>T-SQL UPDATE Dimensions, multi-table ACID</td><td>Warehouse</td></tr>
+<tr><td>IoT/telemetry, streaming, KQL</td><td>Eventhouse</td></tr>
+<tr><td>Most Power BI analytical models</td><td>Star Schema</td></tr>
+<tr><td>Source-independent dimension keys</td><td>Surrogate Keys</td></tr>
+<tr><td>Historical attribute at transaction date</td><td>SCD Type 2</td></tr>
+<tr><td>Daily balance cannot SUM over days</td><td>Semi-additive measure</td></tr>
+<tr><td>Low-code data preparation</td><td>Dataflows Gen2</td></tr>
+<tr><td>JOIN in Power Query</td><td>Merge Queries</td></tr>
+<tr><td>Stack rows in Power Query</td><td>Append Queries</td></tr>
+<tr><td>Push Power Query filter to SQL source</td><td>Query Folding</td></tr>
+<tr><td>SQL in Spark cell</td><td><code>%%sql</code> (Spark SQL)</td></tr>
+<tr><td>Running total retaining individual rows</td><td>Window Function</td></tr>
+<tr><td>Append retry may create duplicates</td><td>Idempotency/dedup/MERGE</td></tr>
+<tr><td>Many small Delta Parquet files</td><td>OPTIMIZE</td></tr>
+<tr><td>Old unreferenced Delta files</td><td>VACUUM</td></tr>
+<tr><td>Reusable SQL read logic</td><td>View</td></tr>
+<tr><td>Persist result of SELECT into new table</td><td>CTAS</td></tr>
+<tr><td>Repeatable multi-step SQL writes with parameters</td><td>Stored Procedure</td></tr>
+<tr><td>Safe test on snapshot of Warehouse table</td><td>Table Clone</td></tr>
+</tbody></table>
+<h2>Coverage và giới hạn</h2>
+<ul>
+<li><strong>Đã kiểm tra cấu trúc 5 module, 39 unit</strong>, lab/case study và knowledge check theo nội dung đã được giảng trong cuộc trò chuyện.</li>
+<li><strong>Các lab là hướng dẫn thực hiện</strong>, không có claim đã chạy trên tenant, tạo capacity, chạy SQL/Spark runtime test hoặc xác nhận PASS.</li>
+<li><strong>Copilot/AI</strong> được giới thiệu ở các phần có liên quan cùng licensing/governance; không kéo thêm Copilot Studio/AI Builder vào các module không dạy chúng.</li>
+<li><strong>Điểm cần đối chiếu khi thực hành Production:</strong> Fabric capabilities/limitations có thể đổi theo thời điểm. Luôn kiểm tra Microsoft Learn hiện hành với T-SQL syntax, Dataflow destinations, Fabric Warehouse IDENTITY/constraints, Delta configurations, permissions, capacities và Copilot availability.</li>
+<li><strong>Giới hạn phiên bản Markdown:</strong> Tài liệu là bản hợp nhất có biên tập từ cuộc trò chuyện, không phải raw transcript/exact export; widget tương tác đã chuyển thành câu hỏi và đáp án văn bản. Các file Notebook/SQL nguồn chính thức vẫn giữ link để có thể chạy đầy đủ.</li>
+</ul>
+<p><strong>Kết thúc Learning Path 2 — DP-600.</strong></p>

@@ -12,7 +12,7 @@
     "DP-600",
     "Microsoft Learn"
   ],
-  "updatedAt": "2026-11-15T10:51:46.122Z",
+  "updatedAt": "2026-11-15T21:05:00+07:00",
   "chapters": [],
   "volumes": [
     {
@@ -49,6 +49,43 @@
           "title": "LP-1 | Module 5 — Get started with Real-Time Intelligence in Microsoft Fabric",
           "order": 5,
           "path": "books/dp-600-fabric-analytics/volumes/learning-path-01/module-05-get-started-real-time-intelligence.html"
+        }
+      ]
+    },
+    {
+      "id": "learning-path-02",
+      "title": "Learning Path 2 — Design and transform analytics data in Microsoft Fabric",
+      "order": 2,
+      "chapters": [
+        {
+          "id": "module-06-choose-data-stores",
+          "title": "LP-2 | Module 1 — Choose data stores in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-02/module-06-choose-data-stores.html"
+        },
+        {
+          "id": "module-07-design-dimensional-models",
+          "title": "LP-2 | Module 2 — Design dimensional models for analytics in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-02/module-07-design-dimensional-models.html"
+        },
+        {
+          "id": "module-08-transform-dataflows-gen2",
+          "title": "LP-2 | Module 3 — Transform data using Dataflows Gen2 in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-02/module-08-transform-dataflows-gen2.html"
+        },
+        {
+          "id": "module-09-transform-notebooks",
+          "title": "LP-2 | Module 4 — Transform data using notebooks in Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-02/module-09-transform-notebooks.html"
+        },
+        {
+          "id": "module-10-transform-tsql",
+          "title": "LP-2 | Module 5 — Transform data using T-SQL in Microsoft Fabric",
+          "order": 5,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-02/module-10-transform-tsql.html"
         }
       ]
     }
