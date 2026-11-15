@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "libraryName": "VBook Personal Library",
-  "updatedAt": "2026-11-15T22:40:00+07:00",
+  "updatedAt": "2026-11-15T16:14:13.843Z",
   "books": [
     {
       "id": "dp-700-fabric-data-engineering-audio",
@@ -26,14 +26,14 @@
       "edition": "audio",
       "description": "Bài giảng tiếng Việt chuẩn hoá để nghe TTS cho DP-600 về Microsoft Fabric Analytics; các module được tổ chức theo Learning Path.",
       "status": "ongoing",
-      "updatedAt": "2026-11-15T22:40:00+07:00",
+      "updatedAt": "2026-11-15T16:14:13.843Z",
       "bookPath": "books/dp-600-fabric-analytics-audio/book.json",
       "genres": [
         "Microsoft Fabric",
         "DP-600",
         "Audio"
       ],
-      "latestChapter": "LP-2 | Module 5 — Transform data using T-SQL in Microsoft Fabric",
+      "latestChapter": "LP-5 | Module 3 — Secure data access in Microsoft Fabric",
       "sourceBookId": "dp-600-fabric-analytics"
     },
     {
