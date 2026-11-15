@@ -1,0 +1,392 @@
+<h2>Module 4 — Get started with data warehouses in Microsoft Fabric</h2>
+<p><strong>Thứ tự:</strong> LP1, Module 4/5. <strong>Số Unit:</strong> 9. <strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/get-started-data-warehouse/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên chính thức</th><th>Heading/subheading</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Giới thiệu Fabric analytical Warehouse</td></tr>
+<tr><td>2</td><td>Understand data warehouses</td><td>Design a data warehouse: Tables in a data warehouse; Special types of dimension tables; Data warehouse schema designs</td></tr>
+<tr><td>3</td><td>Understand data warehouses in Fabric</td><td>Describe a Fabric data warehouse; Warehouse vs SQL analytics endpoint; Create warehouse; Ingest; Create tables/load data; Staging tables; Table clones</td></tr>
+<tr><td>4</td><td>Query and transform data</td><td>SQL query editor; Visual query editor; Views and stored procedures</td></tr>
+<tr><td>5</td><td>Model data in a warehouse</td><td>Prepare data for consumption; Relationships; Views/measures; Semantic model for Power BI</td></tr>
+<tr><td>6</td><td>Secure and monitor a warehouse</td><td>Workspace roles; Item permissions; Granular SQL security; Query insights; DMVs</td></tr>
+<tr><td>7</td><td>Exercise – Create and query a warehouse</td><td>Create workspace/warehouse/tables, T-SQL, views, visual query, optional model, cleanup</td></tr>
+<tr><td>8</td><td>Module assessment</td><td>4 câu</td></tr>
+<tr><td>9</td><td>Summary</td><td>Tổng kết, Learn more</td></tr>
+</tbody></table>
+<p><strong>Mục tiêu:</strong> Hiểu dimensional modeling (Fact/Dimension/Keys/SCD/Star); Warehouse transactional T-SQL; ingestion và staging; View/Procedure; semantic model; SQL security và query monitoring. Lab xây warehouse 4 bảng.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Vì sao sử dụng Fabric Warehouse cho bài toán phân tích dữ liệu quan hệ, có lịch sử và nhiều phép tổng hợp.</p>
+<h4>Nội dung chính trong Unit</h4>
+<p>Nguồn dữ liệu doanh nghiệp nằm trong ERP, CRM, Dataverse, SQL và files. Warehouse chuẩn hóa dữ liệu thành các bảng có cấu trúc để tính doanh thu, tồn kho, hiệu quả theo thời gian, khách hàng hoặc sản phẩm. Fabric Warehouse là hệ thống được quản lý hoàn toàn trong Fabric, không phải tự dựng SQL Server VM, đồng thời lưu dữ liệu dưới nền Delta/OneLake.</p>
+<p><strong>Tính năng chính:</strong> transactional T-SQL với <code>CREATE TABLE</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code>, joins, aggregates, SQL Views, Stored Procedures; kết nối Power BI và các SQL clients. Khác với Lakehouse SQL analytics endpoint, Warehouse cho phép sửa underlying data bằng T-SQL được hỗ trợ.</p>
+<pre><code class="language-mermaid">flowchart TB
+  S[ERP / CRM / Dataverse / SQL / Files] --&gt; I[Data Factory / Dataflows / COPY INTO]
+  I --&gt; W[Fabric Warehouse]
+  W --&gt; T[Staging + Fact/Dimension + Views]
+  T --&gt; P[Power BI semantic model]
+  T --&gt; AI[AI / Data agents khi hỗ trợ]</code></pre>
+<p><strong>Ví dụ:</strong> Doanh nghiệp từng có SQL Views trong Synapse Serverless SQL Pool. Khi chuyển sang Fabric phải đánh giá lại engine, khả năng DML, loại tables, SQL syntax và cost; không khẳng định toàn bộ SQL View cũ tương thích 100%.</p>
+<h3>Unit 2 — Understand data warehouses</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giới thiệu Data Warehouse và mô hình dữ liệu đa chiều, bao gồm Fact, Dimension, Time Dimension, Slowly Changing Dimensions và Star/Snowflake.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Operational database vs Data Warehouse</h5>
+<p>OLTP database ưu tiên giao dịch ngắn, độ chính xác và cập nhật trạng thái. Warehouse ưu tiên báo cáo lịch sử và tính toán tổng hợp trên nhiều nguồn. Một warehouse vẫn cho phép DML; khác biệt nằm ở workload và cách mô hình hóa, không phải cứ Warehouse thì chỉ SELECT.</p>
+<p>Quá trình triển khai Warehouse thường có <strong>Data ingestion → Storage → Processing → Analysis and delivery</strong>.</p>
+<h5>Design a data warehouse — Tables</h5>
+<p><strong>Fact table:</strong> Lưu các sự kiện có thể định lượng. Ví dụ:</p>
+<table><thead><tr><th>DateKey</th><th>ProductKey</th><th>CustomerKey</th><th>Quantity</th><th>SalesAmount</th></tr></thead><tbody>
+<tr><td>20261101</td><td>101</td><td>20</td><td>2</td><td>500000</td></tr>
+<tr><td>20261101</td><td>103</td><td>21</td><td>1</td><td>300000</td></tr>
+<tr><td>20261102</td><td>101</td><td>22</td><td>3</td><td>750000</td></tr>
+</tbody></table>
+<p><strong>Dimension table:</strong> Mô tả ai/cái gì/ở đâu/khi nào. Ví dụ <code>DimProduct(ProductKey, ProductName, Category)</code> cho phép GROUP BY Category khi join FactSales.</p>
+<p><strong>Grain:</strong> Trước khi thiết kế Fact, phải xác định một dòng đại diện cho cái gì: một order, một order line, hay một daily summary. Nếu grain không rõ, aggregate dễ sai do duplicate joins.</p>
+<p><strong>Surrogate Key:</strong> Khóa định danh nội bộ Warehouse như <code>ProductKey=101</code>, độc lập với mã từ ERP. <strong>Alternate/Business Key:</strong> Mã thực thể nguồn như <code>ERP-P0001</code>. Surrogate Keys đặc biệt hữu ích cho SCD Type 2 khi một CustomerID cần nhiều dòng lịch sử.</p>
+<h5>Special types of dimension tables</h5>
+<p><strong>Time Dimension / DimDate:</strong> Cung cấp DateKey, FullDate, Year, Quarter, Month, Day; tạo hierarchy và so sánh thời gian. Ví dụ:</p>
+<table><thead><tr><th>DateKey</th><th>Date</th><th>Year</th><th>Quarter</th><th>Month</th></tr></thead><tbody>
+<tr><td>20261101</td><td>2026-11-01</td><td>2026</td><td>Q4</td><td>11</td></tr>
+<tr><td>20261102</td><td>2026-11-02</td><td>2026</td><td>Q4</td><td>11</td></tr>
+</tbody></table>
+<p><strong>Slowly Changing Dimension (SCD):</strong></p>
+<ul>
+<li><strong>Type 1:</strong> Ghi đè giá trị hiện tại, không giữ lịch sử thuộc tính đã đổi. Ví dụ khách hàng sửa lỗi chính tả tên.</li>
+<li><strong>Type 2:</strong> Thêm dòng lịch sử mới, với Surrogate Key mới và thời gian hiệu lực. Ví dụ khách hàng đổi địa chỉ nhưng cần phân tích khu vực tại thời điểm mua hàng.</li>
+</ul>
+<table><thead><tr><th>CustomerKey</th><th>CustomerID</th><th>City</th><th>ValidFrom</th><th>ValidTo</th></tr></thead><tbody>
+<tr><td>100</td><td>C001</td><td>Hà Nội</td><td>2024-01-01</td><td>2025-12-31</td></tr>
+<tr><td>205</td><td>C001</td><td>TP.HCM</td><td>2026-01-01</td><td>NULL</td></tr>
+</tbody></table>
+<p><strong>SCD</strong> yêu cầu pipeline giải quyết effective dates, current row và matching giữa Fact với đúng bản Dim có hiệu lực; không chỉ thêm cột ValidFrom là xong.</p>
+<h5>Data warehouse schema designs</h5>
+<p><strong>Star schema:</strong> Fact ở trung tâm, Dimensions liên kết trực tiếp. Dimension thường denormalize để giảm joins và làm model dễ hiểu. <strong>Snowflake schema:</strong> Dimension được normalize ra nhiều bảng con, giảm lặp một số thuộc tính nhưng tăng complexity của joins/relationships.</p>
+<pre><code class="language-mermaid">flowchart TB
+  Date[DimDate] --&gt; Fact[FactSales]
+  Product[DimProduct] --&gt; Fact
+  Customer[DimCustomer] --&gt; Fact
+  Store[DimStore] --&gt; Fact</code></pre>
+<table><thead><tr><th>Tiêu chí</th><th>Star</th><th>Snowflake</th></tr></thead><tbody>
+<tr><td>Dimension</td><td>Denormalized hơn</td><td>Normalized hơn</td></tr>
+<tr><td>Số bảng/joins</td><td>Thường ít hơn</td><td>Thường nhiều hơn</td></tr>
+<tr><td>Trực quan cho Power BI</td><td>Thường đơn giản hơn</td><td>Có thể cần modeling thêm</td></tr>
+<tr><td>Khi chọn</td><td>BI thuận tiện, ít joins</td><td>Có lý do chuẩn hóa/tái sử dụng rõ</td></tr>
+</tbody></table>
+<p><strong>Exam notes:</strong> <code>Descriptive attribute</code> → Dimension; <code>Transaction amount/quantity</code> → Fact; <code>Historical attribute changes</code> → SCD; <code>Intuitive analytic model</code> → Star Schema.</p>
+<h3>Unit 3 — Understand data warehouses in Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Đặc điểm Fabric Warehouse, tạo bảng, ingest files, sử dụng staging và zero-copy clones.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Describe a Fabric data warehouse</h5>
+<p>Fabric Warehouse là fully managed analytical database. Hỗ trợ transactional T-SQL theo tập cú pháp Fabric hỗ trợ, OneLake Delta storage, SQL tooling qua TDS, cross-database query và Copilot khi đủ điều kiện. Không phải toàn bộ SQL Server capabilities đều có thể sử dụng; ví dụ PK/FK constraints trong Fabric Warehouse có giới hạn, nhiều dạng chỉ là <code>NOT ENFORCED</code>.</p>
+<p><strong>DDL:</strong> <code>CREATE TABLE</code>, <code>ALTER TABLE</code>, <code>DROP TABLE</code> ở phạm vi hỗ trợ. <strong>DML:</strong> <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code> với semantics Transaction được hỗ trợ.</p>
+<h5>Warehouse vs Lakehouse SQL analytics endpoint</h5>
+<table><thead><tr><th>Khả năng</th><th>Fabric Warehouse</th><th>Lakehouse SQL analytics endpoint</th></tr></thead><tbody>
+<tr><td>SELECT/joins</td><td>Có</td><td>Có</td></tr>
+<tr><td>INSERT/UPDATE/DELETE/MERGE trên dữ liệu nền</td><td>Có</td><td>Không</td></tr>
+<tr><td>CREATE TABLE bằng T-SQL</td><td>Có</td><td>Không cho Delta table nền</td></tr>
+<tr><td>CREATE VIEW</td><td>Có</td><td>Có</td></tr>
+<tr><td>Stored procedure</td><td>Theo phạm vi hỗ trợ</td><td>Theo phạm vi hỗ trợ</td></tr>
+<tr><td>Kết nối SQL client/TDS</td><td>Có</td><td>Có</td></tr>
+</tbody></table>
+<p><strong>Scenario:</strong> Read-only T-SQL trên Delta tables → SQL analytics endpoint. Transform/<code>MERGE</code> dimension/fact bằng T-SQL → Warehouse.</p>
+<h5>Create a data warehouse</h5>
+<p><code>Fabric portal</code> → <code>Workspace</code> → <code>New item</code> → <code>Warehouse</code> → đặt tên và tạo. Workspace phải gắn capacity phù hợp. Warehouse có SQL query editor, data explorer và kết nối SQL tooling.</p>
+<h5>Ingest data into a warehouse</h5>
+<table><thead><tr><th>Phương thức</th><th>Tác vụ</th></tr></thead><tbody>
+<tr><td>COPY INTO</td><td>Bulk load CSV/Parquet từ nguồn files hỗ trợ vào bảng</td></tr>
+<tr><td>OPENROWSET</td><td>Đọc/truy vấn external files trực tiếp trong phạm vi hỗ trợ</td></tr>
+<tr><td>Dataflows Gen2</td><td>Power Query transformations trước khi load</td></tr>
+<tr><td>Pipelines</td><td>Copy, orchestration, scheduling và activity dependencies</td></tr>
+<tr><td>Cross-database query</td><td>Truy vấn dữ liệu Lakehouse/Warehouse khác mà không bắt buộc copy</td></tr>
+</tbody></table>
+<p>Ví dụ khung <code>COPY INTO</code> (cần cấu hình quyền/credential và URL thật):</p>
+<pre><code class="language-sql">COPY INTO dbo.StgSales
+FROM 'https://storageaccount.blob.core.windows.net/data/sales.csv'
+WITH (FILE_TYPE = 'CSV', FIRSTROW = 2);</code></pre>
+<p><strong>OPENROWSET</strong> phù hợp với yêu cầu <em>query external files without creating target table first</em>. <strong>COPY INTO</strong> phù hợp khi muốn nạp file thành dữ liệu vật lý trong bảng Warehouse. Không chọn Pipeline Copy Data khi bài toán chỉ cần truy vấn cross-database trực tiếp.</p>
+<p><strong>Cross-database:</strong> Cấu trúc SQL ba phần <code>database.schema.table</code> trong phạm vi query engine cho phép:</p>
+<pre><code class="language-sql">SELECT CustomerKey, SalesAmount
+FROM SalesLakehouse.dbo.FactSales;</code></pre>
+<h5>Create tables and load data</h5>
+<pre><code class="language-sql">CREATE TABLE dbo.DimCustomer
+(
+    CustomerKey INT NOT NULL,
+    CustomerAltKey VARCHAR(20) NOT NULL,
+    CustomerName VARCHAR(100) NOT NULL,
+    Region VARCHAR(50) NULL
+);
+
+CREATE TABLE dbo.FactSales
+(
+    SalesKey INT NOT NULL,
+    CustomerKey INT NOT NULL,
+    ProductKey INT NOT NULL,
+    DateKey INT NOT NULL,
+    SalesAmount DECIMAL(18,2) NOT NULL,
+    Quantity INT NOT NULL
+);
+
+INSERT INTO dbo.DimCustomer
+    (CustomerKey, CustomerAltKey, CustomerName, Region)
+VALUES
+    (1, 'C001', 'ABC Company', 'South'),
+    (2, 'C002', 'XYZ Company', 'North');</code></pre>
+<p>Kiểu <code>DECIMAL(p,s)</code> thích hợp cho giá trị tiền cần độ chính xác; FLOAT là xấp xỉ và không nên mặc định dùng cho kế toán. Schema phải phù hợp source data.</p>
+<h5>Use staging tables for data loading</h5>
+<p>Staging là khu tiếp nhận dữ liệu nguồn để validate, deduplicate, clean, map business keys thành surrogate keys và nạp bảng Fact/Dimension. Ví dụ:</p>
+<pre><code class="language-sql">INSERT INTO dbo.FactSales
+    (SalesKey, CustomerKey, ProductKey, DateKey, SalesAmount, Quantity)
+SELECT
+    s.OrderID,
+    c.CustomerKey,
+    p.ProductKey,
+    d.DateKey,
+    s.Amount,
+    s.Qty
+FROM dbo.StgSales AS s
+JOIN dbo.DimCustomer AS c ON s.CustomerID = c.CustomerAltKey
+JOIN dbo.DimProduct AS p ON s.ProductID = p.ProductAltKey
+JOIN dbo.DimDate AS d ON s.OrderDate = d.DateValue;</code></pre>
+<p>Mẫu minh họa giả định các bảng/columns tồn tại. Production cần kiểm tra unmatched dimension keys và duplicate records: INNER JOIN có thể làm mất các dòng chưa match.</p>
+<h5>Understand table clones</h5>
+<p>Zero-copy clone tạo một table logic độc lập từ snapshot hiện tại, không sao chép toàn bộ data files ban đầu.</p>
+<pre><code class="language-sql">CREATE TABLE dbo.FactSales_Test
+AS CLONE OF dbo.FactSales;</code></pre>
+<p><strong>Bảng gốc thay đổi sau khi clone không tự đồng bộ sang clone</strong>; sửa clone cũng không thay đổi gốc. Thường dùng test changes, migration rehearsal hoặc phục hồi trong giới hạn retention được hỗ trợ. Khác Shortcut: Shortcut tham chiếu dữ liệu nguồn cập nhật; Clone có trạng thái độc lập tại thời điểm tạo. Giới hạn: không giả định clone được giữa mọi Warehouses/Workspaces hoặc chạy trên Lakehouse SQL endpoint.</p>
+<h4>Exam notes</h4>
+<p><code>Write T-SQL</code> → Warehouse; <code>Bulk load</code> → COPY INTO; <code>Read external file</code> → OPENROWSET; <code>Source keys → surrogate keys</code> → Staging; <code>Independent test snapshot without copying full data</code> → Table Clone.</p>
+<h3>Unit 4 — Query and transform data</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng SQL editor, Visual Query Editor và chuẩn hóa truy vấn bằng Views/Stored Procedures.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Query data with the SQL query editor</h5>
+<p>Fabric SQL query editor hỗ trợ syntax highlighting, IntelliSense, validation/completion và có thể có Copilot khi đủ điều kiện. Ví dụ tổng hợp doanh thu theo khu vực:</p>
+<pre><code class="language-sql">SELECT
+    c.Region,
+    SUM(f.SalesAmount) AS TotalSales
+FROM dbo.FactSales AS f
+JOIN dbo.DimCustomer AS c ON f.CustomerKey = c.CustomerKey
+GROUP BY c.Region
+ORDER BY TotalSales DESC;</code></pre>
+<p>Copilot có thể sinh/giải thích/sửa T-SQL từ prompt như <em>monthly sales by region for last 12 months</em>, nhưng vẫn phải kiểm tra relationships, filter và định nghĩa doanh thu.</p>
+<h5>Query data with the Visual query editor</h5>
+<p>Visual query editor tạo filter, merge, group, choose columns bằng giao diện. Ví dụ kéo <code>FactSales</code> và <code>DimProduct</code>, merge trên <code>ProductKey</code>, expand <code>ProductName</code>, group theo ProductName. Phù hợp với low-code exploratory analytics; T-SQL thường hiệu quả hơn cho stored logic phức tạp.</p>
+<h5>Transform data with views and stored procedures</h5>
+<p><strong>View:</strong> Query definition tái sử dụng làm data surface; khi SELECT, engine thực thi query theo cách hỗ trợ. Nó không tạo bảng vật lý mới như CTAS.</p>
+<pre><code class="language-sql">CREATE VIEW dbo.vw_SalesByRegion AS
+SELECT c.Region, SUM(f.SalesAmount) AS TotalSales
+FROM dbo.FactSales AS f
+JOIN dbo.DimCustomer AS c ON f.CustomerKey = c.CustomerKey
+GROUP BY c.Region;
+
+SELECT * FROM dbo.vw_SalesByRegion;</code></pre>
+<p><strong>Stored procedure:</strong> Có thể thực thi logic T-SQL lặp lại, gồm các bước chuyển đổi DML theo khả năng Warehouse.</p>
+<pre><code class="language-sql">CREATE PROCEDURE dbo.usp_GetSalesByRegion
+AS
+BEGIN
+    SELECT c.Region, SUM(f.SalesAmount) AS TotalSales
+    FROM dbo.FactSales f
+    JOIN dbo.DimCustomer c ON f.CustomerKey = c.CustomerKey
+    GROUP BY c.Region;
+END;
+
+EXEC dbo.usp_GetSalesByRegion;</code></pre>
+<table><thead><tr><th>Tiêu chí</th><th>View</th><th>Stored Procedure</th></tr></thead><tbody>
+<tr><td>Data surface dùng qua SELECT</td><td>Phù hợp</td><td>Không dùng trực tiếp giống View</td></tr>
+<tr><td>Tái sử dụng query logic</td><td>Có</td><td>Có</td></tr>
+<tr><td>Quy trình DML nhiều bước</td><td>Không phải mục tiêu chính</td><td>Phù hợp</td></tr>
+<tr><td>Dùng làm nguồn báo cáo SQL</td><td>Phù hợp</td><td>Cần thiết kế cách tiêu thụ riêng</td></tr>
+</tbody></table>
+<p>Views có tên, business semantics và cột rõ ràng hỗ trợ BI/AI hiểu dữ liệu, nhưng vẫn phải quản trị metadata và quyền.</p>
+<h4>Exam notes</h4>
+<p><code>Ad-hoc T-SQL</code> → SQL query editor; <code>Low-code join/filter</code> → Visual Query; <code>Reusable SQL dataset</code> → View; <code>Repeatable transformation statements</code> → Stored Procedure; <code>Generate SQL from natural language</code> → Copilot phù hợp.</p>
+<h3>Unit 5 — Model data in a warehouse</h3>
+<h4>Unit này dạy gì</h4>
+<p>Chuẩn bị và chuẩn hóa dữ liệu Warehouse cho semantic model/reporting, gồm visibility, naming, relationships, SQL views, DAX measures và Direct Lake.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Prepare data for consumption</h5>
+<p>Một Warehouse có staging, audit, Fact và Dimension tables. Không nên đưa tất cả kỹ thuật columns/tables vào field list của semantic model. Các biện pháp:</p>
+<ol>
+<li><strong>Hide internal objects:</strong> Ẩn Staging tables, surrogate keys kỹ thuật, ETL flags khỏi field list; ẩn field <strong>không phải</strong> là data security.</li>
+<li><strong>Friendly names:</strong> <code>CustRgn</code> → <code>Customer Region</code>, giúp analyst và Copilot hiểu.</li>
+<li><strong>Descriptions:</strong> Giải thích chính xác <code>Billing Region</code> so với <code>Shipping Region</code> hay <code>Net Revenue</code> có/không gồm thuế.</li>
+</ol>
+<h5>Understand relationships between tables</h5>
+<p>Trong Star Schema, Fact thường chứa nhiều dòng tham chiếu một Dimension: <code>FactSales (*) → (1) DimCustomer</code>. Cross-filter single direction từ Dimension sang Fact thường là mặc định dễ quản lý; bi-directional có thể gây ambiguity/performance issues nếu dùng tùy ý.</p>
+<p><strong>SQL foreign keys ≠ semantic relationships.</strong> Một relationship trong semantic model không tự enforce referential integrity ở Warehouse, và Fabric Warehouse PK/FK có các giới hạn riêng.</p>
+<h5>Standardize data access with views and measures</h5>
+<p><strong>View</strong> chuẩn hóa SQL JOIN hoặc transformation để nhiều consumers dùng chung; <strong>DAX measure</strong> chuẩn hóa phép tính phản ứng theo filter context trong semantic model.</p>
+<pre><code class="language-dax">Total Sales = SUM(FactSales[SalesAmount])</code></pre>
+<p>Ví dụ View chuẩn hóa điều kiện <em>completed sales</em>, còn measure <code>Total Sales</code> tính theo Product, Date, Region mà report đang filter. Không bắt buộc mọi KPI đều là cột vật lý trong Warehouse.</p>
+<h5>Create a semantic model for Power BI reporting</h5>
+<p>Semantic model chứa tables, relationships, measures, hierarchies, descriptions và RLS theo phạm vi hỗ trợ. Direct Lake đọc dữ liệu Delta-Parquet từ OneLake theo cơ chế riêng, tránh Import truyền thống. <strong>Framing</strong> cập nhật metadata về trạng thái bảng Delta; không nên hiểu dữ liệu luôn cập nhật tức thì nếu chưa có framing/refresh phù hợp.</p>
+<table><thead><tr><th>Tính năng</th><th>Direct Lake on OneLake</th><th>Direct Lake on SQL</th></tr></thead><tbody>
+<tr><td>Đọc Delta files</td><td>Có</td><td>Có</td></tr>
+<tr><td>DirectQuery fallback</td><td>Không</td><td>Có trong điều kiện hỗ trợ</td></tr>
+<tr><td>SQL endpoint RLS áp dụng tự động</td><td>Không</td><td>Có thể khiến DirectQuery fallback</td></tr>
+<tr><td>Semantic model RLS</td><td>Có theo khả năng hỗ trợ</td><td>Có theo khả năng hỗ trợ</td></tr>
+</tbody></table>
+<p><strong>AI readiness:</strong> Friendly names, business definitions và relationships đúng sẽ cải thiện khả năng dùng Copilot/data agents nhưng không tự bảo đảm kết quả đúng.</p>
+<h4>Exam notes</h4>
+<p><code>Fact-Dim</code> → Many-to-one; <code>Standard filtering</code> → Single from Dim to Fact; <code>Reusable SQL query</code> → View; <code>DAX business metric</code> → Measure; <code>Fabric model without Import</code> → Direct Lake.</p>
+<h3>Unit 6 — Secure and monitor a warehouse</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt các lớp quyền truy cập và công cụ theo dõi truy vấn hiện tại/lịch sử.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Security — Workspace roles</h5>
+<p>Admin/Member/Contributor/Viewer điều khiển phạm vi quản lý Workspace. Viewer không đồng nghĩa mọi data-level access được cấp; cần cân nhắc item permissions và granular SQL security.</p>
+<h5>Item permissions</h5>
+<table><thead><tr><th>Quyền</th><th>Ý nghĩa</th></tr></thead><tbody>
+<tr><td>Read</td><td>Kết nối vào SQL endpoint của Warehouse, không đồng nghĩa có quyền SELECT tất cả bảng</td></tr>
+<tr><td>ReadData</td><td>Đọc các tables/views trong Warehouse theo mô hình hỗ trợ</td></tr>
+<tr><td>ReadAll</td><td>Đọc dữ liệu OneLake/Parquet gốc trong phạm vi quyền</td></tr>
+</tbody></table>
+<p><strong>Scenario:</strong> Chỉ chia sẻ Warehouse cho downstream consumer mà không cả Workspace → item permissions. Chỉ cần connect → Read; query all SQL tables → ReadData; truy cập raw OneLake data → ReadAll, cần quản lý cẩn thận.</p>
+<h5>Granular SQL security</h5>
+<ul>
+<li><strong>Object-level security:</strong> GRANT/DENY theo table, view, stored procedure.</li>
+<li><strong>RLS:</strong> Giới hạn dòng. Ví dụ Sales South chỉ xem <code>Region='South'</code>.</li>
+<li><strong>CLS:</strong> Giới hạn cột. Ví dụ cấm analyst đọc <code>CustomerEmail</code>.</li>
+<li><strong>DDM:</strong> Dynamic Data Masking che một phần giá trị trong SQL query result cho người không có quyền unmask. DDM <strong>không phải encryption</strong> và không thay thế cơ chế chặn truy cập file dữ liệu gốc.</li>
+</ul>
+<p>SQL endpoint policies không nhất thiết áp dụng qua tất cả OneLake/Spark paths. Nếu người dùng được cấp ReadAll hoặc model dùng Direct Lake on OneLake, phải đánh giá đường truy cập riêng. Đây là một trong các rủi ro security quan trọng nhất khi triển khai.</p>
+<h5>Monitoring — Query insights</h5>
+<p>Query insights cho biết lịch sử truy vấn, theo tài liệu module giữ dữ liệu khoảng 30 ngày. Các views đáng nhớ:</p>
+<table><thead><tr><th>View</th><th>Mục đích</th></tr></thead><tbody>
+<tr><td><code>queryinsights.exec<em>requests</em>history</code></td><td>Lịch sử SQL requests hoàn tất</td></tr>
+<tr><td><code>queryinsights.long<em>running</em>queries</code></td><td>Truy vấn chạy dài</td></tr>
+<tr><td><code>queryinsights.exec<em>sessions</em>history</code></td><td>Sessions hoàn tất</td></tr>
+</tbody></table>
+<p>Ví dụ báo cáo Power BI đột nhiên chậm, Query insights giúp xác định truy vấn gần đây có thời gian xử lý tăng.</p>
+<h5>Monitoring — Dynamic management views</h5>
+<p>DMVs hỗ trợ quan sát sessions/requests đang hoạt động:</p>
+<pre><code class="language-sql">SELECT request_id, session_id, start_time, total_elapsed_time
+FROM sys.dm_exec_requests
+WHERE status = 'running'
+ORDER BY total_elapsed_time DESC;</code></pre>
+<p>Có thể cần quyền quản trị thích hợp để xem hoạt động của người khác hoặc <code>KILL</code> session. Trên Fabric, SQL client connection không mặc nhiên có cùng toàn bộ quyền SQL Server sysadmin.</p>
+<p><strong>Exam notes:</strong> <code>historical slow requests</code> → Query insights; <code>current running requests</code> → DMVs; <code>restrict rows</code> → RLS; <code>restrict columns</code> → CLS; <code>mask displayed values</code> → DDM.</p>
+<h3>Unit 7 — Exercise: Create and query a warehouse</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo Warehouse, thiết kế Fact/Dimension tables, chạy T-SQL, View, Visual Query và tùy chọn semantic model.</p>
+<p><strong>Lab gốc:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/06-data-warehouse.html <strong>Script mẫu:</strong> https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/create-dw.txt</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Thành phần</th><th>Yêu cầu</th></tr></thead><tbody>
+<tr><td>Portal</td><td><code>https://app.fabric.microsoft.com</code></td></tr>
+<tr><td>Account</td><td>Organizational account được phép dùng Fabric</td></tr>
+<tr><td>Capacity</td><td>Trial/paid capacity phù hợp, paid có thể phát sinh chi phí</td></tr>
+<tr><td>Quyền</td><td>Create workspace/warehouse, T-SQL query/write</td></tr>
+<tr><td>Dữ liệu</td><td>Script <code>create-dw.txt</code> và các câu SQL của lab</td></tr>
+<tr><td>Optional</td><td>Semantic model tùy quyền/capacity</td></tr>
+<tr><td>Cleanup</td><td>Xóa lab workspace nếu an toàn</td></tr>
+</tbody></table>
+<h4>Các bước thao tác</h4>
+<p><strong>1. Workspace:</strong> <code>Workspaces</code> → <code>New workspace</code> → <code>DP600<em>LP1</em>M4_Lab</code> → chọn capacity phù hợp → Create.</p>
+<p><strong>2. Warehouse:</strong> <code>New item</code> → <code>Warehouse</code> → <code>SalesWarehouse</code> → Create. Xác nhận SQL query editor xuất hiện.</p>
+<p><strong>3. Create table và insert mẫu:</strong></p>
+<pre><code class="language-sql">CREATE TABLE dbo.DimProduct
+(
+    ProductKey INT NOT NULL,
+    ProductAltKey VARCHAR(25) NULL,
+    ProductName VARCHAR(50) NOT NULL,
+    Category VARCHAR(50) NULL,
+    ListPrice DECIMAL(5,2) NULL
+);
+
+INSERT INTO dbo.DimProduct
+    (ProductKey, ProductAltKey, ProductName, Category, ListPrice)
+VALUES
+    (1, 'RING1', 'Bicycle bell', 'Accessories', 5.99),
+    (2, 'BRITE1', 'Front light', 'Accessories', 15.49),
+    (3, 'BRITE2', 'Rear light', 'Accessories', 15.49);
+
+SELECT * FROM dbo.DimProduct;</code></pre>
+<p>Kết quả có 3 sản phẩm mẫu. Mở <code>create-dw.txt</code> và chạy script dữ liệu bổ sung theo hướng dẫn gốc. Cuối cùng có bốn bảng: <code>DimCustomer</code>, <code>DimDate</code>, <code>DimProduct</code>, <code>FactSalesOrder</code>. Không chạy lại một script tạo bảng nếu chúng đã tồn tại mà chưa kiểm tra logic/idempotency.</p>
+<p><strong>4. Query Fact + DimDate:</strong></p>
+<pre><code class="language-sql">SELECT
+    d.[Year] AS CalendarYear,
+    d.[Month] AS MonthOfYear,
+    d.MonthName,
+    SUM(f.SalesTotal) AS SalesRevenue
+FROM dbo.FactSalesOrder AS f
+JOIN dbo.DimDate AS d ON f.SalesOrderDateKey = d.DateKey
+GROUP BY d.[Year], d.[Month], d.MonthName
+ORDER BY CalendarYear, MonthOfYear;</code></pre>
+<p>Kết quả mỗi năm/tháng có tổng doanh thu. Mở rộng join <code>DimCustomer</code> để thêm CountryRegion:</p>
+<pre><code class="language-sql">SELECT
+    d.[Year] AS CalendarYear,
+    d.[Month] AS MonthOfYear,
+    d.MonthName,
+    c.CountryRegion AS SalesRegion,
+    SUM(f.SalesTotal) AS SalesRevenue
+FROM dbo.FactSalesOrder AS f
+JOIN dbo.DimDate AS d ON f.SalesOrderDateKey = d.DateKey
+JOIN dbo.DimCustomer AS c ON f.CustomerKey = c.CustomerKey
+GROUP BY d.[Year], d.[Month], d.MonthName, c.CountryRegion
+ORDER BY CalendarYear, MonthOfYear, SalesRegion;</code></pre>
+<p><strong>5. Create View:</strong> Tái sử dụng logic truy vấn thứ hai, không đưa <code>ORDER BY</code> cuối vào View definition:</p>
+<pre><code class="language-sql">CREATE VIEW dbo.vSalesByRegion AS
+SELECT
+    d.[Year] AS CalendarYear,
+    d.[Month] AS MonthOfYear,
+    d.MonthName,
+    c.CountryRegion AS SalesRegion,
+    SUM(f.SalesTotal) AS SalesRevenue
+FROM dbo.FactSalesOrder AS f
+JOIN dbo.DimDate AS d ON f.SalesOrderDateKey = d.DateKey
+JOIN dbo.DimCustomer AS c ON f.CustomerKey = c.CustomerKey
+GROUP BY d.[Year], d.[Month], d.MonthName, c.CountryRegion;
+
+SELECT * FROM dbo.vSalesByRegion
+ORDER BY CalendarYear, MonthOfYear, SalesRegion;</code></pre>
+<p><strong>6. Visual Query:</strong> <code>New SQL query</code> → <code>New visual query</code> → FactSalesOrder + DimProduct → <code>Merge queries</code> theo ProductKey → <code>Left outer join</code> → expand ProductName → filter <code>ProductName = Cable Lock</code> → visualize hoặc Download Excel.</p>
+<p><strong>7. Optional Semantic Model:</strong> <code>Warehouse</code> → <code>New semantic model</code> → tên <code>SalesWarehouseModel</code> → chọn 4 bảng; model relationships:</p>
+<table><thead><tr><th>Fact</th><th>Dimension</th><th>Cardinality</th><th>Filter</th></tr></thead><tbody>
+<tr><td>FactSalesOrder.ProductKey</td><td>DimProduct.ProductKey</td><td>*:1</td><td>Single</td></tr>
+<tr><td>FactSalesOrder.CustomerKey</td><td>DimCustomer.CustomerKey</td><td>*:1</td><td>Single</td></tr>
+<tr><td>FactSalesOrder.SalesOrderDateKey</td><td>DimDate.DateKey</td><td>*:1</td><td>Single</td></tr>
+</tbody></table>
+<p><strong>8. Cleanup:</strong> Xóa workspace lab qua <code>Workspace settings</code> → <code>General</code> → <code>Remove this workspace</code>, không xóa production data.</p>
+<h4>Kết quả đúng và lỗi thường gặp</h4>
+<table><thead><tr><th>Kiểm tra</th><th>Kết quả / Cách xử lý</th></tr></thead><tbody>
+<tr><td>Warehouse created</td><td>Thấy SQL query editor; nếu không, kiểm tra capacity</td></tr>
+<tr><td>Bốn bảng có dữ liệu</td><td>Kiểm tra Explorer, script error và không insert trùng</td></tr>
+<tr><td>Monthly revenue</td><td>Một dòng theo Year/Month; kiểm tra DateKey joins</td></tr>
+<tr><td>SalesRegion revenue</td><td>Group theo thời gian và Region</td></tr>
+<tr><td>View</td><td><code>SELECT * FROM dbo.vSalesByRegion</code> trả kết quả</td></tr>
+<tr><td>Visual query</td><td>Join <code>ProductKey</code>, filter Cable Lock đúng</td></tr>
+<tr><td>Semantic model</td><td>Fact ở trung tâm, 3 Dim 1:* relationships</td></tr>
+</tbody></table>
+<p><strong>Mẹo thi:</strong> Warehouse có DDL/DML; Fact/Dims phục vụ analytics; View tái sử dụng SQL; Semantic Model mới là nơi tạo DAX relationships/measures.</p>
+<h3>Unit 8 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm tra bốn điểm nền tảng về Dimension, semantic model, item permissions và T-SQL engine.</p>
+<p><strong>Câu 1. Công ty bảo hiểm lưu thuộc tính provider để phân tích claims, loại bảng nào?</strong> A. Fact; B. Dimension; C. Staging. <strong>Đáp án B.</strong> Provider attributes là mô tả/ngữ cảnh. Fact lưu claim events/amounts, staging là khu tiếp nhận tạm. <em>Mẹo:</em> Descriptive attributes → Dimension. <em>Liên hệ:</em> Unit 2.</p>
+<p><strong>Câu 2. Semantic Model trong Warehouse experience?</strong> A. Business-oriented reusable data model; B. Physical storage design; C. Machine learning prediction model. <strong>Đáp án A.</strong> Semantic Model gồm business relationships/measures; B và C là các khái niệm khác. <em>Mẹo:</em> Business-oriented + relationships + measures. <em>Liên hệ:</em> Unit 5.</p>
+<p><strong>Câu 3. Item Permissions dùng để làm gì?</strong> A. Grant all Workspace items; B. Column permissions; C. Share individual Warehouse to downstream users. <strong>Đáp án C.</strong> A là Workspace roles; B là granular SQL security. <em>Mẹo:</em> Share single item. <em>Liên hệ:</em> Unit 6.</p>
+<p><strong>Câu 4. Warehouse có gì mà Lakehouse SQL endpoint không có?</strong> A. T-SQL INSERT/UPDATE/DELETE/MERGE trên dữ liệu; B. SELECT; C. SSMS/SQL client connection. <strong>Đáp án A.</strong> Cả hai có SELECT và SQL tooling phù hợp; chỉ Warehouse có T-SQL write vào underlying tables. <em>Liên hệ:</em> Unit 3.</p>
+<h3>Unit 9 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết kiến trúc, mô hình hóa, SQL processing, semantic model và security/monitoring của Fabric Warehouse.</p>
+<h4>Nội dung chính trong Unit</h4>
+<ul>
+<li><strong>Dimensional model:</strong> Fact, Dimension, surrogate keys, time/SCD, Star/Snowflake.</li>
+<li><strong>Fabric Warehouse:</strong> Fully managed analytical SQL with transactional T-SQL support, OneLake Delta storage.</li>
+<li><strong>Data movement:</strong> COPY INTO, OPENROWSET, Dataflows, Pipelines, cross-database queries, staging.</li>
+<li><strong>Logic reuse:</strong> Views, Stored Procedures và DAX measures có nhiệm vụ khác nhau.</li>
+<li><strong>BI:</strong> Semantic Model + Direct Lake, điều kiện kết nối/security phải xét kỹ.</li>
+<li><strong>Governance:</strong> Workspace roles, item permissions, SQL RLS/CLS/DDM, Query insights/DMVs.</li>
+</ul>
+<p><strong>Learn more:</strong> https://learn.microsoft.com/en-us/fabric/data-warehouse/data-warehousing ; https://learn.microsoft.com/en-us/fabric/data-warehouse/query-warehouse</p>
+<h3>Coverage check — Module 4</h3>
+<ul>
+<li><strong>Units:</strong> 9/9 theo đúng thứ tự. <strong>Assessment:</strong> 4/4; <strong>Exercise:</strong> các bước tạo Workspace/Warehouse, Dim/Fact, T-SQL, View, Visual Query, optional model, cleanup.</li>
+<li><strong>Headings:</strong> Unit 2 có 3 nhánh trong Design, Unit 3 có 7 nhánh, Unit 4 có 3, Unit 5 có 4, Unit 6 có security/monitoring và các subheadings. Đã đi qua tất cả nhóm được xác định.</li>
+<li><strong>Đã phủ:</strong> Dimensional Modeling, SCD, Star/Snowflake, T-SQL DML/DDL, ingest methods, staging, clones, Query Editor, Visual Editor, Views/Procedures, Direct Lake, RLS/CLS/DDM, Query insights và DMVs.</li>
+<li><strong>AI/Copilot/Agent:</strong> Đã liên hệ với SQL generation, clean semantic metadata và views; chưa mở rộng thành lab agent ngoài module.</li>
+<li><strong>Đã rút gọn:</strong> SCD Type 2 ETL production, transactional concurrency, query optimization nâng cao và các bước SQL security thực chiến chi tiết.</li>
+<li><strong>Giới hạn:</strong> Chưa chạy lab trên tenant, chưa xác nhận kết quả query thực tế.</li>
+<li><strong>Bẫy scenario:</strong> Warehouse vs Lakehouse SQL endpoint; Fact vs Dim; Clone vs Shortcut; View vs Measure; Read vs ReadData vs ReadAll; RLS vs CLS vs DDM; Query insights vs DMVs.</li>
+</ul>
+<p>---</p>

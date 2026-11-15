@@ -1,0 +1,285 @@
+<h2>Module 3 — Get started with lakehouses in Microsoft Fabric</h2>
+<p><strong>Thứ tự:</strong> LP1, Module 3/5. <strong>Số Unit:</strong> 7. <strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/get-started-lakehouses/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/subheading</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Data Lake vs Data Warehouse vs Lakehouse</td></tr>
+<tr><td>2</td><td>Describe lakehouse features and capabilities</td><td>Understand lakehouse design; Understand Delta Lake tables; Manage lakehouse access; Build a foundation for intelligent analytics</td></tr>
+<tr><td>3</td><td>Ingest and transform data in a lakehouse</td><td>Create and explore a lakehouse; Ingest data into a lakehouse; Access data using shortcuts; Transform data in a lakehouse</td></tr>
+<tr><td>4</td><td>Query and analyze lakehouse data</td><td>Query data using the SQL analytics endpoint; Explore data using Lakehouse Query Explorer; Query data using Spark notebooks; Analyze and visualize with Power BI</td></tr>
+<tr><td>5</td><td>Exercise – Create a Microsoft Fabric lakehouse</td><td>Workspace, Lakehouse, Upload, Shortcut source, Load to Tables, SQL, Visual query, cleanup</td></tr>
+<tr><td>6</td><td>Module assessment</td><td>6 câu</td></tr>
+<tr><td>7</td><td>Summary</td><td>Tổng kết và Learn more</td></tr>
+</tbody></table>
+<p><strong>Learning objectives:</strong> Giải thích cấu trúc Lakehouse, Delta tables và bảo mật; ingest/transform với Upload, Dataflows, Spark, Pipelines; truy vấn bằng các engines phù hợp; tạo báo cáo từ semantic model.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Vì sao Lakehouse kết hợp thế mạnh của Data Lake và Data Warehouse.</p>
+<h4>Nội dung chính trong Unit</h4>
+<p><strong>Data Warehouse:</strong> Tập trung bảng dữ liệu có cấu trúc, SQL, joins, aggregation, KPI và lịch sử nghiệp vụ. Điển hình có <code>FactSales</code>, <code>DimProduct</code>, <code>DimCustomer</code>, <code>DimDate</code>. Dữ liệu dạng log JSON, ảnh hoặc raw files có thể không phù hợp để quản lý hoàn toàn dưới cấu trúc warehouse.</p>
+<p><strong>Data Lake:</strong> Lưu files linh hoạt (<code>CSV</code>, <code>JSON</code>, <code>Parquet</code>, <code>PDF</code>, images). Cấu trúc có thể thay đổi theo nguồn, hữu ích khi cần lưu raw data và phục vụ Spark/ML. Tuy nhiên, thư mục files thuần túy không tự có transaction log, schema enforcement hoặc SQL table semantics.</p>
+<p><strong>Lakehouse:</strong> Kết hợp file storage và Delta tables. Fabric Lakehouse sử dụng OneLake cùng Spark và SQL analytics endpoint. Nó phù hợp khi vừa cần giữ raw files vừa chuẩn hóa chúng thành các bảng phân tích.</p>
+<pre><code class="language-mermaid">flowchart TB
+  A[Raw source files: CSV / JSON / Parquet] --&gt; B[Lakehouse Files]
+  B --&gt; C[Notebook / Dataflow / Load to Tables]
+  C --&gt; D[Lakehouse Tables: Delta Lake]
+  D --&gt; E[SQL analytics endpoint]
+  D --&gt; F[Spark]
+  E --&gt; G[Semantic model / Power BI]</code></pre>
+<table><thead><tr><th>Đặc điểm</th><th>Data Lake</th><th>Warehouse</th><th>Lakehouse</th></tr></thead><tbody>
+<tr><td>Raw files</td><td>Có</td><td>Không phải mục tiêu chính</td><td>Có</td></tr>
+<tr><td>Structured tables</td><td>Cần engine/format phù hợp</td><td>Có</td><td>Delta tables</td></tr>
+<tr><td>SQL analytics</td><td>Qua query engine</td><td>Có</td><td>SQL analytics endpoint</td></tr>
+<tr><td>Spark</td><td>Phù hợp</td><td>Không phải trọng tâm</td><td>Có</td></tr>
+<tr><td>ACID table transactions</td><td>Không mặc định ở files</td><td>Có</td><td>Có qua Delta Lake</td></tr>
+</tbody></table>
+<p><strong>Ví dụ:</strong> Dữ liệu Dataverse, SharePoint, ERP được nạp vào Lakehouse. Raw files lưu ở Files, các bảng chuẩn hóa lưu ở Tables, SQL endpoint phục vụ kiểm tra và Power BI báo cáo. Lakehouse không làm cho Warehouse trở nên lỗi thời: Fabric hỗ trợ cả hai theo workload.</p>
+<h3>Unit 2 — Describe lakehouse features and capabilities</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu Tables/Files, cách Delta Lake bảo đảm tính nhất quán, các lớp security và ngữ cảnh dữ liệu dùng cho AI.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Understand lakehouse design</h5>
+<p><strong>Tables:</strong> Chứa Delta tables với schema định nghĩa các cột, data types; có thể truy vấn bằng Spark và T-SQL từ SQL analytics endpoint. Ví dụ <code>Tables/dbo/sales</code>, <code>Tables/dbo/customers</code>.</p>
+<p><strong>Files:</strong> Chứa raw/staging/historical files như <code>Files/raw/sales.csv</code>, <code>Files/documents/invoices.pdf</code>. File CSV dưới Files có thể preview, nhưng <strong>không tự động là SQL table</strong>.</p>
+<pre><code class="language-text">Lakehouse: BusinessAnalytics
+├── Tables
+│   └── dbo
+│       ├── sales
+│       ├── products
+│       └── customers
+└── Files
+    ├── raw/sales.csv
+    ├── raw/customers.json
+    └── documents/invoices.pdf</code></pre>
+<p>Một lợi ích của việc lưu raw files là có thể xử lý lại ETL khi đổi logic nghiệp vụ. Dữ liệu được nạp sang Tables giúp các query engines làm việc theo schema ổn định.</p>
+<h5>Understand Delta Lake tables</h5>
+<p>Bảng Delta thường có nhiều file Parquet và thư mục <code><em>delta</em>log</code> chứa metadata/giao dịch:</p>
+<pre><code class="language-text">sales/
+├── part-00001-...snappy.parquet
+├── part-00002-...snappy.parquet
+└── _delta_log/
+    ├── 00000000000000000000.json
+    └── 00000000000000000001.json</code></pre>
+<p><strong>ACID:</strong></p>
+<table><thead><tr><th>Thuộc tính</th><th>Ý nghĩa</th></tr></thead><tbody>
+<tr><td>Atomicity</td><td>Giao dịch commit hoàn toàn hoặc không</td></tr>
+<tr><td>Consistency</td><td>Bảo vệ các quy tắc nhất quán của bảng theo engine</td></tr>
+<tr><td>Isolation</td><td>Kiểm soát truy cập/giao dịch đồng thời</td></tr>
+<tr><td>Durability</td><td>Giao dịch đã commit được duy trì</td></tr>
+</tbody></table>
+<p><strong>Schema enforcement:</strong> Cột <code>Quantity</code> kiểu Integer sẽ không nhận văn bản không chuyển đổi được. Nó không tự ngăn mọi sai lệch nghiệp vụ như Quantity âm nếu không có rule bổ sung.</p>
+<p><strong>Time travel:</strong> Có thể đọc một phiên bản bảng trước đó khi Delta log và files còn trong thời hạn retention. Ví dụ Spark SQL:</p>
+<pre><code class="language-sql">SELECT * FROM dbo.sales VERSION AS OF 1;</code></pre>
+<p>Đây là <strong>Spark SQL Delta syntax</strong>, không phải T-SQL của Lakehouse SQL analytics endpoint.</p>
+<p><strong>Updates/deletes:</strong> Delta Lake hỗ trợ <code>UPDATE</code>, <code>DELETE</code>, <code>MERGE</code> qua engine ghi phù hợp. Ví dụ Spark SQL:</p>
+<pre><code class="language-sql">UPDATE dbo.sales
+SET Quantity = 5
+WHERE SalesOrderNumber = 'SO1001';</code></pre>
+<p>Câu trên không được dùng để sửa Delta table qua Lakehouse SQL analytics endpoint, vì endpoint đó là read-only đối với underlying Delta data.</p>
+<p><strong>Batch và streaming:</strong> Delta tables có thể tham gia cả batch pipelines và streaming workloads được hỗ trợ. Cần thiết kế concurrency, schema và freshness phù hợp; không mặc nhiên nhiều writers đều được phép ghi tùy ý.</p>
+<h5>Manage lakehouse access</h5>
+<ul>
+<li><strong>Workspace Roles:</strong> Admin, Member, Contributor, Viewer. Kiểm soát phạm vi cộng tác trong workspace.</li>
+<li><strong>Item-level sharing:</strong> Cấp quyền vào một Lakehouse cụ thể thay vì trao quyền rộng cho toàn bộ workspace.</li>
+<li><strong>Row-level Security (RLS):</strong> Ở SQL query surface, hạn chế dòng được SELECT; ví dụ Sales South chỉ xem Region South.</li>
+<li><strong>Column-level Security (CLS):</strong> Chặn quyền truy cập cột nhạy cảm như CustomerEmail.</li>
+<li><strong>Schema-level permissions:</strong> Quản lý quyền theo <code>sales</code>, <code>finance</code>, <code>hr</code> schema trong trường hợp được hỗ trợ.</li>
+<li><strong>Sensitivity labels / Purview governance:</strong> Phân loại dữ liệu và hỗ trợ tuân thủ.</li>
+</ul>
+<p><strong>Giới hạn đặc biệt:</strong> SQL endpoint RLS/CLS không tự động áp dụng lên mọi đường đọc OneLake/Spark. Khi dùng Direct Lake cần xem cách kết nối và cơ chế bảo mật thực tế, không coi security của một engine là global security.</p>
+<h5>Build a foundation for intelligent analytics</h5>
+<p>Lakehouse có tên bảng/cột, data types, business semantics rõ ràng sẽ giúp Semantic Model, Copilot và data agents làm việc hiệu quả hơn. Ví dụ <code>NetRevenue</code> với định nghĩa rõ thuế/chiết khấu tốt hơn một cột <code>Amount1</code> không có mô tả. Fabric IQ/ontology có thể đưa thêm quan hệ nghiệp vụ trong những cấu hình hỗ trợ; AI không thay thế schema, dữ liệu đúng và access control.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Keyword</th><th>Lựa chọn</th></tr></thead><tbody>
+<tr><td>Store raw files</td><td>Files</td></tr>
+<tr><td>Structured SQL analytical table</td><td>Delta Table trong Tables</td></tr>
+<tr><td>Table versions, ACID</td><td>Delta log</td></tr>
+<tr><td>Restrict SQL rows</td><td>RLS</td></tr>
+<tr><td>Restrict SQL columns</td><td>CLS</td></tr>
+<tr><td>SQL endpoint UPDATE underlying Delta</td><td>Không được hỗ trợ</td></tr>
+</tbody></table>
+<h3>Unit 3 — Ingest and transform data in a lakehouse</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo Lakehouse, ingest và chuyển đổi dữ liệu bằng công cụ đúng nhu cầu, sử dụng Shortcuts khi cần tham chiếu dữ liệu.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Create and explore a lakehouse</h5>
+<p><code>Fabric portal</code> → <code>Workspace</code> → <code>New item</code> → <code>Lakehouse</code>. Một Lakehouse mới hiện thường bật <strong>schema support</strong>, với schema ban đầu <code>dbo</code>. Một số Lakehouse legacy có cấu trúc không schema, nên không được giả định tất cả đối tượng cũ đã cùng chuẩn.</p>
+<pre><code class="language-text">EnterpriseAnalytics
+├── Tables
+│   ├── dbo/audit_events
+│   ├── sales/orders
+│   └── finance/expenses
+└── Files/raw</code></pre>
+<p><strong>Lakehouse explorer:</strong> Tables/Files, upload, Shortcuts, previews, reference Lakehouses. <strong>SQL analytics endpoint:</strong> read-only T-SQL trên Delta tables, có thể tạo các SQL metadata objects như views trong phạm vi hỗ trợ. Reference Lakehouse trong explorer không tự tạo Shortcut/copy.</p>
+<p>Trong Spark SQL có thể sử dụng namespace dạng <code>workspace.lakehouse.schema.table</code> ở những trường hợp hỗ trợ; ví dụ:</p>
+<pre><code class="language-sql">SELECT *
+FROM SalesWorkspace.SalesLakehouse.sales.orders;</code></pre>
+<h5>Ingest data into a lakehouse</h5>
+<table><thead><tr><th>Phương thức</th><th>Khi chọn</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Upload</td><td>Nạp file mẫu nhỏ/thủ công</td><td>Upload <code>sales.csv</code> vào Files</td></tr>
+<tr><td>Load to tables</td><td>CSV/Parquet thành Delta table không viết code</td><td><code>Files/data/sales.csv</code> → <code>Tables/dbo/sales</code></td></tr>
+<tr><td>Dataflows Gen2</td><td>Low-code Power Query</td><td>Chuẩn hóa types, deduplicate, filter</td></tr>
+<tr><td>Spark notebooks</td><td>Logic phức tạp/data lớn</td><td>PySpark transform 3 triệu dòng/ngày</td></tr>
+<tr><td>Data Factory Pipelines</td><td>Lịch và orchestration</td><td>Copy → Notebook → Validate → Notify</td></tr>
+</tbody></table>
+<p><strong>Upload không đồng nghĩa Load to Tables.</strong> Một file ở Files phải được load/chuyển đổi phù hợp để trở thành Delta table có thể query qua SQL endpoint.</p>
+<p>Ví dụ PySpark đọc CSV:</p>
+<pre><code class="language-python">from pyspark.sql import functions as F
+
+df = (
+    spark.read.option(&quot;header&quot;, &quot;true&quot;)
+    .option(&quot;inferSchema&quot;, &quot;true&quot;)
+    .csv(&quot;Files/data/sales.csv&quot;)
+)
+
+df_clean = (
+    df.filter(F.col(&quot;Quantity&quot;) &gt; 0)
+      .withColumn(&quot;Revenue&quot;, F.col(&quot;Quantity&quot;) * F.col(&quot;UnitPrice&quot;))
+)
+
+display(df_clean)</code></pre>
+<p><code>inferSchema</code> thuận tiện để minh họa, nhưng production nên định nghĩa data types rõ nếu input không ổn định. Nếu muốn ghi Delta cần thêm bước <code>write.format('delta')</code> với chế độ, đường dẫn/bảng và quyền chính xác, không phải code ở trên tự ghi.</p>
+<h5>Access data using shortcuts</h5>
+<p>Shortcut ở <code>Files</code> tham chiếu file/folder, ở <code>Tables</code> có thể tham chiếu Delta table. <strong>Schema Shortcut</strong> có thể tham chiếu nhóm nhiều Delta tables trong schema hỗ trợ, thay vì tạo từng table shortcut. External Shortcut tới ADLS/S3 phù hợp khi muốn dùng dữ liệu nguồn mà không copy thông thường. Permissions phụ thuộc passthrough/delegated identity và ACL ở nguồn.</p>
+<p><strong>Ví dụ:</strong> Finance muốn tham chiếu cả schema <code>sales</code> gồm nhiều bảng trong Lakehouse khác. Schema shortcut (nếu được hỗ trợ tại nguồn/đích) giúp giảm việc tạo nhiều table references độc lập.</p>
+<h5>Transform data in a lakehouse</h5>
+<ul>
+<li><strong>Notebook:</strong> PySpark, Spark SQL, Scala được hỗ trợ; logic nhiều bước, xử lý quy mô lớn, reusable code.</li>
+<li><strong>Dataflows Gen2:</strong> Power Query low-code với các bước biến đổi phổ biến.</li>
+<li><strong>Pipeline:</strong> Điều phối chạy Notebook/Dataflow và các hoạt động copy/validate/schedule.</li>
+</ul>
+<p>Một luồng production hợp lý: Ingest raw vào <code>Files/raw</code> → Notebook chuẩn hóa → ghi Delta tables → SQL endpoint kiểm tra → Power BI dùng semantic model. Không gượng ép dùng cả ba công cụ nếu chỉ cần một bước đơn giản.</p>
+<h4>Exam notes</h4>
+<ul>
+<li><code>CSV + no code + create Delta</code> → Load to tables.</li>
+<li><code>Power Query-style transformations</code> → Dataflow Gen2.</li>
+<li><code>Spark transformations / Python</code> → Notebook.</li>
+<li><code>Schedule / orchestrate tasks</code> → Pipeline.</li>
+<li><code>Use outside data without copy</code> → Shortcut.</li>
+</ul>
+<h3>Unit 4 — Query and analyze lakehouse data</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt SQL analytics endpoint, Lakehouse Query Explorer, Spark Notebook và Power BI/Direct Lake.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Query data using the SQL analytics endpoint</h5>
+<p>Mỗi Lakehouse được cung cấp SQL analytics endpoint, cho phép T-SQL <code>SELECT</code>, JOIN, GROUP BY trên Delta tables. Ví dụ:</p>
+<pre><code class="language-sql">SELECT Item, SUM(Quantity * UnitPrice) AS Revenue
+FROM dbo.sales
+GROUP BY Item
+ORDER BY Revenue DESC;</code></pre>
+<p>Có thể tạo SQL Views theo phạm vi hỗ trợ:</p>
+<pre><code class="language-sql">CREATE VIEW dbo.vw_ProductRevenue AS
+SELECT Item, SUM(Quantity * UnitPrice) AS Revenue
+FROM dbo.sales
+GROUP BY Item;</code></pre>
+<p>View là metadata/query definition, không ghi lại Delta table. <code>UPDATE</code>, <code>DELETE</code>, <code>INSERT</code>, <code>MERGE</code> trực tiếp vào underlying Delta tables <strong>không được hỗ trợ qua SQL analytics endpoint</strong>.</p>
+<h5>Explore data using Lakehouse Query Explorer</h5>
+<p><strong>Lakehouse Query Explorer chạy Spark SQL</strong>, không phải T-SQL engine. Có syntax highlighting, IntelliSense, tabs, inline charts, export, cross-schema/cross-lakehouse, Spark SQL DML khi có quyền và bảng hỗ trợ.</p>
+<table><thead><tr><th>Nhu cầu</th><th>T-SQL analytics endpoint</th><th>Spark SQL Query Explorer</th></tr></thead><tbody>
+<tr><td>Đọc Delta tables</td><td>Có</td><td>Có</td></tr>
+<tr><td>T-SQL TOP</td><td>Có</td><td>Không phải cú pháp Spark SQL chuẩn</td></tr>
+<tr><td>Spark SQL LIMIT</td><td>Không phải cú pháp T-SQL chuẩn</td><td>Có</td></tr>
+<tr><td>UPDATE underlying Delta</td><td>Không</td><td>Có, khi hỗ trợ/quyền phù hợp</td></tr>
+<tr><td>PySpark / Python</td><td>Không</td><td>Không; cần Notebook</td></tr>
+<tr><td>Query scheduling trực tiếp</td><td>Không phải trọng tâm</td><td>Không</td></tr>
+</tbody></table>
+<p>Ví dụ:</p>
+<pre><code class="language-sql">-- T-SQL
+SELECT TOP 5 * FROM dbo.sales;
+
+-- Spark SQL (chạy riêng trong Spark Query Explorer)
+SELECT * FROM dbo.sales LIMIT 5;</code></pre>
+<p>Giới hạn Query Explorer được học: query tabs không được lưu bền vững như notebooks, không phải công cụ lịch chạy/phát triển Python, không có persistent query history đầy đủ hoặc cộng tác chỉnh sửa cùng lúc như một IDE chuyên biệt.</p>
+<h5>Query data using Spark notebooks</h5>
+<p>Notebook có cell Python, Spark SQL và API Spark:</p>
+<pre><code class="language-sql">%%sql
+SELECT Item, SUM(Quantity) AS TotalQuantity
+FROM dbo.sales
+GROUP BY Item;</code></pre>
+<p>Hoặc PySpark:</p>
+<pre><code class="language-python">from pyspark.sql import functions as F
+
+result = (
+    spark.table(&quot;dbo.sales&quot;)
+    .groupBy(&quot;Item&quot;)
+    .agg(F.sum(&quot;Quantity&quot;).alias(&quot;TotalQuantity&quot;))
+    .orderBy(F.desc(&quot;TotalQuantity&quot;))
+)
+display(result)</code></pre>
+<p>Notebook phù hợp khi cần Python libraries, nhiều cell, transformations phức tạp hoặc được chạy bởi Pipeline. Với câu truy vấn ngắn, Query Explorer thường nhẹ hơn về workflow; với ETL code, Notebook thích hợp hơn.</p>
+<h5>Analyze and visualize with Power BI</h5>
+<p>Power BI có thể kết nối Lakehouse và xây semantic model gồm tables, relationships, measures, descriptions và security. Ví dụ DAX:</p>
+<pre><code class="language-dax">Total Revenue =
+SUMX(
+    FactSales,
+    FactSales[Quantity] * FactSales[UnitPrice]
+)</code></pre>
+<p><strong>Storage modes:</strong></p>
+<table><thead><tr><th>Mode</th><th>Cách hoạt động</th></tr></thead><tbody>
+<tr><td>Import</td><td>Nạp dữ liệu vào semantic model và refresh</td></tr>
+<tr><td>DirectQuery</td><td>Gửi query xuống source lúc cần</td></tr>
+<tr><td>Direct Lake</td><td>Đọc Delta-Parquet qua OneLake và nạp cột cần thiết để trả lời truy vấn</td></tr>
+</tbody></table>
+<p><strong>Direct Lake on OneLake</strong> không có DirectQuery fallback. <strong>Direct Lake on SQL</strong> có thể fallback ở tình huống hỗ trợ, đặc biệt liên quan SQL endpoint metadata/security. Direct Lake vẫn có memory caching, framing và những giới hạn; không phải “không bao giờ có refresh” hay “không cần permissions”.</p>
+<p><strong>Ví dụ:</strong> Bảng Delta FactSales lớn được semantic model Direct Lake sử dụng; report theo Product dùng DAX measures/relationships đã chuẩn hóa, còn storage mode quyết định đường đọc dữ liệu.</p>
+<h4>Exam notes</h4>
+<p><code>Read-only T-SQL</code> → SQL endpoint; <code>Spark SQL with DML</code> → Query Explorer/Notebook; <code>Python</code> → Notebook; <code>Semantic model on Delta without traditional import</code> → Direct Lake. Luôn kiểm tra tính năng security ở đúng engine.</p>
+<h3>Unit 5 — Exercise: Create a Microsoft Fabric lakehouse</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thực hành tạo Workspace/Lakehouse, upload CSV, khám phá Shortcut, chuyển thành Delta table, chạy T-SQL và Visual Query.</p>
+<p><strong>Lab:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/01-lakehouse.html <strong>Dữ liệu:</strong> https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/sales.csv</p>
+<h4>Chuẩn bị</h4>
+<ul>
+<li>Portal: <code>https://app.fabric.microsoft.com</code>, tài khoản tổ chức.</li>
+<li>Quyền tạo Workspace/Lakehouse và capacity Trial/paid hỗ trợ.</li>
+<li>File <code>sales.csv</code>; lưu ý compute/storage có thể gây phí trên paid capacity.</li>
+<li>Cleanup chỉ workspace tạo riêng để thực hành.</li>
+</ul>
+<h4>Các bước</h4>
+<p><strong>1. Workspace:</strong> <code>Workspaces</code> → <code>New workspace</code> → <code>DP600<em>LP1</em>M3_Lab</code>, chọn capacity phù hợp → Apply.</p>
+<p><strong>2. Lakehouse:</strong> <code>New item</code> → <code>Lakehouse</code> → <code>SalesLakehouse</code> → Create. Quan sát Tables, Files và schema <code>dbo</code>.</p>
+<p><strong>3. Upload:</strong> <code>Files</code> → <code>...</code> → <code>New subfolder</code> → <code>data</code> → <code>Upload files</code> → <code>sales.csv</code>. Kết quả: <code>Files/data/sales.csv</code>, chưa có <code>dbo.sales</code>.</p>
+<p><strong>4. Explore Shortcut:</strong> Ở Files, <code>...</code> → <code>New shortcut</code>; xem các nguồn hỗ trợ và đóng hộp thoại. <strong>Lab này chỉ khám phá nguồn Shortcut, không yêu cầu thực tạo Shortcut</strong>, khác lab Module 2.</p>
+<p><strong>5. Load to Tables:</strong> menu file <code>sales.csv</code> → <code>Load to Tables</code> → <code>New table</code> → <code>sales</code> → xác nhận; refresh Tables. Xem dữ liệu trong <code>dbo.sales</code>, <code>View files</code> để nhận diện Parquet và <code><em>delta</em>log</code>.</p>
+<p><strong>6. SQL analytics endpoint:</strong> Chuyển mode <code>SQL analytics endpoint</code> → <code>New SQL query</code>:</p>
+<pre><code class="language-sql">SELECT
+    Item,
+    SUM(Quantity * UnitPrice) AS Revenue
+FROM dbo.sales
+GROUP BY Item
+ORDER BY Revenue DESC;</code></pre>
+<p>Kết quả: doanh thu theo Item, sắp xếp giảm dần. Định nghĩa revenue ở lab đơn giản, chưa chắc khớp Net Revenue production.</p>
+<p><strong>7. Visual query:</strong> <code>New SQL query</code> → <code>New visual query</code> → kéo <code>sales</code> → <code>Manage columns</code> → chọn <code>SalesOrderNumber</code>, <code>SalesOrderLineNumber</code> → <code>Transform</code> → <code>Group by</code>: Group by <code>SalesOrderNumber</code>, new column <code>LineItems</code>, operation <code>Count distinct values</code>, column <code>SalesOrderLineNumber</code>. Kết quả mỗi SalesOrderNumber một dòng và số line khác nhau.</p>
+<p><strong>8. Cleanup:</strong> <code>Workspace settings</code> → <code>General</code> → <code>Remove this workspace</code>, chỉ trên lab workspace.</p>
+<h4>Lỗi thường gặp</h4>
+<table><thead><tr><th>Hiện tượng</th><th>Nguyên nhân và xử lý</th></tr></thead><tbody>
+<tr><td>Không tạo được Lakehouse</td><td>Kiểm tra capacity, Fabric tenant settings và quyền</td></tr>
+<tr><td>SQL không thấy bảng</td><td>File chưa <code>Load to Tables</code>, hoặc metadata chưa sync</td></tr>
+<tr><td>Sai số lượng line items</td><td>Chọn Count thay vì Count distinct hoặc nhầm column</td></tr>
+<tr><td>Invalid object name</td><td>Kiểm tra <code>dbo.sales</code> và endpoint đúng</td></tr>
+<tr><td>Revenue sai</td><td>Kiểm tra data types, công thức và những business rules chưa nằm trong lab</td></tr>
+</tbody></table>
+<p><strong>5 ý luyện tay:</strong> Upload khác Delta table; Tables có schema; SQL endpoint chỉ đọc underlying Delta; Visual Query dùng được cho Group By; Shortcut không phải tính năng tự động chuyển CSV thành Delta.</p>
+<h3>Unit 6 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm tra sáu năng lực: định nghĩa Lakehouse, explorer vs endpoint, Shortcut, Load to Tables, Spark notebook và Direct Lake.</p>
+<p><strong>Câu 1. Mô tả Lakehouse đúng nhất?</strong> A. Chỉ là relational SQL Server database; B. Chỉ là file/folder ADLS Gen2; C. Kết hợp Data Lake file storage với analytical SQL capabilities. <strong>Đáp án C.</strong> A và B chỉ mô tả một phía. <em>Mẹo:</em> Lake + Warehouse. <em>Liên hệ:</em> Unit 1–2.</p>
+<p><strong>Câu 2. Lakehouse explorer khác SQL endpoint?</strong> A. Explorer read-only và endpoint write; B. Explorer quản lý Tables/Files/Folders còn endpoint dùng T-SQL read-only cho Delta; C. Hai bên giống nhau. <strong>Đáp án B.</strong> A đảo ngược SQL endpoint behavior; C bỏ qua sự khác biệt về chức năng. <em>Liên hệ:</em> Unit 3–4.</p>
+<p><strong>Câu 3. Dùng dữ liệu ADLS Gen2 không copy?</strong> A. Pipeline Copy Data; B. Shortcut; C. Dataflow extract/load. <strong>Đáp án B.</strong> Hai đáp án còn lại nạp/copy dữ liệu. <em>Liên hệ:</em> Unit 3.</p>
+<p><strong>Câu 4. CSV trong Files thành Delta table không code?</strong> A. PySpark notebook; B. Load to tables; C. SQL analytics endpoint. <strong>Đáp án B.</strong> PySpark cần code, SQL endpoint không chuyển Files CSV thành Delta table. <em>Liên hệ:</em> Unit 3, 5.</p>
+<p><strong>Câu 5. Khám phá file dữ liệu bằng Apache Spark?</strong> A. Notebook; B. SQL analytics endpoint; C. Dataflow Gen2. <strong>Đáp án A.</strong> Notebook có Spark, Python. Query Explorer cũng hỗ trợ Spark SQL nhưng không nằm trong lựa chọn. <em>Liên hệ:</em> Unit 4.</p>
+<p><strong>Câu 6. Mode semantic model đặc trưng cho Lakehouse theo module?</strong> A. Import; B. DirectQuery; C. Direct Lake. <strong>Đáp án C.</strong> Direct Lake kết nối Delta-Parquet/OneLake với cơ chế riêng, không phải Import truyền thống. <em>Liên hệ:</em> Unit 4.</p>
+<h3>Unit 7 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết Lakehouse như nền tảng lưu trữ và xử lý phân tích linh hoạt cho dữ liệu, BI và AI.</p>
+<h4>Nội dung chính trong Unit</h4>
+<p>Lakehouse có <strong>Files</strong> và <strong>Delta Tables</strong>; Delta Lake thêm transaction log, schema và ACID. Ingest/transform bằng Upload, Load to Tables, Dataflows, Notebooks/Pipelines. Đọc dữ liệu bằng SQL endpoint hoặc Spark; Query Explorer dùng Spark SQL, không phải T-SQL. Power BI Direct Lake cho phép xây semantic model hiệu quả trên dữ liệu Delta. Phải thiết kế bảo mật đúng đường truy cập.</p>
+<p><strong>Learn more:</strong> https://learn.microsoft.com/en-us/fabric/data-engineering/data-engineering-overview</p>
+<h3>Coverage check — Module 3</h3>
+<ul>
+<li><strong>Units:</strong> 7/7, các heading Unit 2, 3, 4 đều 4/4; Unit 5 có 8 task; Assessment 6/6; Summary đã giảng.</li>
+<li><strong>Đã phủ:</strong> Tables/Files, Parquet/Delta, ACID, schema enforcement, time travel, security, ingest options, shortcuts, schemas, SQL endpoint, Query Explorer, Spark, Power BI Direct Lake, AI metadata.</li>
+<li><strong>Lab:</strong> Có chuẩn bị, thao tác portal, SQL/Visual Query, kết quả mong đợi, lỗi, cleanup, exam linkage; chưa chạy trên tenant.</li>
+<li><strong>Rút gọn:</strong> Không khai triển sâu về Delta optimization, Direct Lake tuning, Fabric OneLake security matrix hoặc Medallion Architecture ngoài phạm vi.</li>
+<li><strong>Bẫy scenario:</strong> SQL endpoint read-only vs Spark DML; Files CSV vs Delta table; Spark SQL vs T-SQL; Query Explorer vs Notebook; Direct Lake on OneLake vs on SQL.</li>
+</ul>
+<p>---</p>

@@ -1,0 +1,218 @@
+<h2>Module 2 — Discover and connect to data in OneLake</h2>
+<p><strong>Thứ tự:</strong> LP1, Module 2/5. <strong>Số Unit:</strong> 7. <strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/discover-data-onelake/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên chính thức</th><th>Heading/subheading</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Không có heading nội bộ</td></tr>
+<tr><td>2</td><td>Understand OneLake</td><td>One storage layer, one copy of data; How data arrives in OneLake; What this means for discovery</td></tr>
+<tr><td>3</td><td>Browse and connect to data in OneLake</td><td>Browse and search the catalog; Choose how to use the data</td></tr>
+<tr><td>4</td><td>Discover streaming data in Real-Time hub</td><td>What Real-Time hub shows you; How to find streaming data; What you can do with a discovered stream</td></tr>
+<tr><td>5</td><td>Exercise – Discover and connect to data in OneLake</td><td>Workspace; Lakehouse; Upload CSV; Delta table; Catalog; Shortcut; SQL; semantic model; Cleanup</td></tr>
+<tr><td>6</td><td>Knowledge check</td><td>5 câu</td></tr>
+<tr><td>7</td><td>Summary</td><td>Learn more</td></tr>
+</tbody></table>
+<p><strong>Learning objectives:</strong> Hiểu kiến trúc OneLake; tìm, đánh giá và kết nối tài sản dữ liệu; khám phá Eventstreams/KQL tables qua Real-Time hub; thực hành tạo Shortcut, query SQL endpoint và semantic model. Module có một lab chính thức.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giải thích vì sao một data analyst cần tìm và đánh giá data assets đã có trước khi xây pipeline hoặc dataset mới.</p>
+<h4>Nội dung chính trong Unit</h4>
+<p><strong>Bài toán khám phá dữ liệu:</strong> Một nhóm đã có Lakehouse bán hàng, nhóm khác có Warehouse tài chính, nhóm BI có semantic models được chuẩn hóa. Nếu analyst không biết nguồn nào đáng tin cậy, họ có thể tự tạo bộ dữ liệu khác, làm phát sinh sao chép, storage/compute dư thừa và KPI sai lệch.</p>
+<p>Quy trình hợp lý là <strong>Discover → Evaluate → Connect → Analyze</strong>. Tìm data assets đang tồn tại; xem metadata, owner, freshness, endorsement, schema và quyền; quyết định dùng trực tiếp hay Shortcut; sau đó truy vấn hoặc xây semantic model.</p>
+<p><strong>Ví dụ:</strong> Dữ liệu doanh thu có trong <code>SalesLakehouse</code> và model đã Certified. Một analyst muốn làm report theo chi nhánh; nên cân nhắc dùng model Certified thay vì tạo bảng doanh thu mới.</p>
+<p><strong>Exam note:</strong> Không phải “khác workspace” đồng nghĩa bắt buộc Copy Data. Trước tiên kiểm tra khả năng kết nối trực tiếp, SQL analytics endpoint hoặc Shortcut.</p>
+<h3>Unit 2 — Understand OneLake</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiến trúc lưu trữ thống nhất, các phương thức đưa dữ liệu vào OneLake và ý nghĩa với data discovery.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>One storage layer, one copy of data</h5>
+<p>OneLake là một logical data lake ở cấp Fabric tenant; workloads có thể truy cập các tài sản được lưu và tổ chức dưới lớp OneLake. Một Workspace chứa Lakehouse, Workspace khác chứa Warehouse/Eventhouse; điều này không có nghĩa bắt buộc triển khai riêng một Azure Storage Account cho từng nhóm. Tuy nhiên, dữ liệu vẫn chịu quyền item/OneLake/SQL và các yêu cầu governance; không phải mọi user có quyền xem toàn bộ dữ liệu.</p>
+<pre><code class="language-mermaid">flowchart TB
+  W[Microsoft Fabric tenant] --&gt; A[Workspace: Sales]
+  W --&gt; B[Workspace: Finance]
+  W --&gt; C[Workspace: Operations]
+  A --&gt; L[Lakehouse]
+  B --&gt; D[Warehouse]
+  C --&gt; E[Eventhouse]
+  L --&gt; O[OneLake logical storage]
+  D --&gt; O
+  E --&gt; O</code></pre>
+<p><strong>Parquet</strong> là định dạng cột. <strong>Delta Lake</strong> thêm transaction log, metadata và cơ chế trạng thái bảng. CSV/JSON/images cũng có thể được lưu trong Files. Không phải mọi file trong OneLake mặc nhiên xuất hiện như SQL table.</p>
+<p><strong>One copy of data:</strong> Kiến trúc chung giảm nhu cầu nhân bản dữ liệu chỉ để thay engine. Không có nghĩa toàn bộ hệ thống chỉ tồn tại đúng một bản vật lý hoặc không bao giờ cần biến đổi/copy dữ liệu. Có những trường hợp kiểm toán, isolation, performance hoặc data transformations yêu cầu tạo dữ liệu vật lý mới.</p>
+<h5>How data arrives in OneLake — 6 phương thức</h5>
+<table><thead><tr><th>Phương thức</th><th>Cách làm</th><th>Khi nào chọn</th></tr></thead><tbody>
+<tr><td>Mirroring</td><td>Đồng bộ/copy những nguồn database được hỗ trợ</td><td>Muốn duy trì thay đổi từ operational source</td></tr>
+<tr><td>Pipelines</td><td>Điều phối ETL, Copy Data, chạy hoạt động theo lịch/dependency</td><td>Quy trình nhiều bước và cần orchestration</td></tr>
+<tr><td>Dataflows</td><td>Power Query low-code, load sau khi transform</td><td>Analyst quen Power Query</td></tr>
+<tr><td>Eventstreams</td><td>Nhận, xử lý, route dữ liệu sự kiện liên tục</td><td>IoT, app logs, CDC, streaming</td></tr>
+<tr><td>Shortcuts</td><td>Tham chiếu dữ liệu ở nguồn khác</td><td>Muốn tái sử dụng không copy vật lý thông thường</td></tr>
+<tr><td>Direct upload</td><td>Upload CSV/Parquet/files trong UI</td><td>Lab hoặc dữ liệu thủ công quy mô nhỏ</td></tr>
+</tbody></table>
+<p><strong>Mirroring:</strong> Đối với database được hỗ trợ, Fabric duy trì bản sao/sự đồng bộ các thay đổi về OneLake. Cần phân biệt database mirroring có sao chép với metadata mirroring/shortcut có cách hoạt động khác. Không phải mọi hệ thống nguồn hoặc mọi loại dữ liệu đều được mirror.</p>
+<p><strong>Pipeline:</strong> Ví dụ <code>Copy SQL → Run Notebook → Validate → Load curated table</code>. Pipeline điều phối chứ không nhất thiết tự làm mọi phép biến đổi phức tạp.</p>
+<p><strong>Dataflow:</strong> Ví dụ chuyển <code>OrderDate</code> từ text sang Date, loại null, deduplicate records và load sang Lakehouse.</p>
+<p><strong>Eventstream:</strong> Ví dụ dữ liệu nhiệt độ thiết bị được gửi mỗi 5 giây và route tới Eventhouse.</p>
+<p><strong>Shortcut:</strong> Ví dụ Finance dùng Delta table của Sales qua reference thay vì copy. Dữ liệu được truy cập tùy credentials, quyền và cơ chế caching/metadata.</p>
+<p><strong>Direct upload:</strong> Đơn giản, không lý tưởng để thay một ingest pipeline production thường xuyên.</p>
+<h5>What this means for discovery</h5>
+<p>Vì nhiều assets nằm trong cùng môi trường Fabric, người dùng có thể tìm và đánh giá các nguồn đã tồn tại từ Catalog và các item explorer. Điều này giảm duplicate data products, nhưng <strong>không thay thế quản lý chất lượng, metadata, ownership và security</strong>.</p>
+<p><strong>Scenario:</strong> Muốn đồng bộ những thay đổi từ Azure SQL được hỗ trợ → cân nhắc Mirroring. Muốn sắp xếp nhiều bước ETL chạy theo lịch → Pipeline. Muốn dùng cùng dữ liệu Delta mà không tạo copy → Shortcut.</p>
+<h3>Unit 3 — Browse and connect to data in OneLake</h3>
+<h4>Unit này dạy gì</h4>
+<p>Dùng OneLake catalog để xác định data asset phù hợp, đánh giá endorsement, freshness/ownership rồi chọn kết nối trực tiếp hoặc Shortcut.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Browse and search the catalog</h5>
+<p>Truy cập <code>Fabric portal</code> → <code>OneLake catalog</code> → <code>Explore</code>. Tìm asset theo tên, loại item, workspace/domain và những bộ lọc được hỗ trợ. Một asset có tên gần giống business requirement chưa đủ để khẳng định đúng nguồn: cần kiểm tra metadata.</p>
+<table><thead><tr><th>Metadata</th><th>Câu hỏi cần đặt</th></tr></thead><tbody>
+<tr><td>Item name/type</td><td>Đây có phải loại tài sản cần sử dụng?</td></tr>
+<tr><td>Workspace/owner</td><td>Đơn vị nào chịu trách nhiệm?</td></tr>
+<tr><td>Updated time</td><td>Dữ liệu có đủ mới cho nghiệp vụ?</td></tr>
+<tr><td>Endorsement</td><td>Đã được đề xuất hoặc chứng nhận?</td></tr>
+<tr><td>Sensitivity</td><td>Có dữ liệu cá nhân/nhạy cảm?</td></tr>
+<tr><td>Schema</td><td>Có đủ keys, measures và dimensions?</td></tr>
+</tbody></table>
+<p><strong>Endorsements:</strong></p>
+<ul>
+<li><strong>Promoted:</strong> Owner/người có Write permission phù hợp đề xuất item cho người khác.</li>
+<li><strong>Certified:</strong> Người được tổ chức ủy quyền xác nhận item đã đáp ứng chuẩn tin cậy/chất lượng.</li>
+<li><strong>Master data:</strong> Dữ liệu nguồn có thẩm quyền về thực thể nghiệp vụ như Customer/Product; theo loại item và điều kiện hỗ trợ.</li>
+</ul>
+<p>Promoted không đồng nghĩa Certified. Master data nhấn mạnh nguồn có thẩm quyền, không chỉ là một model hữu ích.</p>
+<p><strong>Ví dụ:</strong> <code>Sales<em>Development</code> và <code>Sales</em>Production</code> cùng có bảng doanh thu. Một model được Certified, có owner rõ và update time đáp ứng yêu cầu đáng cân nhắc hơn bảng thử nghiệm không có metadata quản trị.</p>
+<p><strong>Kiểm tra bảng thực tế:</strong> Mở Lakehouse/Warehouse và preview schema, dữ liệu; với SQL analytics endpoint có thể chạy:</p>
+<pre><code class="language-sql">SELECT TOP 10 *
+FROM dbo.sales;</code></pre>
+<p>Chỉ 10 dòng minh họa không đủ để chứng minh chất lượng mọi dữ liệu; trong production cần validate uniqueness, null, granularity và business definitions.</p>
+<h5>Choose how to use the data</h5>
+<p><strong>Connect directly</strong> khi nguồn đã đáp ứng yêu cầu và bạn có quyền. Ví dụ kết nối Power BI report trực tiếp tới semantic model chuẩn; truy vấn bảng Lakehouse bằng SQL analytics endpoint mà không sao chép.</p>
+<p><strong>Create a shortcut</strong> khi muốn tham chiếu bảng/folder từ nơi khác trong Lakehouse đích và kết hợp với dữ liệu local. Shortcut có thể được đặt trong <code>Tables</code> cho Delta tables phù hợp hoặc <code>Files</code> cho files/folders; CSV Shortcut dưới Files không tự động là Delta table.</p>
+<table><thead><tr><th>Kiểu Shortcut</th><th>Nguồn</th><th>Authentication/permission</th></tr></thead><tbody>
+<tr><td>Internal Shortcut</td><td>Items trong OneLake</td><td>Passthrough hoặc Delegated theo khả năng được hỗ trợ</td></tr>
+<tr><td>External Shortcut</td><td>ADLS Gen2, S3, nguồn tương thích được hỗ trợ</td><td>Connection/credentials phù hợp</td></tr>
+</tbody></table>
+<p><strong>Passthrough:</strong> quyền người đang truy cập được xét ở target theo cơ chế hỗ trợ. <strong>Delegated:</strong> connection identity được cấu hình để truy cập target. Không thể suy ra rằng quyền Write tại Lakehouse đích sẽ cấp quyền đọc mọi nguồn.</p>
+<pre><code class="language-mermaid">flowchart LR
+    A[Sales Workspace / Lakehouse A / dbo.sales] --&gt;|Shortcut reference| B[Analytics Workspace / Lakehouse B / dbo.sales]
+    B --&gt; C[SQL query hoặc semantic model]</code></pre>
+<p><strong>Bảng chọn giải pháp:</strong></p>
+<table><thead><tr><th>Tình huống</th><th>Lựa chọn</th></tr></thead><tbody>
+<tr><td>Dùng model đã chuẩn hóa để tạo report</td><td>Connect directly</td></tr>
+<tr><td>Đọc Lakehouse Delta table bằng T-SQL</td><td>SQL analytics endpoint</td></tr>
+<tr><td>Tham chiếu Lakehouse khác để kết hợp nhiều nguồn</td><td>Shortcut</td></tr>
+<tr><td>Dùng Delta files trong ADLS mà không copy</td><td>External Shortcut</td></tr>
+<tr><td>Nạp, transform và schedule dữ liệu</td><td>Pipeline/Dataflow</td></tr>
+<tr><td>Sửa underlying Delta table bằng T-SQL ở Lakehouse SQL endpoint</td><td>Không hỗ trợ; cần engine ghi Delta như Spark</td></tr>
+</tbody></table>
+<h3>Unit 4 — Discover streaming data in Real-Time hub</h3>
+<h4>Unit này dạy gì</h4>
+<p>Khám phá Eventstreams và KQL tables đang phục vụ streaming analytics; phân biệt Real-Time hub với OneLake catalog.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>What Real-Time hub shows you</h5>
+<p>Real-Time hub tập hợp các streaming sources và related assets mà người dùng có quyền. Hai kiểu asset trọng tâm là <strong>Eventstreams</strong> (dòng sự kiện được ingest, transform, route) và <strong>KQL tables</strong> (bảng trong KQL database/Eventhouse để truy vấn log/time series).</p>
+<pre><code class="language-mermaid">flowchart TB
+  S[IoT / Kafka / Event Hubs / CDC / Application logs] --&gt; ES[Eventstream]
+  ES --&gt; EH[Eventhouse / KQL Database]
+  ES --&gt; LH[Lakehouse]
+  EH --&gt; KQL[KQL Queryset]
+  KQL --&gt; D[Real-Time Dashboard]
+  EH --&gt; AC[Activator]</code></pre>
+<p>Eventstream có thể route đến một hay nhiều destination; sơ đồ không có nghĩa mọi trường hợp bắt buộc ghi cả Eventhouse và Lakehouse.</p>
+<h5>How to find streaming data</h5>
+<p><code>Fabric portal</code> → <code>Real-Time</code> → <code>Real-Time hub</code> → <code>Streaming data</code>. Tìm theo tên, workspace, owner, data type và các metadata được hỗ trợ. Ví dụ tìm <code>MachineTemperature</code> để xác định một Eventstream hoặc KQL table đã có sẵn. Cần kiểm tra item thực sự đang nhận Events hay dữ liệu bị dừng cập nhật.</p>
+<h5>What you can do with a discovered stream</h5>
+<ul>
+<li><strong>Eventstream:</strong> preview events, xem thuộc tính, mở nguồn, cấu hình sử dụng hay các cảnh báo được hỗ trợ.</li>
+<li><strong>KQL table:</strong> query qua KQL, dùng để tạo Dashboard/alerts, kiểm tra time series.</li>
+<li><strong>Lakehouse destination:</strong> dùng lại trong phân tích lịch sử và kết hợp batch datasets.</li>
+</ul>
+<p>Ví dụ KQL giả định bảng <code>MachineEvents(Timestamp,MachineId,Temperature)</code>:</p>
+<pre><code class="language-kusto">MachineEvents
+| where Timestamp &gt; ago(1h)
+| summarize AvgTemp = avg(Temperature) by MachineId
+| order by AvgTemp desc</code></pre>
+<p>Một Real-Time Dashboard có thể hiển thị xu hướng 5 phút; Activator đánh giá một Rule và gửi cảnh báo khi điều kiện đạt. Dashboard không đồng nghĩa công cụ thực hiện cảnh báo.</p>
+<table><thead><tr><th>Công cụ</th><th>Trọng tâm</th></tr></thead><tbody>
+<tr><td>OneLake catalog</td><td>Lakehouses, Warehouses, semantic models và data assets</td></tr>
+<tr><td>Real-Time hub</td><td>Streaming sources, Eventstreams, KQL tables</td></tr>
+</tbody></table>
+<p><strong>Exam notes:</strong> <code>discover streaming data sources</code> → Real-Time hub. Không nhầm với Data Factory Pipeline hoặc OneLake catalog.</p>
+<h3>Unit 5 — Exercise: Discover and connect to data in OneLake</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tự tạo Lakehouse và Delta table, tìm item qua Catalog, tạo Shortcut sang Lakehouse khác, query T-SQL và tạo semantic model cơ bản.</p>
+<p><strong>Lab gốc:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/25-discover-onelake.html <strong>Dữ liệu mẫu:</strong> https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/sales.csv</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Thành phần</th><th>Giá trị</th></tr></thead><tbody>
+<tr><td>Portal</td><td>https://app.fabric.microsoft.com</td></tr>
+<tr><td>Account</td><td>Tài khoản tổ chức có quyền Fabric</td></tr>
+<tr><td>Capacity</td><td>Trial phù hợp hoặc paid Fabric capacity</td></tr>
+<tr><td>Permission</td><td>Workspace create, Lakehouse create, Shortcut và query permissions</td></tr>
+<tr><td>File</td><td><code>sales.csv</code></td></tr>
+<tr><td>Cleanup</td><td>Xóa workspace lab khi xong; paid capacity có thể phát sinh phí</td></tr>
+</tbody></table>
+<h4>Các bước thao tác</h4>
+<p><strong>1. Create workspace.</strong> <code>Workspaces</code> → <code>New workspace</code> → tên <code>DP600<em>LP1</em>Lab</code> → cấu hình capacity phù hợp → <code>Apply</code>.</p>
+<p><strong>2. Create first Lakehouse.</strong> <code>Workspace</code> → <code>New item</code> → <code>Lakehouse</code> → tên <code>salesdata</code> → <code>Create</code>.</p>
+<p><strong>3. Upload CSV.</strong> <code>salesdata</code> → <code>Files</code> → <code>...</code> → <code>Upload</code> → <code>Upload files</code> → chọn <code>sales.csv</code>. Mở preview: file đã nằm dưới <code>Files</code>, chưa có Delta table trong <code>Tables</code>.</p>
+<p><strong>4. Load to Tables.</strong> Menu <code>sales.csv</code> → <code>Load to Tables</code> → <code>New table</code> → <code>sales</code> → xác nhận. Kiểm tra <code>Tables/dbo/sales</code>; xem schema và File view chứa Parquet cùng <code><em>delta</em>log</code>.</p>
+<p>Các cột chính trong file mẫu: <code>SalesOrderNumber</code>, <code>SalesOrderLineNumber</code>, <code>OrderDate</code>, <code>CustomerName</code>, <code>EmailAddress</code>, <code>Item</code>, <code>Quantity</code>, <code>UnitPrice</code>, <code>TaxAmount</code>.</p>
+<p><strong>5. Browse Catalog.</strong> <code>OneLake catalog</code> → <code>Explore</code> → tìm <code>salesdata</code> → xem Workspace, owner, updated time, schema, SQL endpoint/connection string theo giao diện.</p>
+<p><strong>6. Create second Lakehouse.</strong> <code>Workspace</code> → <code>New item</code> → <code>Lakehouse</code> → <code>analytics</code>. Trong <code>Tables/dbo</code> → <code>...</code> → <code>New table shortcut</code> → OneLake → workspace chứa <code>salesdata</code> → chọn Passthrough identity nếu phù hợp → bảng <code>sales</code> → Create.</p>
+<p><strong>Kết quả:</strong> <code>analytics.dbo.sales</code> là Shortcut tới <code>salesdata.dbo.sales</code>. Lab mặc định dùng hai Lakehouse cùng workspace. Mở rộng cross-workspace bằng cách đặt Lakehouse <code>analytics</code> ở workspace thứ hai và kiểm tra quyền tương ứng.</p>
+<p><strong>7. Query SQL analytics endpoint.</strong> Tại <code>analytics</code> → <code>SQL analytics endpoint</code> → <code>New SQL query</code>:</p>
+<pre><code class="language-sql">SELECT
+    Item,
+    SUM(Quantity * UnitPrice) AS TotalRevenue,
+    SUM(Quantity) AS TotalQuantity
+FROM dbo.sales
+GROUP BY Item
+ORDER BY TotalRevenue DESC;</code></pre>
+<p>Kết quả: một dòng mỗi Item, số lượng và doanh thu <code>Quantity * UnitPrice</code> giảm dần. Công thức không tự tính chiết khấu, hoàn trả hoặc thuế.</p>
+<p>Truy vấn Top 5 khách hàng:</p>
+<pre><code class="language-sql">SELECT TOP 5
+    CustomerName,
+    SUM(Quantity) AS TotalQuantity,
+    SUM(Quantity * UnitPrice) AS TotalRevenue
+FROM dbo.sales
+GROUP BY CustomerName
+ORDER BY TotalRevenue DESC;</code></pre>
+<p><strong>8. Create semantic model.</strong> <code>SQL analytics endpoint</code> → <code>New semantic model</code> → bảng <code>sales</code> → tên <code>Sales Analysis</code> → Create → <code>Explore this data</code> → Item và Quantity → biểu đồ Bar/Column. Kiểm tra aggregation là SUM.</p>
+<p><strong>9. Optional Copilot.</strong> Nếu có quyền/capacity hỗ trợ, hỏi Copilot để tạo SQL như doanh thu theo tháng, sau đó kiểm tra schema và phạm vi thời gian. Trial không mặc nhiên có Copilot.</p>
+<p><strong>10. Cleanup.</strong> <code>Workspace settings</code> → <code>General</code> → <code>Remove this workspace</code> nếu chỉ dùng riêng cho lab và không chứa tài sản production.</p>
+<h4>Kết quả đúng, lỗi và giải pháp</h4>
+<table><thead><tr><th>Lỗi</th><th>Kiểm tra</th></tr></thead><tbody>
+<tr><td>Không tạo Lakehouse</td><td>Workspace capacity, tenant settings, permissions</td></tr>
+<tr><td>CSV đã upload nhưng SQL không thấy</td><td>Chưa <code>Load to Tables</code>; CSV nằm ở Files</td></tr>
+<tr><td>Shortcut không truy cập dữ liệu</td><td>Source/target permissions và identity mode</td></tr>
+<tr><td><code>Invalid object name</code></td><td>Tên schema/bảng hoặc SQL endpoint metadata sync</td></tr>
+<tr><td>Model không xuất hiện</td><td>Quyền hoặc quá trình tạo thất bại</td></tr>
+<tr><td>Copilot unavailable</td><td>Licensing/capacity/tenant settings</td></tr>
+</tbody></table>
+<p><strong>5 ý luyện tay:</strong> Upload Files ≠ Delta table; Catalog tìm được item; Shortcut đọc nguồn không copy; SQL endpoint đọc Delta; model là lớp phân tích riêng.</p>
+<h3>Unit 6 — Knowledge check</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm tra 5 câu về OneLake, SQL analytics endpoint, streaming discovery, Shortcut và data discovery cho AI.</p>
+<p><strong>Câu 1. Lợi ích OneLake cấp tenant?</strong> A. Tự sao lưu mọi dữ liệu nhiều region; B. Fabric workloads chia sẻ lớp lưu trữ, giảm silos; C. Workspace phải cấu hình data lake riêng. <strong>Đáp án B.</strong> A không phải lợi ích được hỏi; C trái kiến trúc unified storage. <em>Mẹo:</em> Tenant-wide unified storage. <em>Liên hệ:</em> Unit 2.</p>
+<p><strong>Câu 2. Đọc bảng Lakehouse nhóm khác bằng T-SQL, không copy?</strong> A. Tạo Shortcut sang Lakehouse mới; B. SQL analytics endpoint của Lakehouse nguồn; C. Copy bảng. <strong>Đáp án B.</strong> Đây là read-only T-SQL trực tiếp; A có giá trị khi cần đưa bảng vào Lakehouse khác để kết hợp nhưng không bắt buộc; C tạo copy không cần thiết. <em>Liên hệ:</em> Unit 3.</p>
+<p><strong>Câu 3. Nơi tìm Eventstreams và KQL tables?</strong> A. OneLake catalog; B. Real-Time hub; C. Data Factory Pipelines. <strong>Đáp án B.</strong> A thiên về khám phá assets, C là orchestration. <em>Liên hệ:</em> Unit 4.</p>
+<p><strong>Câu 4. Vai trò của OneLake Shortcut?</strong> A. Nén dữ liệu; B. Tham chiếu dữ liệu nơi khác mà không cần copy; C. Tự tạo pipeline đồng bộ copy. <strong>Đáp án B.</strong> A, C không mô tả Shortcut. <em>Liên hệ:</em> Unit 2–3.</p>
+<p><strong>Câu 5. Dữ liệu được catalog tốt giúp AI thế nào?</strong> A. Tự training ML models; B. Copilot/Fabric IQ và công cụ được hỗ trợ tìm nguồn và ngữ cảnh liên quan; C. Tự động chặn mọi truy cập AI trái phép. <strong>Đáp án B.</strong> Catalog không tự training models, cũng không thay thế security. <em>Liên hệ:</em> Unit 2–3.</p>
+<h3>Unit 7 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết discovery, evaluation và connection với dữ liệu lưu trữ/streaming trong Fabric.</p>
+<h4>Nội dung chính trong Unit</h4>
+<ul>
+<li>OneLake cung cấp logical storage thống nhất và hỗ trợ chia sẻ/tái sử dụng dữ liệu.</li>
+<li>Catalog giúp đánh giá metadata, ownership, endorsement và khả năng truy cập.</li>
+<li>Connect directly khi source/model đã phù hợp; Shortcut khi cần đưa tham chiếu đến dữ liệu nguồn vào Lakehouse đích.</li>
+<li>SQL analytics endpoint dùng T-SQL read-only cho Delta tables; Real-Time hub giúp khám phá Eventstreams và KQL tables.</li>
+</ul>
+<p><strong>Learn more:</strong> https://learn.microsoft.com/en-us/fabric/governance/onelake-catalog-overview ; https://learn.microsoft.com/en-us/fabric/onelake/onelake-shortcuts ; https://learn.microsoft.com/en-us/fabric/real-time-hub/get-started-real-time-hub</p>
+<h3>Coverage check — Module 2</h3>
+<ul>
+<li><strong>Đủ 7/7 Unit:</strong> Introduction, Understand OneLake, Browse/connect, Real-Time hub, Exercise, Knowledge check, Summary.</li>
+<li><strong>Headings xác định:</strong> Unit 2 có 3 heading, Unit 3 có 2, Unit 4 có 3; nội dung ingest/reference, endorsements, authentication/permissions và streaming đều được giảng.</li>
+<li><strong>Exercise:</strong> Bao gồm tạo workspace, hai Lakehouse, CSV, Load to Tables, Catalog, Shortcut, truy vấn T-SQL, semantic model, optional Copilot và cleanup. Chưa chạy trên tenant.</li>
+<li><strong>Assessment:</strong> 5/5 câu, có đáp án/giải thích/phân biệt nhiễu.</li>
+<li><strong>Nội dung rút gọn:</strong> Lặp lại kiến trúc OneLake đã học M1 được giảm; chưa đi sâu hiệu năng Shortcut, KQL tuning hay chi tiết AI agent.</li>
+<li><strong>Security/Governance/Licensing/AI:</strong> Đã nêu permission ở source/target, endorsements, sensitivity, capacity/Trial và khả năng tái sử dụng dữ liệu cho AI.</li>
+<li><strong>Bẫy thi:</strong> SQL endpoint vs Shortcut; Mirroring vs Pipeline; Certified vs Promoted vs Master data; Real-Time hub vs OneLake catalog.</li>
+</ul>
+<p>---</p>

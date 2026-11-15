@@ -1,0 +1,353 @@
+<h2>Module 5 — Get started with Real-Time Intelligence in Microsoft Fabric</h2>
+<p><strong>Thứ tự:</strong> LP1, Module 5/5. <strong>Số Unit:</strong> 10. <strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên chính thức</th><th>Heading/subheading</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Bài toán real-time vs batch</td></tr>
+<tr><td>2</td><td>What is real-time data analytics?</td><td>Understand events and streams; Components of real-time analytics solutions; Use real-time analytics</td></tr>
+<tr><td>3</td><td>Real-Time Intelligence in Microsoft Fabric</td><td>Use cases; Components; Eventstream; Eventhouse; KQL Queryset; Real-Time Dashboard; Activator; Real-Time hub</td></tr>
+<tr><td>4</td><td>Ingest and transform real-time data</td><td>Eventstreams for ingestion/transformation; Data sources; Event transformations; Data destinations; Direct ingestion to KQL database; Update policies</td></tr>
+<tr><td>5</td><td>Store and query real-time data</td><td>Power of KQL; Syntax; Management commands; SQL subset; Copilot</td></tr>
+<tr><td>6</td><td>Visualize real-time data</td><td>Create Real-Time Dashboard; Visualize with Power BI</td></tr>
+<tr><td>7</td><td>Automate actions</td><td>Activator key concepts; Use cases</td></tr>
+<tr><td>8</td><td>Exercise – Get started with Real-Time Intelligence in Microsoft Fabric</td><td>Workspace; Eventstream; Eventhouse; KQL; Dashboard; Activator Alert; Cleanup</td></tr>
+<tr><td>9</td><td>Module assessment</td><td>3 câu</td></tr>
+<tr><td>10</td><td>Summary</td><td>Tổng kết Real-Time Intelligence</td></tr>
+</tbody></table>
+<p><strong>Learning objectives:</strong> Hiểu Event/Stream và nhu cầu phân tích thời gian thực; ingest/transform/route với Eventstream; lưu trữ và query Eventhouse/KQL; trực quan với Dashboard; tự động phản ứng qua Activator. Bài thực hành dùng Stock market sample của Fabric.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tại sao phân tích theo batch không đáp ứng những quyết định vận hành cần phản ứng ngay khi sự kiện phát sinh.</p>
+<h4>Nội dung chính trong Unit</h4>
+<p>Một công ty vận chuyển có GPS, scans kiện hàng, trạng thái giao hàng và phản hồi khách hàng. Nếu pipeline chỉ chạy cuối ngày, một xe gặp sự cố lúc 9:00 có thể không được báo cáo tới quản lý cho tới ngày hôm sau. Dữ liệu lịch sử có thể đúng nhưng ra quyết định đã muộn.</p>
+<p><strong>Batch Analytics:</strong> gom và xử lý dữ liệu theo đợt. Phù hợp báo cáo định kỳ, không cần phản ứng tức thì. <strong>Real-Time Analytics:</strong> nhận và xử lý dữ liệu liên tục để phát hiện tình trạng đang diễn ra; phù hợp với logistics, monitoring, fraud và operational control.</p>
+<pre><code class="language-mermaid">flowchart TB
+  A[Event xảy ra] --&gt; B[Eventstream ingestion]
+  B --&gt; C[Store / Analyze]
+  C --&gt; D[Dashboard]
+  C --&gt; E[Automated alert/action]</code></pre>
+<p>Real-time không có nghĩa độ trễ bằng 0; độ trễ tồn tại ở network, ingest, processing, query, trigger và delivery. Các hệ thống gọi là near real-time khi có thời gian xử lý thấp nhưng không tức thì tuyệt đối.</p>
+<h3>Unit 2 — What is real-time data analytics?</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt Event và Stream; hiểu năm thành phần của giải pháp real-time và giá trị nghiệp vụ.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Understand events and streams</h5>
+<p><strong>Event</strong> là một bản ghi mô tả sự kiện tại một thời điểm. Ví dụ:</p>
+<pre><code class="language-json">{
+  &quot;machineId&quot;: &quot;M001&quot;,
+  &quot;timestamp&quot;: &quot;2026-11-15T09:00:00Z&quot;,
+  &quot;temperature&quot;: 85.5,
+  &quot;status&quot;: &quot;Warning&quot;
+}</code></pre>
+<p>Các hệ thống khác có Event như khách thêm sản phẩm vào giỏ, app phát lỗi, giao dịch thanh toán, xe thay đổi GPS, hàng được scan ở kho. Event không nhất thiết là error.</p>
+<p><strong>Stream</strong> là luồng nhiều Events liên tục: cảm biến M001 phát nhiệt độ 76.2°C lúc 09:00:00, 79.4°C lúc 09:00:05, 83.1°C lúc 09:00:10, 91.5°C lúc 09:00:15. Hệ thống streaming có thể phát hiện ngưỡng 90°C ngay khi thấy giá trị tương ứng.</p>
+<p>Lưu ý <strong>Event time</strong> (lúc sự kiện xảy ra) có thể khác <strong>Ingestion/Processing time</strong> (lúc dịch vụ nhận/xử lý). Sự kiện đôi khi đến trễ hoặc sai thứ tự, nên production analytics cần chọn cách xử lý timestamp phù hợp.</p>
+<h5>Components of real-time analytics solutions — 5 thành phần</h5>
+<table><thead><tr><th>Thành phần</th><th>Trách nhiệm</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Real-time ingestion</td><td>Nhận dữ liệu liên tục</td><td>Azure Event Hubs / Kafka / IoT Hub</td></tr>
+<tr><td>Stream processing</td><td>Filter, aggregate, join, detect patterns</td><td>Chỉ giữ Temperature &gt; 80</td></tr>
+<tr><td>Low-latency storage</td><td>Lưu để query events nhanh</td><td>Eventhouse / KQL database</td></tr>
+<tr><td>Interactive dashboard</td><td>Hiển thị thông tin cập nhật</td><td>Nhiệt độ, lỗi trong 5 phút</td></tr>
+<tr><td>Automated decisions/actions</td><td>Phản ứng theo điều kiện</td><td>Email/Flow khi quá nhiệt</td></tr>
+</tbody></table>
+<p><strong>Ví dụ:</strong> Filter Events <code>Temperature&gt;80</code>, nhóm theo MachineId và tính trung bình trong rolling window, ghi KQL table, hiển thị dashboard và cảnh báo nếu vượt ngưỡng. Tạo dashboard không đồng nghĩa tự động trigger Alert.</p>
+<h5>Use real-time analytics — 4 lợi ích</h5>
+<ol>
+<li><strong>Respond immediately:</strong> Hành động nhanh trước vấn đề/giao dịch bất thường.</li>
+<li><strong>Optimize operations:</strong> Cân đối nhân lực, điều phối vận tải, tối ưu tài nguyên.</li>
+<li><strong>Enhance customer experiences:</strong> Thông báo tình trạng đơn hàng và thay đổi kịp thời.</li>
+<li><strong>Prevent issues:</strong> Cảnh báo sớm thiết bị có nguy cơ hư hỏng hoặc hệ thống đang suy giảm.</li>
+</ol>
+<p><strong>Exam note:</strong> Event là record; Stream là chuỗi records. Real-time analytics bao gồm ingest + process + store + visualize + act, không chỉ Dashboard.</p>
+<h3>Unit 3 — Real-Time Intelligence in Microsoft Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Các công cụ Eventstream, Eventhouse, KQL Queryset, Real-Time Dashboard, Activator và Real-Time hub; khi nào chọn từng công cụ.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Explore Real-Time Intelligence use cases</h5>
+<table><thead><tr><th>Use case</th><th>Events</th><th>Hành động/value</th></tr></thead><tbody>
+<tr><td>Delivery tracking</td><td>GPS, delivery status</td><td>Phát hiện giao trễ</td></tr>
+<tr><td>Equipment monitoring</td><td>Sensor nhiệt độ/áp suất</td><td>Cảnh báo hư hỏng</td></tr>
+<tr><td>Fraud detection</td><td>Payment transaction</td><td>Nhận diện bất thường</td></tr>
+<tr><td>Website performance</td><td>Load times, page events</td><td>Xác định trải nghiệm chậm</td></tr>
+<tr><td>System health</td><td>App exceptions/logs</td><td>Cảnh báo service degradation</td></tr>
+</tbody></table>
+<h5>Real-Time Intelligence components</h5>
+<p><strong>Eventstream:</strong> Ingest, filter, transform và route dữ liệu đang chuyển động. Ví dụ <code>Event Hubs → Eventstream → Eventhouse</code>. Eventstream không phải kho lưu lịch sử chính.</p>
+<p><strong>Eventhouse:</strong> Môi trường lưu/truy vấn event, log và time-series; có thể có nhiều KQL databases và tables như <code>MachineTemperature</code>, <code>MachineErrors</code>, <code>ProductionStatus</code>.</p>
+<p><strong>KQL Queryset:</strong> Nơi viết, lưu và chia sẻ truy vấn Kusto Query Language.</p>
+<p><strong>Real-Time Dashboard:</strong> Các Tiles từ KQL queries, có thể tự làm mới và filter tương tác.</p>
+<p><strong>Activator:</strong> Đánh giá Events hoặc KQL query results theo Rules, gửi email, kích hoạt Power Automate, Pipelines/Notebooks khi được hỗ trợ. Nó không bắt buộc đọc nguồn từ Dashboard.</p>
+<p><strong>Real-Time hub:</strong> Điểm khám phá các streaming sources và KQL tables mà người dùng có quyền; không phải Eventhouse. Các nhóm nguồn được nêu gồm Data sources, Azure sources, Fabric events và Azure events.</p>
+<pre><code class="language-mermaid">flowchart TB
+  A[IoT / Kafka / CDC / Apps] --&gt; E[Eventstream]
+  E --&gt; H[Eventhouse / KQL Database]
+  H --&gt; Q[KQL Queryset]
+  Q --&gt; D[Real-Time Dashboard]
+  H --&gt; AC[Activator]
+  E --&gt; AC
+  AC --&gt; R[Email / Power Automate / Pipeline]</code></pre>
+<p><strong>Ví dụ nhà máy 500 thiết bị:</strong> mỗi thiết bị gửi Events 10 giây/lần → Eventstream ingest → Eventhouse lưu trữ → KQL tính trung bình/nhiệt độ cao → Dashboard hiển thị → Activator gửi thông báo quá ngưỡng. Nếu cần batch historical analysis và doanh thu, có thể route thêm dữ liệu vào Lakehouse; không phải mọi giải pháp bắt buộc route nhiều đích.</p>
+<table><thead><tr><th>Yêu cầu</th><th>Component</th></tr></thead><tbody>
+<tr><td>Discover streaming source</td><td>Real-Time hub</td></tr>
+<tr><td>Ingest/transform/route events</td><td>Eventstream</td></tr>
+<tr><td>Store logs/time-series</td><td>Eventhouse</td></tr>
+<tr><td>Query real-time data</td><td>KQL Queryset</td></tr>
+<tr><td>Show monitoring visuals</td><td>Real-Time Dashboard</td></tr>
+<tr><td>Trigger rule-based action</td><td>Activator</td></tr>
+</tbody></table>
+<h3>Unit 4 — Ingest and transform real-time data</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng Eventstreams và Direct Ingestion; phân biệt eventstream transformations với KQL update policies.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Eventstreams for data ingestion and transformation</h5>
+<p>Mô hình <strong>Source → Optional Transformation → Destination</strong>. Ví dụ sensor gửi <code>{sensorId, temperature, factory, timestamp}</code>; chỉ lọc <code>Temperature&gt;80</code> rồi route vào một destination. Nếu cần lưu raw dữ liệu để kiểm toán, có thể route raw đến đích riêng thay vì loại bỏ ngay từ source.</p>
+<h5>Data sources</h5>
+<table><thead><tr><th>Nhóm nguồn</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Microsoft streaming services</td><td>Azure Event Hubs, Azure IoT Hub, Azure Service Bus</td></tr>
+<tr><td>Database change events</td><td>CDC từ source database được hỗ trợ</td></tr>
+<tr><td>Azure events</td><td>Blob Storage events</td></tr>
+<tr><td>Fabric events</td><td>OneLake, item/job events được hỗ trợ</td></tr>
+<tr><td>External</td><td>Apache Kafka, Google Cloud Pub/Sub, MQTT trong trạng thái hỗ trợ tương ứng</td></tr>
+</tbody></table>
+<p><strong>CDC (Change Data Capture)</strong> ghi nhận inserts/updates/deletes hoặc thay đổi dữ liệu trong nguồn, khác với một full refresh batch định kỳ. Không phải mọi nguồn CDC đều hỗ trợ cùng cơ chế và quyền.</p>
+<h5>Event transformations — các nhóm chức năng chính thức</h5>
+<ol>
+<li><strong>SQL code:</strong> SQL transformations được Eventstream hỗ trợ, không phải một stored procedure T-SQL Warehouse.</li>
+<li><strong>Filter:</strong> Giữ những Events thỏa điều kiện, như Temp&gt;80.</li>
+<li><strong>Manage fields:</strong> Chọn/bỏ/đổi tên fields, ví dụ <code>temp</code> → <code>Temperature</code>.</li>
+<li><strong>Aggregate:</strong> SUM, COUNT, AVG trong windows/logic hỗ trợ.</li>
+<li><strong>Group by:</strong> Tổng hợp theo MachineId/Region.</li>
+<li><strong>Expand:</strong> Mở rộng nested structures, đặc biệt JSON payload.</li>
+<li><strong>Join:</strong> Kết hợp streams/reference data phù hợp với các operator hỗ trợ.</li>
+</ol>
+<p><strong>Time windows</strong> bổ trợ quan trọng: Tumbling windows không chồng lấp, Hopping windows có thể chồng lấp, Sliding windows theo dòng thời gian/sự kiện. Ví dụ tính AVG(Temp) theo mỗi cửa sổ 5 phút; nếu tính trung bình toàn lịch sử sẽ không phản ánh trạng thái gần đây. Chỉ coi đây là kiến thức giải thích thêm, không phải heading riêng của Unit.</p>
+<h5>Data destinations</h5>
+<table><thead><tr><th>Destination</th><th>Vai trò</th></tr></thead><tbody>
+<tr><td>KQL database/Eventhouse</td><td>Lưu để phân tích KQL</td></tr>
+<tr><td>Lakehouse</td><td>Lưu dữ liệu phục vụ BI/data engineering</td></tr>
+<tr><td>Derived stream</td><td>Tạo luồng được xử lý cho consumer khác</td></tr>
+<tr><td>Activator</td><td>Rule-based action/alerts</td></tr>
+<tr><td>Custom endpoint</td><td>Tiêu thụ Events từ endpoint phù hợp</td></tr>
+</tbody></table>
+<p>Eventstream có thể route đến nhiều destination, theo khả năng hỗ trợ của item và cách cấu hình.</p>
+<h5>Direct ingestion to a KQL database</h5>
+<p>Không phải mọi nguồn đều cần Eventstream. <code>Eventhouse</code> → <code>KQL database</code> → <code>Get data</code> có thể ingest từ local file, Azure Storage, S3, Event Hubs, OneLake và nguồn hỗ trợ khác. Nếu có sẵn một file logs muốn query KQL, direct ingestion có thể đơn giản hơn tạo Eventstream riêng.</p>
+<h5>Data transformation with update policies</h5>
+<p><strong>Update Policy</strong> chạy logic KQL đã cấu hình khi source KQL table nhận dữ liệu mới, có thể ghi bảng processed riêng:</p>
+<pre><code class="language-text">Eventstream → RawMachineEvents → Update Policy → ProcessedMachineEvents</code></pre>
+<p><strong>Eventstream transformation</strong> chạy trước destination, phù hợp lọc/route on-the-fly. <strong>Update Policy</strong> chạy trong KQL database theo ingestion của bảng nguồn. Ví dụ giữ raw events nhưng tự tạo parsed/validated KQL table là use case của Update Policy.</p>
+<h4>Exam notes</h4>
+<p><code>Before destination</code> → Eventstream Transformation; <code>After ingestion to KQL table</code> → Update Policy; <code>Read raw file into KQL</code> → Direct Ingestion; <code>Store real-time events</code> → Eventhouse.</p>
+<h3>Unit 5 — Store and query real-time data</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng Eventhouse/KQL databases và query bằng Kusto Query Language; hiểu management commands, Materialized Views, Stored Functions, SQL subset và Copilot.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Eventhouse và KQL database</h5>
+<p>Eventhouse tổ chức KQL databases. KQL database chứa KQL tables, stored functions, materialized views, shortcuts và các đối tượng hỗ trợ. KQL Queryset là nơi chạy/saved query chứ không phải một bảng dữ liệu.</p>
+<h5>Understand the power of KQL</h5>
+<p>Kusto Query Language (KQL) chuyên phục vụ event/time-series/log analytics. Có mặt trong Azure Data Explorer, Azure Monitor Log Analytics, Microsoft Sentinel và Fabric Eventhouse. Phù hợp truy vấn cắt theo thời gian, filter và aggregate khối lượng events lớn.</p>
+<h5>Get familiar with KQL syntax</h5>
+<p>KQL sử dụng pipeline operators nối bằng dấu <code>|</code>. Đọc từ bảng, đưa tập kết quả qua từng bước:</p>
+<pre><code class="language-kusto">stock
+| take 10</code></pre>
+<p><code>take 10</code> không mặc định là 10 records mới nhất. Nếu muốn thứ tự, phải <code>sort</code>/<code>order by</code> trường thời gian.</p>
+<p><strong>Where:</strong></p>
+<pre><code class="language-kusto">MachineEvents
+| where Temperature &gt; 80</code></pre>
+<p><strong>Project:</strong></p>
+<pre><code class="language-kusto">MachineEvents
+| project MachineId, Timestamp, Temperature</code></pre>
+<p><strong>Summarize:</strong></p>
+<pre><code class="language-kusto">MachineEvents
+| summarize AvgTemp = avg(Temperature) by MachineId</code></pre>
+<p><strong>Ago(time filter):</strong></p>
+<pre><code class="language-kusto">MachineEvents
+| where Timestamp &gt; ago(1h)</code></pre>
+<p><strong>Kết hợp:</strong></p>
+<pre><code class="language-kusto">MachineEvents
+| where Timestamp &gt; ago(1h)
+| where Temperature &gt; 80
+| summarize
+    AvgTemp = avg(Temperature),
+    MaxTemp = max(Temperature),
+    EventCount = count()
+    by MachineId
+| order by AvgTemp desc</code></pre>
+<p><strong>Bẫy:</strong> Kết quả <code>AvgTemp</code> chỉ tính từ sự kiện vượt 80, không phải trung bình toàn bộ nhiệt độ một giờ gần nhất. Filter trước aggregate làm thay đổi ý nghĩa nghiệp vụ.</p>
+<p><strong>Query cổ phiếu từ lab/Microsoft Learn:</strong></p>
+<pre><code class="language-kusto">stock
+| where todatetime([&quot;time&quot;]) &gt; ago(5m)
+| summarize avgPrice = avg(todouble(bidPrice)) by symbol
+| project symbol, avgPrice</code></pre>
+<p><code>todatetime</code> chuyển thời gian; <code>ago(5m)</code> là 5 phút; <code>todouble</code>/<code>todecimal</code> chuyển numeric; <code>summarize by symbol</code> nhóm theo mã cổ phiếu; <code>project</code> chọn columns.</p>
+<p>Ví dụ 2 events ABC có bidPrice 100 và 110, AVG =105; XYZ có 200 và 220, AVG =210 nếu đều trong filter 5 phút.</p>
+<h5>Automate data processing with management commands</h5>
+<p><strong>Update Policies:</strong> Transform khi KQL table nhận dữ liệu, thường từ raw → processed table.</p>
+<p><strong>Materialized Views:</strong> Lưu kết quả tổng hợp được materialize/duy trì; hữu ích cho những truy vấn lặp đi lặp lại trên dữ liệu lớn. Khác View thông thường chỉ lưu query definition. Cần hiểu tradeoff compute/storage và phạm vi query hỗ trợ.</p>
+<p><strong>Stored Functions:</strong> Lưu logic KQL có thể tái sử dụng trong queries. Khác Stored Procedure T-SQL dùng trong Warehouse.</p>
+<h5>Other query options — Using SQL</h5>
+<p>KQL database hỗ trợ một <strong>subset của T-SQL</strong>:</p>
+<pre><code class="language-sql">SELECT TOP 10 * FROM stock;</code></pre>
+<p>Nhưng Eventhouse không vì thế mà trở thành Fabric Warehouse hỗ trợ toàn bộ transactional DML/DDL. KQL vẫn là ngôn ngữ chính để phân tích events/time series.</p>
+<h5>Use Copilot</h5>
+<p>Copilot for Real-Time Intelligence có thể hỗ trợ sinh/gợi ý KQL từ ngôn ngữ tự nhiên trong môi trường đủ điều kiện. Ví dụ <em>show top 10 machines with highest average temperature in last hour</em>. Kiểm tra bảng, timestamp, filter, aggregate và business meaning trước khi sử dụng query. Licensing/capacity/permissions có thể giới hạn Copilot.</p>
+<h4>Exam notes</h4>
+<p><code>Time-series query language</code> → KQL; <code>Saved queries</code> → KQL Queryset; <code>Precomputed aggregation</code> → Materialized View; <code>Reusable KQL logic</code> → Stored Function; <code>Transform ingested records</code> → Update Policy.</p>
+<h3>Unit 6 — Visualize real-time data</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo Real-Time Dashboard và phân biệt với Power BI.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Create a Real-Time Dashboard</h5>
+<p>Dashboard chứa nhiều <strong>Tiles</strong>, mỗi Tile dùng KQL query. Ví dụ: Active Machines, Avg Temperature, Critical Alerts và Temperature Trend. Có thể tạo từ KQL Queryset bằng <code>Save to dashboard</code> hoặc tạo Dashboard trong workspace.</p>
+<p>Ví dụ một Tile:</p>
+<pre><code class="language-kusto">MachineEvents
+| where Timestamp &gt; ago(30m)
+| summarize ErrorCount = count() by MachineId
+| order by ErrorCount desc</code></pre>
+<p>Có thể đổi loại visual từ Table sang Column/Line chart, filter theo Region/Plant hoặc cấu hình <strong>Live refresh</strong>. Tần suất Dashboard refresh (ví dụ 10 giây) không phải SLA ingest 10 giây; query refresh và việc nhận events là hai cơ chế riêng, đều có thể tiêu thụ compute.</p>
+<h5>Visualize real-time data with Power BI</h5>
+<p>Power BI phù hợp khi cần semantic model, DAX, relationships, drilldown và dimensional analytics kết hợp nhiều nguồn. Real-Time Dashboard phù hợp operational monitoring dựa KQL query/Tiles. Hai công cụ có thể kết hợp cùng giải pháp.</p>
+<table><thead><tr><th>Nhu cầu</th><th>Real-Time Dashboard</th><th>Power BI</th></tr></thead><tbody>
+<tr><td>Monitor live events</td><td>Rất phù hợp</td><td>Có thể theo kiến trúc phù hợp</td></tr>
+<tr><td>KQL tiles</td><td>Native</td><td>Qua kết nối/model phù hợp</td></tr>
+<tr><td>Semantic Model/DAX</td><td>Không phải trọng tâm</td><td>Trọng tâm</td></tr>
+<tr><td>Complex BI over many business dimensions</td><td>Hạn chế hơn</td><td>Thường phù hợp hơn</td></tr>
+</tbody></table>
+<p><strong>Ví dụ:</strong> Trung tâm vận hành quan sát 500 thiết bị liên tục trên Real-Time Dashboard; Giám đốc phân tích chi phí, sản lượng, sản phẩm, downtime theo quý bằng Power BI.</p>
+<h4>Exam notes</h4>
+<p><code>Tile-based KQL monitoring with refresh</code> → Real-Time Dashboard; <code>DAX and semantic model</code> → Power BI.</p>
+<h3>Unit 7 — Automate actions</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thiết kế Rules trong Activator bằng Events, Objects, Properties và actions để phản ứng tự động với data conditions.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Understand Activator key concepts</h5>
+<table><thead><tr><th>Concept</th><th>Giải thích</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Event</td><td>Bản ghi sự kiện</td><td>M001 có Temperature=91.5 lúc 09:00</td></tr>
+<tr><td>Object</td><td>Thực thể đang theo dõi</td><td>Machine M001</td></tr>
+<tr><td>Property</td><td>Trạng thái/measurement của Object</td><td>Temperature, Status, Pressure</td></tr>
+<tr><td>Rule</td><td>Điều kiện và hành động</td><td>Temperature&gt;90 → Send email</td></tr>
+</tbody></table>
+<pre><code class="language-mermaid">flowchart TB
+  E[Event: Machine temperature reading] --&gt; O[Object: Machine M001]
+  O --&gt; P[Property: Temperature 91.5]
+  P --&gt; R{Rule: Temperature &gt; 90?}
+  R --&gt;|Yes| A[Action: Email / Workflow]
+  R --&gt;|No| N[Continue monitoring]</code></pre>
+<h5>Use cases for Activator</h5>
+<p>Các tình huống được bài học giới thiệu: inventory, customer engagement, resource allocation, marketing actions, perishable-goods temperature, app experience, orders không cập nhật, tài khoản vượt ngưỡng, pipeline failures.</p>
+<p><strong>Ví dụ order không cập nhật:</strong> <code>OrderId SO1001</code>, Status <code>InTransit</code>, LastUpdated <code>08:00</code>. Nếu đến <code>10:00</code> không có sự kiện mới, Rule có thể phát cảnh báo theo logic time-based condition. Đây là kiểm tra sự <strong>vắng mặt</strong> của update, khác với điều kiện một số đo vượt threshold.</p>
+<p><strong>Nguồn Rule:</strong> Có thể theo stream events hoặc chạy query-based monitoring theo lịch trên dữ liệu KQL/Realtime Dashboard được hỗ trợ. Query mỗi 5 phút không đồng nghĩa sự kiện được đánh giá ngay khi đến.</p>
+<p><strong>Actions:</strong> Email, Power Automate, Fabric Pipeline/Notebook và các action được hỗ trợ. Với production phải xét throttling, trigger duplicates, quyền kết nối, idempotency, logging và xử lý lỗi.</p>
+<p><strong>Tên cũ/tên mới:</strong> <code>Data Activator</code> là cách gọi trước đây; giáo trình hiện dùng <code>Activator</code>.</p>
+<h4>Exam notes</h4>
+<p><code>Business entity</code> → Object; <code>Measurement</code> → Property; <code>Condition for action</code> → Rule; <code>Send alert or trigger workflow</code> → Activator. Dashboard chỉ quan sát; Activator mới có Rule/Action.</p>
+<h3>Unit 8 — Exercise: Get started with Real-Time Intelligence in Microsoft Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Triển khai luồng Stock market sample → Eventstream → Eventhouse → KQL Queryset → Dashboard → Activator Alert.</p>
+<p><strong>Lab gốc:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/07-real-time-Intelligence.html</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Thành phần</th><th>Giá trị</th></tr></thead><tbody>
+<tr><td>Portal</td><td><code>https://app.fabric.microsoft.com</code></td></tr>
+<tr><td>Account</td><td>Organizational account có quyền dùng Fabric</td></tr>
+<tr><td>Capacity</td><td>Trial/paid Fabric capacity hỗ trợ các items</td></tr>
+<tr><td>Quyền</td><td>Tạo Workspace, Eventstream, Eventhouse, Dashboard, Activator</td></tr>
+<tr><td>Sample</td><td>Stock market sample trong Fabric, không cần external API/CSV</td></tr>
+<tr><td>Query language</td><td>KQL</td></tr>
+<tr><td>Chi phí</td><td>Paid capacity phát sinh chi phí tùy hoạt động; cần cleanup</td></tr>
+</tbody></table>
+<h4>Các bước</h4>
+<p><strong>1. Create workspace:</strong> <code>Workspaces</code> → <code>New workspace</code> → <code>DP600<em>LP1</em>M5_Lab</code> → capacity phù hợp.</p>
+<p><strong>2. Create eventstream:</strong> <code>Real-Time hub</code> → <code>Add data</code> → <code>Stock market sample</code> → Source name <code>stock</code>, Workspace <code>DP600<em>LP1</em>M5_Lab</code>, Eventstream name <code>stock-data</code> → <code>Next</code> → <code>Connect</code> → <code>Open eventstream</code>. Luồng có thể mang tên <code>stock-data-stream</code>. Eventstream đã ingest nhưng chưa có KQL destination.</p>
+<p><strong>3. Create eventhouse:</strong> <code>Create</code> → <code>Real-Time Intelligence</code> → <code>Eventhouse</code> → <code>StockEventhouse</code>. KQL database mặc định cùng tên và KQL Queryset được tạo phù hợp với trải nghiệm portal.</p>
+<p><strong>4. Kết nối destination:</strong> <code>KQL database</code> → <code>Get data</code> → <code>Eventstream</code> → <code>Existing eventstream</code> → New table <code>stock</code>, workspace lab, eventstream <code>stock-data</code>, connection name <code>stock-table</code> → preview schema → Create. Xác nhận stream đang ghi vào KQL table.</p>
+<p><strong>5. KQL Queryset:</strong></p>
+<pre><code class="language-kusto">stock
+| take 100</code></pre>
+<p>Kết quả tối đa 100 records, đủ kiểm tra table và schema. <code>take</code> không có thứ tự thời gian đảm bảo.</p>
+<p>KQL tính average price 5 phút:</p>
+<pre><code class="language-kusto">stock
+| where todatetime([&quot;time&quot;]) &gt; ago(5m)
+| summarize avgPrice = avg(todecimal(bidPrice)) by symbol
+| project symbol, avgPrice</code></pre>
+<p><strong>Kết quả:</strong> mỗi <code>symbol</code> một dòng với avgPrice. Kết quả có thể thay đổi khi dữ liệu mới đến; nếu source không có event trong 5 phút thì kết quả có thể rỗng.</p>
+<p><strong>6. Create Real-Time Dashboard:</strong> Từ Queryset → <code>Save to dashboard</code> → <code>New dashboard</code> → tên <code>Stock Dashboard</code>, tile <code>Average Prices</code>. Mở Dashboard → Editing mode → Edit tile → Visual formatting → Column chart → Apply changes. Tại <code>Manage</code> → <code>Refresh settings</code> → <code>Live refresh</code>, chọn giới hạn refresh 10 seconds; kết quả tile được cập nhật theo cấu hình.</p>
+<p><strong>7. Create Activator alert:</strong> <code>Stock Dashboard</code> → <code>Set alert</code>. Cấu hình:</p>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td>Run query every</td><td>5 minutes</td></tr>
+<tr><td>Check</td><td>On each event grouped by</td></tr>
+<tr><td>Group by</td><td><code>symbol</code></td></tr>
+<tr><td>Value</td><td><code>avgPrice</code></td></tr>
+<tr><td>Condition</td><td>Increases by</td></tr>
+<tr><td>Threshold</td><td><code>100</code></td></tr>
+<tr><td>Action</td><td>Send me an email</td></tr>
+<tr><td>Item</td><td>Create new Activator, ví dụ <code>StockPriceAlerts</code></td></tr>
+</tbody></table>
+<p>Mở Activator → chọn Rule dưới property avgPrice → tab History. Không thấy trigger chưa hẳn là lỗi: có thể điều kiện chưa đạt. <strong>Increases by 100</strong> khác <strong>greater than 100</strong>; Rule query mỗi 5 phút khác event-trigger ngay lập tức.</p>
+<p><strong>8. Cleanup:</strong> <code>Workspace</code> → <code>Workspace settings</code> → <code>General</code> → <code>Remove this workspace</code> nếu là lab workspace và không chứa tài sản cần giữ lại.</p>
+<h4>Kết quả mong đợi và xử lý lỗi</h4>
+<table><thead><tr><th>Lỗi</th><th>Kiểm tra</th></tr></thead><tbody>
+<tr><td>Không có sample Stock market</td><td>Nguồn sample/UI/quyền hiện tại</td></tr>
+<tr><td>Không tạo được Eventhouse</td><td>Capacity, tenant settings, workspace permissions</td></tr>
+<tr><td>KQL table không có records</td><td>Eventstream connection/destination status, thời gian ingest</td></tr>
+<tr><td>Query 5 phút rỗng</td><td>Không có events gần đây, cột timestamp/data type</td></tr>
+<tr><td>Dashboard không đổi</td><td>Live refresh và nguồn events</td></tr>
+<tr><td>Alert không gửi email</td><td>Rule chưa đạt, History, action permission</td></tr>
+<tr><td>Có nhiều cảnh báo</td><td>Rule repetition, cooldown/deduplication và query cadence</td></tr>
+</tbody></table>
+<p><strong>5 ý luyện tay:</strong> Ingest source bằng Eventstream; ghi Eventhouse; KQL <code>where/summarize/project</code>; dashboard từ query; Activator condition + action + History.</p>
+<h3>Unit 9 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Đánh giá lựa chọn Eventstream, KQL và Real-Time Dashboard theo đúng nhiệm vụ.</p>
+<p><strong>Câu 1. Ingest và transform streaming events trong Fabric dùng gì?</strong> A. Eventhouse; B. Eventstream; C. Activator. <strong>Đáp án B.</strong> Eventstream ingest/transform/route; Eventhouse store/query; Activator react. <em>Mẹo:</em> Ingest+Transform+Stream. <em>Liên hệ:</em> Unit 3–4.</p>
+<p><strong>Câu 2. Ngôn ngữ tối ưu cho real-time queries trong Eventhouse?</strong> A. Python; B. SQL; C. KQL. <strong>Đáp án C.</strong> Kusto Query Language được thiết kế cho log/event/time-series, còn SQL chỉ có subset hỗ trợ; Python không phải ngôn ngữ Queryset chính. <em>Liên hệ:</em> Unit 5.</p>
+<p><strong>Câu 3. Thành phần tạo Tiles để trực quan real-time data?</strong> A. Dataflows; B. Real-Time Dashboards; C. Delta tables. <strong>Đáp án B.</strong> Dashboard dùng KQL tiles, trong khi Dataflows transform và Delta tables lưu trữ. <em>Liên hệ:</em> Unit 6.</p>
+<h3>Unit 10 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết toàn bộ pipeline Real-Time Intelligence từ Event đến Action.</p>
+<h4>Nội dung chính trong Unit</h4>
+<table><thead><tr><th>Stage</th><th>Fabric component</th><th>Tác vụ</th></tr></thead><tbody>
+<tr><td>Ingest</td><td>Eventstream</td><td>Nhận dữ liệu liên tục</td></tr>
+<tr><td>Transform</td><td>Eventstream transforms / Update Policies</td><td>Lọc và chuyển đổi</td></tr>
+<tr><td>Store</td><td>Eventhouse/KQL Database</td><td>Lưu Events/Time series</td></tr>
+<tr><td>Analyze</td><td>KQL Queryset</td><td>Truy vấn, tổng hợp</td></tr>
+<tr><td>Visualize</td><td>Real-Time Dashboard/Power BI</td><td>Quan sát và khai thác</td></tr>
+<tr><td>Act</td><td>Activator</td><td>Rules và automated actions</td></tr>
+</tbody></table>
+<p>Không phải giải pháp nào cũng cần dùng toàn bộ thành phần. Chọn theo business problem, latency, source, access rights, governance và chi phí.</p>
+<p><strong>Learn more:</strong> https://learn.microsoft.com/en-us/fabric/real-time-intelligence/</p>
+<h3>Coverage check — Module 5</h3>
+<ul>
+<li><strong>Units:</strong> 10/10; headings Unit 2–7 đã được giảng theo nội dung đã xác định.</li>
+<li><strong>Lab:</strong> 7 nhóm công việc chính + cleanup, có sample data, configuration, KQL, Dashboard refresh, Activator alert, kết quả/lỗi; chưa chạy thực tế.</li>
+<li><strong>Assessment:</strong> 3/3 câu với đúng/sai và mẹo scenario.</li>
+<li><strong>Coverage:</strong> Events/Streams, batch vs real-time, architecture, Real-Time hub, Eventstream sources/transforms/destinations, direct ingestion, Update Policy, Eventhouse/KQL, management concepts, Dashboards, Power BI, Activator, Copilot, security/licensing trong phạm vi module.</li>
+<li><strong>Rút gọn:</strong> Chưa đi vào KQL performance optimization, advanced streaming windows, anomaly algorithms, KQL database permissions chuyên sâu hoặc production-grade alert orchestration.</li>
+<li><strong>Bẫy scenario:</strong> Eventstream vs Eventhouse; KQL Queryset vs Dashboard; Update Policy vs Eventstream transform; Materialized View vs Stored Function; Dashboard vs Activator; Increases by vs Greater than; scheduled query vs event trigger.</li>
+</ul>
+<p>---</p>
+<h2>Kết thúc Learning Path 1 — Tổng hợp tiến độ và trọng tâm</h2>
+<table><thead><tr><th>Module</th><th>Tên</th><th>Units</th><th>Kết quả bài giảng</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction to end-to-end analytics using Microsoft Fabric</td><td>6</td><td>Đã tổng hợp</td></tr>
+<tr><td>2</td><td>Discover and connect to data in OneLake</td><td>7</td><td>Đã tổng hợp</td></tr>
+<tr><td>3</td><td>Get started with lakehouses in Microsoft Fabric</td><td>7</td><td>Đã tổng hợp</td></tr>
+<tr><td>4</td><td>Get started with data warehouses in Microsoft Fabric</td><td>9</td><td>Đã tổng hợp</td></tr>
+<tr><td>5</td><td>Get started with Real-Time Intelligence in Microsoft Fabric</td><td>10</td><td>Đã tổng hợp</td></tr>
+<tr><td><strong>Tổng</strong></td><td><strong>Learning Path 1</strong></td><td><strong>39</strong></td><td><strong>5/5 Module</strong></td></tr>
+</tbody></table>
+<h3>Trọng tâm ôn thi theo mô hình scenario</h3>
+<table><thead><tr><th>Nhóm quyết định</th><th>Chọn khi nào</th></tr></thead><tbody>
+<tr><td>OneLake vs Workspace vs Capacity</td><td>Storage logic chung / tổ chức items / tài nguyên compute</td></tr>
+<tr><td>Catalog vs Real-Time hub</td><td>Tìm data assets / tìm streaming sources</td></tr>
+<tr><td>Shortcut vs Copy vs Clone</td><td>Tham chiếu / nhân bản dữ liệu vật lý / tạo snapshot logic độc lập</td></tr>
+<tr><td>Lakehouse vs Warehouse</td><td>Files + Spark + Delta / transactional SQL analytics</td></tr>
+<tr><td>SQL endpoint vs Query Explorer vs Notebook</td><td>T-SQL read-only Delta / Spark SQL / Spark với Python và code nhiều bước</td></tr>
+<tr><td>Dataflow vs Pipeline</td><td>Low-code transform / orchestration</td></tr>
+<tr><td>Star vs Snowflake</td><td>Mô hình BI ít joins, trực quan / Dimension normalize hơn</td></tr>
+<tr><td>View vs Measure</td><td>Reusable SQL dataset / DAX theo filter context</td></tr>
+<tr><td>Direct Lake vs Import vs DirectQuery</td><td>Đọc Delta qua OneLake / nạp dữ liệu model / query xuống source</td></tr>
+<tr><td>Eventstream vs Eventhouse vs KQL Queryset</td><td>Ingest/transform / lưu dữ liệu / truy vấn</td></tr>
+<tr><td>Real-Time Dashboard vs Activator</td><td>Quan sát / trigger hành động</td></tr>
+<tr><td>RLS vs CLS vs DDM</td><td>Giới hạn rows / columns / masking ở SQL result</td></tr>
+<tr><td>Query insights vs DMVs</td><td>Truy vấn lịch sử / hoạt động hiện tại</td></tr>
+</tbody></table>
+<h3>Lưu ý thực hành và tính toàn vẹn</h3>
+<p>Tài liệu này bao quát <strong>5 Module và 39 Unit đã được giảng trong đoạn chat</strong>, có thể dùng để ôn tập offline. Các link là nguồn Microsoft Learn/MicrosoftLearning tham khảo. Bài lab mới ở trạng thái <strong>hướng dẫn</strong>, chưa có xác nhận thao tác chạy thành công trên tenant thật. Một số UI, license, preview statuses và khả năng hỗ trợ có thể thay đổi về sau; khi thao tác thực tế nên đối chiếu trang sản phẩm chính thức tương ứng.</p>

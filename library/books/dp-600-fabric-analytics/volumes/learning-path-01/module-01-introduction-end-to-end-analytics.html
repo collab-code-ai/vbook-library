@@ -1,0 +1,164 @@
+<h2>DP-600 — Learning Path 1: Explore analytics data stores in Microsoft Fabric</h2>
+<p><strong>Bản tổng hợp bài học đầy đủ theo nội dung đã giảng trong cuộc trò chuyện</strong> <strong>Chương trình:</strong> DP-600T00-A — Implement analytics solutions using Microsoft Fabric <strong>Phạm vi:</strong> 5 Module · 39 Unit <strong>Ngôn ngữ:</strong> Tiếng Việt; giữ tên dịch vụ và thuật ngữ Microsoft bằng tiếng Anh. <strong>Cập nhật tổng hợp:</strong> 15/11/2026.</p>
+<blockquote><p><strong>Ghi chú biên soạn:</strong> Tài liệu này được biên tập lại thành Markdown thuần từ nội dung giảng dạy của đoạn chat, giữ nội dung giải thích, ví dụ, các bảng đối chiếu, kịch bản, lab, câu hỏi đánh giá và Coverage check. Các biểu đồ trực quan trong chat được diễn đạt lại bằng Mermaid/text để có thể đọc trong Markdown. Đây không phải bản chép nguyên văn từng thành phần tương tác trên giao diện chat; các bài lab mô tả <em>kết quả mong đợi</em>, chưa có xác nhận đã chạy trên tenant thực tế.</p></blockquote>
+<h3>Mục lục</h3>
+<ol>
+<li>[Module 1 — Introduction to end-to-end analytics using Microsoft Fabric](#module-1--introduction-to-end-to-end-analytics-using-microsoft-fabric)</li>
+<li>[Module 2 — Discover and connect to data in OneLake](#module-2--discover-and-connect-to-data-in-onelake)</li>
+<li>[Module 3 — Get started with lakehouses in Microsoft Fabric](#module-3--get-started-with-lakehouses-in-microsoft-fabric)</li>
+<li>[Module 4 — Get started with data warehouses in Microsoft Fabric](#module-4--get-started-with-data-warehouses-in-microsoft-fabric)</li>
+<li>[Module 5 — Get started with Real-Time Intelligence in Microsoft Fabric](#module-5--get-started-with-real-time-intelligence-in-microsoft-fabric)</li>
+</ol>
+<p>---</p>
+<h2>Module 1 — Introduction to end-to-end analytics using Microsoft Fabric</h2>
+<p><strong>Thứ tự:</strong> LP1, Module 1/5. <strong>Số Unit:</strong> 6. <strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/subheading</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Không có heading nội bộ</td></tr>
+<tr><td>2</td><td>Explore end-to-end analytics with Microsoft Fabric</td><td>OneLake; Workspaces; Administration and governance</td></tr>
+<tr><td>3</td><td>Explore data teams and Microsoft Fabric</td><td>Traditional roles and challenges; Evolution of collaborative workflows</td></tr>
+<tr><td>4</td><td>Enable and use Microsoft Fabric</td><td>Enable Microsoft Fabric; Create workspaces; Discover data with OneLake catalog; Create items with Fabric workloads; AI capabilities in Microsoft Fabric; Copilot across workloads</td></tr>
+<tr><td>5</td><td>Module assessment</td><td>4 câu</td></tr>
+<tr><td>6</td><td>Summary</td><td>Learn more</td></tr>
+</tbody></table>
+<p><strong>Learning objectives:</strong> Xác định năng lực chính của Fabric; hiểu cách triển khai giải pháp end-to-end analytics; nắm cách cộng tác của các data teams và cách AI/Copilot/Fabric IQ sử dụng dữ liệu được quản trị. Module này không có Exercise chính thức.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Vì sao hệ thống analytics truyền thống gặp vấn đề phân mảnh công cụ và vì sao Fabric chọn kiến trúc SaaS thống nhất.</p>
+<h4>Nội dung chính trong Unit</h4>
+<p><strong>Bài toán truyền thống.</strong> Một tổ chức có thể dùng công cụ riêng cho ingest, transform, storage, governance, phân tích và AI. Điều này dễ tạo ra các bản sao dữ liệu, những pipeline kết nối phức tạp, quản trị quyền rời rạc và định nghĩa KPI không nhất quán. Dữ liệu bán hàng từ Dataverse, tài liệu từ SharePoint, dữ liệu ERP và dữ liệu trong SQL có thể cùng được dùng cho một dashboard nhưng lại phải đi qua nhiều công cụ và quy trình khác nhau.</p>
+<p><strong>Cách Fabric giải quyết.</strong> Microsoft Fabric là nền tảng Software as a Service (SaaS) cho end-to-end analytics: Data Factory, Data Engineering, Data Warehouse, Real-Time Intelligence, Data Science và Power BI có thể phối hợp trong cùng hệ sinh thái. OneLake đóng vai trò lớp lưu trữ logic chung; tổ chức có thể sử dụng lại dữ liệu đã chuẩn hóa cho nhiều workload thay vì sao chép chỉ vì khác engine.</p>
+<pre><code class="language-mermaid">flowchart TB
+    A[Dataverse / SharePoint / SQL / ERP / Streaming] --&gt; B[Ingest và Transform: Data Factory / Data Engineering]
+    B --&gt; C[OneLake: Unified Storage]
+    C --&gt; D[Lakehouse / Warehouse / Eventhouse]
+    D --&gt; E[Semantic Model và Power BI]
+    D --&gt; F[AI: Copilot, data agents, Fabric IQ]</code></pre>
+<p><strong>Ví dụ:</strong> Doanh nghiệp ingest dữ liệu đơn hàng và sản phẩm, chuẩn hóa thành các bảng phân tích. BI team xây semantic model về Revenue/Profit, trong khi nhóm AI sử dụng metadata và dữ liệu có quyền để trả lời câu hỏi. Điểm cốt lõi không phải mọi workload đều dùng một pipeline giống nhau, mà dữ liệu có thể chia sẻ và tái sử dụng dưới một mô hình quản trị thống nhất.</p>
+<h3>Unit 2 — Explore end-to-end analytics with Microsoft Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu lớp kiến trúc OneLake, cách Fabric tổ chức tài sản bằng Workspace và những cơ chế quản trị/governance tập trung.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>OneLake</h5>
+<p>OneLake là kiến trúc lưu trữ logic thống nhất ở cấp tenant, xây trên công nghệ Azure Data Lake Storage Gen2. Nó hỗ trợ dữ liệu dưới nhiều định dạng và cho các analytics engines cùng làm việc với dữ liệu được tổ chức trong Fabric.</p>
+<ul>
+<li><strong>Parquet</strong> là định dạng file dạng cột, hiệu quả khi chỉ cần quét các cột nhất định.</li>
+<li><strong>Delta Lake</strong> bổ sung transaction log và cơ chế quản lý trạng thái của bảng trên nền files Parquet. Trong Microsoft Learn, cụm <strong>Delta-Parquet</strong> nhấn mạnh Delta table dùng Parquet cho dữ liệu.</li>
+<li><strong>CSV, JSON và file khác</strong> có thể tồn tại trong OneLake, nhưng không vì thế mà tất cả tự trở thành Delta tables.</li>
+<li><strong>OneLake Shortcut</strong> là tham chiếu tới dữ liệu đã có trong OneLake hoặc những external stores hỗ trợ, giúp tránh sao chép vật lý thông thường. Shortcut không phải ETL: nó không tự lọc, làm sạch hay chuyển đổi dữ liệu.</li>
+</ul>
+<p><strong>Ví dụ:</strong> <code>FinanceLakehouse</code> cần sử dụng bảng <code>SalesLakehouse.dbo.sales</code>. Một Shortcut có thể tham chiếu bảng nguồn, trong khi việc copy dữ liệu sẽ tạo bản mới cần đồng bộ. Shortcut vẫn đòi hỏi các quyền phù hợp trên nguồn và đích; unified storage không phải unrestricted access.</p>
+<h5>Workspaces</h5>
+<p>Workspace là nơi tổ chức Fabric items và cộng tác. Một Workspace có thể chứa Lakehouse, Warehouse, pipelines, notebooks, semantic models, reports và nhiều loại item khác. Workspace không phải một compute cluster riêng; cần phân biệt:</p>
+<table><thead><tr><th>Thành phần</th><th>Vai trò</th></tr></thead><tbody>
+<tr><td>Workspace</td><td>Container logic, cộng tác, phân quyền và tổ chức items</td></tr>
+<tr><td>Capacity</td><td>Tài nguyên tính toán phục vụ workloads</td></tr>
+<tr><td>OneLake</td><td>Lớp lưu trữ dữ liệu thống nhất</td></tr>
+</tbody></table>
+<p>Có thể tách Workspace theo domain như <code>Finance-Analytics</code>, <code>Sales-Analytics</code>, <code>Shared-Data</code>. Các items được hỗ trợ có thể dùng Git integration để quản lý phiên bản. Quyền workspace không đồng nghĩa với quyền xem toàn bộ nội dung dữ liệu khi có thêm item- hoặc data-level security.</p>
+<h5>Administration and governance</h5>
+<p><strong>Admin portal</strong> quản lý tenant settings, phạm vi sử dụng một số tính năng, gateway, các khả năng quản trị và phần việc qua API/SDK được hỗ trợ. <strong>OneLake catalog</strong> giúp khám phá tài sản dữ liệu theo metadata, owner, endorsement, labels và thông tin liên quan. Catalog không tự cấp quyền đọc dữ liệu.</p>
+<p>Ví dụ analyst muốn tìm semantic model doanh thu. Cần tìm model qua Catalog và đánh giá nguồn, owner, thời gian cập nhật, endorsement, quyền; không nên tự xây một báo cáo dựa trên bảng trùng tên nhưng không được quản trị.</p>
+<h4>Exam notes / Bẫy dễ nhầm</h4>
+<table><thead><tr><th>Keyword</th><th>Công cụ phù hợp</th></tr></thead><tbody>
+<tr><td>Unified data storage</td><td>OneLake</td></tr>
+<tr><td>Reference without copying</td><td>OneLake Shortcut</td></tr>
+<tr><td>Organize items/collaboration</td><td>Workspace</td></tr>
+<tr><td>Tenant-level settings</td><td>Admin portal</td></tr>
+<tr><td>Discover governed assets</td><td>OneLake catalog</td></tr>
+<tr><td>Version supported items</td><td>Git integration</td></tr>
+</tbody></table>
+<h3>Unit 3 — Explore data teams and Microsoft Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giải thích trách nhiệm các vai trò trong data team và cách Fabric hỗ trợ cộng tác thay vì chuyển giao dữ liệu qua nhiều hệ thống tách biệt.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Traditional roles and challenges</h5>
+<p><strong>Data Engineer:</strong> xây dựng luồng ingest, làm sạch/chuyển đổi và xuất bản datasets dùng chung. <strong>Data Analyst:</strong> phân tích KPI, báo cáo và giúp người dùng khai thác dữ liệu. <strong>Data Scientist:</strong> xây dựng/đánh giá các mô hình dự báo. <strong>Analytics Engineer:</strong> chuẩn hóa lớp phân tích và semantic models để business definitions được sử dụng nhất quán.</p>
+<p>Ba vấn đề điển hình của tổ chức truyền thống là phụ thuộc giữa nhóm, chuyển đổi dữ liệu trùng lặp và khó tích hợp Data Science. Ví dụ một analyst cần trường <code>NetRevenue</code>, phải yêu cầu data engineer sửa ETL; trong lúc đó analyst có thể tự tạo một công thức Power Query dẫn đến chênh lệch với Finance.</p>
+<h5>Evolution of collaborative workflows</h5>
+<table><thead><tr><th>Vai trò</th><th>Fabric workloads thường dùng</th><th>Đầu ra điển hình</th></tr></thead><tbody>
+<tr><td>Data Engineer</td><td>Data Factory, Lakehouse, Spark notebooks</td><td>Pipeline và curated Delta tables</td></tr>
+<tr><td>Analytics Engineer</td><td>Warehouse/Lakehouse, Semantic Model</td><td>Star schema, measures, KPI definitions</td></tr>
+<tr><td>Data Analyst</td><td>Power BI, Dataflows Gen2, Direct Lake</td><td>Reports và self-service analytics</td></tr>
+<tr><td>Data Scientist</td><td>Python, Spark, ML tools</td><td>Predictive models và feature datasets</td></tr>
+<tr><td>Citizen Developer / Business User</td><td>Catalog, Power BI, Copilot phù hợp</td><td>Tìm và khai thác dữ liệu đáng tin cậy</td></tr>
+</tbody></table>
+<p><strong>Ví dụ chuỗi cộng tác:</strong> Data Engineer nạp dữ liệu bán hàng → Analytics Engineer thiết kế FactSales/DimCustomer/DimProduct và semantic model → Analyst tạo dashboard → Data Scientist phát triển dự báo → người dùng nghiệp vụ xem báo cáo hoặc hỏi dữ liệu qua công cụ AI được cấp quyền.</p>
+<p>Dữ liệu có schema và business metadata tốt giúp AI tránh suy đoán các định nghĩa như Revenue, Profit hoặc Active Customer. Không vì sử dụng Copilot mà các quy tắc nghiệp vụ tự động được đúng.</p>
+<h4>Exam notes</h4>
+<p><strong>Data Engineer</strong> chú trọng vận chuyển, xử lý và tổ chức dữ liệu. <strong>Analytics Engineer</strong> biến dữ liệu đó thành tài sản phân tích có business meaning, model và KPI thống nhất. Một cá nhân thực tế có thể thực hiện nhiều vai trò; trong đề thi phải chọn theo trách nhiệm được mô tả.</p>
+<h3>Unit 4 — Enable and use Microsoft Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Học quyền bật Fabric, tạo Workspace, khám phá dữ liệu và nhận diện chức năng từng workload cùng những tính năng AI của Fabric.</p>
+<h4>Nội dung chính trong Unit</h4>
+<h5>Enable Microsoft Fabric</h5>
+<p>Tenant phải có tenant settings phù hợp, người dùng cần quyền và workspace phải nằm trên capacity/license mode hỗ trợ workload định dùng. Các vai trò quản trị có quyền liên quan gồm Fabric administrator, Power Platform administrator và Global administrator. Có thể giới hạn nhiều tenant settings theo nhóm Entra/M365 thay vì mở cho toàn bộ tổ chức.</p>
+<p><strong>Fabric Trial:</strong> có thể sử dụng khi đủ điều kiện, thông thường có thời hạn 60 ngày, nhưng không nên giả định Trial hỗ trợ Copilot, data agents hoặc mọi AI experience. Fabric capacity và Power BI per-user license là hai loại điều kiện khác nhau, nhất là khi phân phối và xem báo cáo.</p>
+<h5>Create workspaces</h5>
+<p>Truy cập <code>app.fabric.microsoft.com</code> → <code>Workspaces</code> → <code>New workspace</code> → nhập tên → chọn thông số và capacity phù hợp.</p>
+<table><thead><tr><th>Role</th><th>Trách nhiệm chung</th></tr></thead><tbody>
+<tr><td>Admin</td><td>Quản lý workspace và quyền</td></tr>
+<tr><td>Member</td><td>Cộng tác và quản lý nội dung với quyền rộng</td></tr>
+<tr><td>Contributor</td><td>Tạo/chỉnh sửa items trong phạm vi được cấp</td></tr>
+<tr><td>Viewer</td><td>Xem và sử dụng nội dung được phép</td></tr>
+</tbody></table>
+<p>Các cài đặt đáng chú ý của Workspace: License type, OneDrive access, ADLS Gen2 Storage connection, Git integration, Spark workload settings. <strong>Lineage view</strong> giúp nhận diện quan hệ phụ thuộc, ví dụ Pipeline → Lakehouse → Semantic Model → Report.</p>
+<h5>Discover data with OneLake catalog</h5>
+<p><code>OneLake catalog</code> → <code>Explore</code> giúp lọc, tìm kiếm theo tên, loại item, domain/workspace và metadata. Catalog phục vụ discovery, không phải một cổng tự động bỏ qua ACL.</p>
+<h5>Create items with Fabric workloads</h5>
+<table><thead><tr><th>Workload</th><th>Chức năng</th><th>Khi nào chọn</th></tr></thead><tbody>
+<tr><td>Data Engineering</td><td>Lakehouse, Spark, notebooks</td><td>Xử lý dữ liệu lớn/complex transformations</td></tr>
+<tr><td>Data Factory</td><td>Ingest, transform, orchestrate</td><td>ETL, pipelines, lịch và dependencies</td></tr>
+<tr><td>Data Warehouse</td><td>SQL analytics/data warehouse</td><td>Bảng phân tích, transactional T-SQL</td></tr>
+<tr><td>Real-Time Intelligence</td><td>Event processing &amp; KQL</td><td>Streaming, logs, operational monitoring</td></tr>
+<tr><td>Industry Solutions</td><td>Giải pháp theo ngành</td><td>Bài toán ngành được hỗ trợ</td></tr>
+<tr><td>Data Science</td><td>ML và phân tích nâng cao</td><td>Predictive classification/forecast</td></tr>
+<tr><td>Databases</td><td>Database items</td><td>Các tình huống database được Fabric hỗ trợ</td></tr>
+<tr><td>IQ (Preview)</td><td>Ontology, graph, business context</td><td>AI cần ngữ cảnh nghiệp vụ</td></tr>
+<tr><td>Power BI</td><td>Semantic models, reports</td><td>BI và trực quan hóa</td></tr>
+</tbody></table>
+<p><strong>Data mesh</strong> phân quyền sở hữu data products theo business domain trong khi vẫn duy trì governance chung. Nó không đồng nghĩa buộc từng domain phải tạo hạ tầng lưu trữ hoàn toàn tách biệt.</p>
+<h5>AI capabilities in Microsoft Fabric</h5>
+<p><strong>Fabric IQ (Preview)</strong> hỗ trợ mô hình hóa các business concepts, relationships và quy tắc thông qua ontology và các lớp semantic/graph phù hợp. Ví dụ ontology biểu diễn Customer đặt Order, Order chứa Product và định nghĩa Net Revenue.</p>
+<p><strong>Fabric IQ / Foundry IQ / Work IQ</strong> khác trọng tâm: Fabric IQ hướng đến business data và ontology; Foundry IQ tập trung enterprise knowledge; Work IQ tập trung ngữ cảnh công việc và cộng tác. Không bắt buộc sử dụng cả ba cho mọi bài toán.</p>
+<p><strong>Fabric data agents</strong> giúp hỏi dữ liệu bằng ngôn ngữ tự nhiên dựa trên data sources được cấu hình như Lakehouse, Warehouse, semantic model hoặc ontology trong phạm vi hỗ trợ. Agent không thay thế ETL hoặc permissions.</p>
+<p><strong>Copilot across workloads</strong> có thể hỗ trợ sinh/giải thích SQL, KQL, notebook code, gợi ý data transformations hoặc report/insight trong Power BI. Người phát triển phải xác minh logic và quyền; sự hiện diện của một tenant setting không bảo đảm mọi người có thể sử dụng Copilot nếu thiếu điều kiện capacity/license.</p>
+<h5>Thao tác minh họa — Không phải lab chính thức</h5>
+<ol>
+<li>Vào <code>app.fabric.microsoft.com</code> với tài khoản tổ chức và quyền phù hợp.</li>
+<li><code>Workspaces</code> → <code>New workspace</code> → tạo <code>DP600-LP1-Lab</code>.</li>
+<li>Kiểm tra <code>Workspace settings</code> và <code>License/Workspace type</code>.</li>
+<li>Mở <code>Manage access</code> xem Workspace roles.</li>
+<li>Mở <code>New item</code> quan sát những Fabric items được phép tạo.</li>
+<li>Vào <code>OneLake catalog</code> tìm data assets có quyền.</li>
+<li>Cleanup workspace mẫu nếu không còn sử dụng.</li>
+</ol>
+<p><strong>Lỗi phổ biến:</strong> Không tạo được Workspace vì tenant settings; không tạo được Lakehouse/Warehouse vì capacity; không thấy Trial vì tài khoản không đủ điều kiện.</p>
+<h3>Unit 5 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm tra nhận thức về nền tảng thống nhất, Delta-Parquet, Data Factory và AI trên OneLake. Assessment gốc có 4 câu.</p>
+<p><strong>Câu 1. Lợi ích đặc trưng của Microsoft Fabric?</strong> A. Chuyên gia dữ liệu làm độc lập; B. Bắt buộc sao chép giữa các hệ thống; C. Môi trường tích hợp thống nhất để cộng tác. <strong>Đáp án C.</strong> Vì Fabric cho phép nhiều workload và data teams cộng tác. A trái mục tiêu; B trái định hướng giảm sao chép. <em>Mẹo:</em> Unified platform + Collaboration. <em>Liên hệ:</em> Unit 1–3.</p>
+<p><strong>Câu 2. Định dạng mặc định quan trọng cho bảng phân tích trong OneLake?</strong> A. Delta-Parquet; B. JSON; C. CSV. <strong>Đáp án A.</strong> Delta Lake dùng Parquet và transaction log cho analytical tables. JSON/CSV có thể lưu ở Files nhưng không phải định dạng bảng Delta mặc định. <em>Mẹo:</em> Phân biệt supported file formats với analytical table format. <em>Liên hệ:</em> Unit 2.</p>
+<p><strong>Câu 3. Experience dành cho di chuyển, chuyển đổi, điều phối dữ liệu?</strong> A. Data Science; B. Data Warehousing; C. Data Factory. <strong>Đáp án C.</strong> Data Factory cung cấp pipelines/dataflows và orchestration; A chú trọng ML, B chú trọng phân tích SQL. <em>Mẹo:</em> Move + Transform + Orchestrate. <em>Liên hệ:</em> Unit 4.</p>
+<p><strong>Câu 4. Vì sao OneLake hỗ trợ AI?</strong> A. Buộc chuyển tất cả dữ liệu sang proprietary format; B. AI/Copilot/agents có thể khai thác cùng dữ liệu được quản trị mà không phải xây pipeline chuẩn bị riêng cho mọi workload; C. Luôn lưu mô hình AI ngay cạnh dữ liệu. <strong>Đáp án B.</strong> Dữ liệu dùng chung, được chuẩn hóa và quản trị giúp tái sử dụng; A sai vì open formats; C không phải đặc trưng bắt buộc. <em>Mẹo:</em> Shared governed data. <em>Liên hệ:</em> Unit 1, 2, 4.</p>
+<h3>Unit 6 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết Fabric theo ba lớp: storage, analytics workloads và AI/business context.</p>
+<h4>Nội dung chính trong Unit</h4>
+<ul>
+<li>OneLake là lưu trữ logic thống nhất, không có nghĩa chia sẻ quyền không giới hạn.</li>
+<li>Data Factory/Data Engineering/Warehouse/Real-Time Intelligence/Power BI bổ trợ nhau trong end-to-end analytics.</li>
+<li>Workspace tổ chức và phân quyền items, Capacity cung cấp compute, Catalog phục vụ khám phá dữ liệu.</li>
+<li>Copilot hỗ trợ phát triển và phân tích; data agents giúp hỏi đáp; Fabric IQ cung cấp ngữ cảnh nghiệp vụ. Tất cả vẫn phụ thuộc vào nguồn dữ liệu đúng, metadata và security.</li>
+</ul>
+<p><strong>Learn more:</strong> https://learn.microsoft.com/en-us/fabric/fundamentals/whats-new và https://learn.microsoft.com/en-us/fabric/fundamentals/migration</p>
+<h3>Coverage check — Module 1</h3>
+<ul>
+<li><strong>Units:</strong> 6/6, theo đúng thứ tự. <strong>Assessment:</strong> 4/4. <strong>Exercise:</strong> Không có lab chính thức.</li>
+<li><strong>Headings:</strong> Unit 2 có OneLake, Workspaces, Administration/Governance; Unit 3 có Traditional roles/challenges, Collaborative workflows; Unit 4 gồm Enable, Create workspaces, Catalog, Fabric workloads, AI capabilities/Copilot; Unit 6 có Summary/Learn more.</li>
+<li><strong>Nội dung được rút gọn:</strong> Giảm lặp giải thích các workload, không lặp nguyên văn định nghĩa; thêm ví dụ, các bảng phân biệt và thao tác minh họa.</li>
+<li><strong>AI/Copilot/Agent/Fabric IQ, Security, Governance, Licensing:</strong> Đã đề cập đúng phạm vi nhập môn.</li>
+<li><strong>Điểm ôn:</strong> OneLake vs Workspace vs Capacity; Data Factory vs Data Engineering; Analytics Engineer vs Data Engineer; Copilot vs data agent vs Fabric IQ; Catalog vs quyền truy cập.</li>
+<li><strong>Giới hạn:</strong> Phần giảng có giải thích nhưng không tự động chứng minh việc người học đã chạy lab hay nắm vững kiến thức.</li>
+</ul>
+<p>---</p>
