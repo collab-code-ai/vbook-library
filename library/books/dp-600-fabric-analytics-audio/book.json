@@ -12,7 +12,71 @@
     "DP-600",
     "Audio"
   ],
-  "updatedAt": "2026-11-15T15:00:00.044Z",
+  "updatedAt": "2026-11-15T15:54:40.620Z",
   "chapters": [],
-  "volumes": []
+  "volumes": [
+    {
+      "id": "learning-path-01",
+      "title": "Learning Path 1 — Explore analytics data stores in Microsoft Fabric",
+      "order": 1,
+      "chapters": [
+        {
+          "id": "module-01-introduction-end-to-end-analytics",
+          "title": "LP-1 | Module 1 — Introduction to end-to-end analytics using Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-01/module-01-introduction-end-to-end-analytics.html",
+          "sourceChapterId": "learning-path-01/module-01-introduction-end-to-end-analytics",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/"
+          ]
+        },
+        {
+          "id": "module-02-discover-connect-onelake",
+          "title": "LP-1 | Module 2 — Discover and connect to data in OneLake",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-01/module-02-discover-connect-onelake.html",
+          "sourceChapterId": "learning-path-01/module-02-discover-connect-onelake",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/discover-data-onelake/"
+          ]
+        },
+        {
+          "id": "module-03-get-started-lakehouses",
+          "title": "LP-1 | Module 3 — Get started with lakehouses in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-01/module-03-get-started-lakehouses.html",
+          "sourceChapterId": "learning-path-01/module-03-get-started-lakehouses",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-lakehouses/"
+          ]
+        },
+        {
+          "id": "module-04-get-started-data-warehouses",
+          "title": "LP-1 | Module 4 — Get started with data warehouses in Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-01/module-04-get-started-data-warehouses.html",
+          "sourceChapterId": "learning-path-01/module-04-get-started-data-warehouses",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-data-warehouse/"
+          ]
+        },
+        {
+          "id": "module-05-get-started-real-time-intelligence",
+          "title": "LP-1 | Module 5 — Get started with Real-Time Intelligence in Microsoft Fabric",
+          "order": 5,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-01/module-05-get-started-real-time-intelligence.html",
+          "sourceChapterId": "learning-path-01/module-05-get-started-real-time-intelligence",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/"
+          ]
+        }
+      ]
+    }
+  ],
+  "sourceBookId": "dp-600-fabric-analytics"
 }
