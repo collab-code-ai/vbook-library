@@ -12,7 +12,7 @@
     "DP-600",
     "Microsoft Learn"
   ],
-  "updatedAt": "2026-11-15T15:44:06.079Z",
+  "updatedAt": "2026-11-15T22:39:00+07:00",
   "chapters": [],
   "volumes": [
     {
@@ -120,6 +120,31 @@
           "sourceUrls": [
             "https://learn.microsoft.com/en-us/training/modules/create-ontology-with-fabric-iq/"
           ]
+        }
+      ]
+    },
+    {
+      "id": "learning-path-05",
+      "title": "Learning Path 5 — Manage a Microsoft Fabric environment",
+      "order": 5,
+      "chapters": [
+        {
+          "id": "lp05-module-01-implement-cicd",
+          "title": "LP-5 | Module 1 — Implement continuous integration and continuous delivery (CI/CD) in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-05/lp05-module-01-implement-cicd.html"
+        },
+        {
+          "id": "lp05-module-02-monitor-activities",
+          "title": "LP-5 | Module 2 — Monitor activities in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-05/lp05-module-02-monitor-activities.html"
+        },
+        {
+          "id": "lp05-module-03-secure-data-access",
+          "title": "LP-5 | Module 3 — Secure data access in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics/volumes/learning-path-05/lp05-module-03-secure-data-access.html"
         }
       ]
     }

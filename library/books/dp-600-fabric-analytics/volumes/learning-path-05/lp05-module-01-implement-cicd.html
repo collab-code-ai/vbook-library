@@ -1,0 +1,348 @@
+<h2>Module 1 — Implement continuous integration and continuous delivery (CI/CD) in Microsoft Fabric</h2>
+<p><strong>LP5 · Module 1/3 · 8 Unit · khoảng 46 phút theo Microsoft Learn</strong></p>
+<p>Nguồn: https://learn.microsoft.com/en-us/training/modules/implement-cicd-in-fabric/</p>
+<p>Module này dạy cách quản lý vòng đời phát triển và triển khai Fabric items: kiểm soát phiên bản, cộng tác bằng Git, triển khai giữa Development/Test/Production và tự động hóa qua REST APIs.</p>
+<h3>Structure check — Module 1</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/subheading hoặc loại nội dung</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Lifecycle management; mục tiêu module</td></tr>
+<tr><td>2</td><td>Understand Continuous Integration and Continuous Delivery (CI/CD)</td><td>Continuous integration; Continuous delivery; Continuous deployment; Use CI/CD in Fabric</td></tr>
+<tr><td>3</td><td>Implement version control and Git integration</td><td>Connect to a Git Repository; Commit and update the Fabric workspace and Git repository; Branching scenarios; Create a dedicated branch, issue pull requests and sync a workspace with Git</td></tr>
+<tr><td>4</td><td>Implement deployment pipelines</td><td>What are deployment pipelines?; Create a deployment pipeline; Deploy content to a pipeline stage; Use deployment pipelines with Git</td></tr>
+<tr><td>5</td><td>Automate CI/CD using Fabric APIs</td><td>Use the Fabric REST APIs for CI/CD to automate processes</td></tr>
+<tr><td>6</td><td>Exercise: Implement deployment pipelines in Microsoft Fabric</td><td>Exercise/Lab</td></tr>
+<tr><td>7</td><td>Module assessment</td><td>3 câu hỏi assessment</td></tr>
+<tr><td>8</td><td>Summary</td><td>Tổng kết</td></tr>
+</tbody></table>
+<p><strong>Mức coverage:</strong> Đã giảng cả 8 Unit và các heading chính đã xác định; Unit 6 sử dụng Lab liên kết từ Microsoft Learning.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giới thiệu quản lý vòng đời Fabric items khi nhiều kỹ sư cùng xây dựng giải pháp phân tích dữ liệu.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Ví dụ một doanh nghiệp xây dựng hệ thống gồm Lakehouse, Notebook, Data Pipeline, Semantic Model và Power BI Report. Một kỹ sư chỉnh Notebook, một người sửa Pipeline, người khác chỉnh Semantic Model. Nếu mọi người thay đổi trực tiếp trong Production workspace, nguy cơ là:</p>
+<ol>
+<li>Nội dung chưa kiểm thử làm gián đoạn báo cáo.</li>
+<li>Những chỉnh sửa cùng đối tượng xung đột hoặc ghi đè.</li>
+<li>Không biết ai đổi nội dung nào, vào thời điểm nào.</li>
+<li>Khó quay về phiên bản ổn định khi lỗi.</li>
+<li>Phát hành Production phụ thuộc vào thao tác thủ công.</li>
+</ol>
+<p><strong>Lifecycle management</strong> kiểm soát vòng đời item: tạo → sửa → kiểm thử → triển khai → bảo trì. Microsoft Fabric có hai cơ chế quan trọng:</p>
+<ul>
+<li><strong>Git integration:</strong> Quản lý version, branches, commits và hỗ trợ cộng tác.</li>
+<li><strong>Deployment pipelines:</strong> Chuyển các định nghĩa item được hỗ trợ qua những stage/môi trường.</li>
+</ul>
+<p><strong>Fabric REST APIs</strong> bổ sung tự động hóa. Bạn quản lý không chỉ source code thông thường mà cả những định nghĩa Fabric items hỗ trợ lưu trong Git. Git không thay thế quá trình triển khai, còn deployment không thay thế version control.</p>
+<h3>Unit 2 — Understand Continuous Integration and Continuous Delivery (CI/CD)</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt Continuous Integration, Continuous Delivery và Continuous Deployment; biết vai trò các công cụ của Fabric trong vòng đời phát hành.</p>
+<h4>2.1. Continuous integration (CI)</h4>
+<p><strong>Continuous Integration</strong> là tích hợp thường xuyên những thay đổi nhỏ từ nhiều developer vào nhánh mã nguồn chung. Khi Developer A sửa Notebook để làm sạch dữ liệu, Developer B sửa phần liên quan của cùng hệ thống, họ không nên phát triển độc lập quá lâu rồi mới tích hợp một lần.</p>
+<p>Quy trình thường gặp:</p>
+<ol>
+<li>Mỗi developer tạo feature branch riêng.</li>
+<li>Thực hiện thay đổi và commit.</li>
+<li>Tạo Pull Request.</li>
+<li>Chạy các kiểm tra đã được cấu hình (build/validation/tests).</li>
+<li>Review, chấp thuận và merge vào nhánh chung.</li>
+</ol>
+<pre><code class="language-mermaid">flowchart TD
+ A[Developer A] --&gt; G[Shared Git branch]
+ B[Developer B] --&gt; G
+ C[Developer C] --&gt; G
+ G --&gt; T[Build / Validate / Test]
+ T --&gt; R[Phát hiện lỗi tích hợp sớm]</code></pre>
+<p><strong>Lưu ý:</strong> Chỉ kết nối Git integration trong Fabric không có nghĩa là tất cả unit tests tự động chạy. Bạn phải thiết kế CI workflow phù hợp nếu cần validation, schema tests, data-quality tests hoặc integration tests.</p>
+<h4>2.2. Continuous delivery</h4>
+<p><strong>Continuous Delivery</strong> đưa thay đổi vào trạng thái <strong>sẵn sàng phát hành</strong>, có thể còn bước phê duyệt trước khi lên Production.</p>
+<p><code>Code change → Integration → Validation → Test/Staging → Approval → Production</code></p>
+<p>Ví dụ, Semantic Model cập nhật các measure DAX; Test workspace đã được kiểm thử và nhóm vận hành chỉ còn đợi release approval. Đây là Continuous Delivery.</p>
+<h4>2.3. Continuous deployment</h4>
+<p><strong>Continuous Deployment</strong> tự động triển khai vào Production nếu toàn bộ điều kiện kiểm thử, phê duyệt bằng policy và kiểm soát được cấu hình đều đạt; không cần phê duyệt thủ công cho từng đợt release.</p>
+<p>Ví dụ, merge Pull Request → chạy tests → cập nhật Test → validation → tự động đưa sang Production. Cơ chế này <strong>phải được cấu hình</strong>, không có sẵn chỉ bằng việc tạo Deployment pipeline.</p>
+<table><thead><tr><th>Khái niệm</th><th>Mục tiêu</th><th>Điểm phân biệt</th></tr></thead><tbody>
+<tr><td>Continuous Integration</td><td>Tích hợp thay đổi thường xuyên</td><td>Version control và kiểm tra tích hợp</td></tr>
+<tr><td>Continuous Delivery</td><td>Luôn ở trạng thái có thể phát hành</td><td>Có thể cần approval trước Production</td></tr>
+<tr><td>Continuous Deployment</td><td>Tự động phát hành sau khi đạt điều kiện</td><td>Không cần manual approval cho từng deployment</td></tr>
+</tbody></table>
+<p>CD có thể viết tắt cả Delivery và Deployment; đọc <em>hành vi mô tả</em> trong scenario.</p>
+<h4>2.4. Use CI/CD in Fabric</h4>
+<table><thead><tr><th>Thành phần</th><th>Vai trò</th></tr></thead><tbody>
+<tr><td>Git integration</td><td>Source control, branches, commits, đồng bộ workspace với repository</td></tr>
+<tr><td>Deployment pipelines</td><td>Promote Fabric items qua các stage</td></tr>
+<tr><td>Fabric REST APIs</td><td>Điều khiển và tự động hóa hoạt động CI/CD</td></tr>
+</tbody></table>
+<p>Ví dụ hệ thống phân tích doanh thu: GitHub quản lý định nghĩa Notebook/item → Deployment pipeline phát hành Development sang Test/Production → GitHub Actions hoặc Azure DevOps dùng REST APIs để tự động hóa nếu cần.</p>
+<h4>Exam notes</h4>
+<ul>
+<li>Track changes/history, branches, merge/revert → <strong>Git</strong>.</li>
+<li>Promote Fabric content from Test to Production → <strong>Deployment pipelines</strong>.</li>
+<li>Automate deploy on a CI event → <strong>DevOps workflow + Fabric REST APIs</strong>.</li>
+<li>Validate every Pull Request → cần <strong>CI tests</strong>, không chỉ Git integration.</li>
+</ul>
+<h3>Unit 3 — Implement version control and Git integration</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kết nối Fabric workspace với Git, commit/update theo hai chiều và tổ chức phát triển bằng branches và Pull Requests.</p>
+<h4>3.1. Connect to a Git Repository</h4>
+<p><strong>Version control</strong> lưu định nghĩa item được hỗ trợ vào repository để theo dõi từng lần thay đổi.</p>
+<table><thead><tr><th>Thuật ngữ</th><th>Ý nghĩa</th></tr></thead><tbody>
+<tr><td>Repository</td><td>Kho mã nguồn và lịch sử thay đổi</td></tr>
+<tr><td>Branch</td><td>Nhánh phát triển</td></tr>
+<tr><td>Commit</td><td>Bản ghi tập thay đổi</td></tr>
+<tr><td>Push</td><td>Đưa commits lên remote</td></tr>
+<tr><td>Pull Request</td><td>Đề xuất hợp nhất thay đổi</td></tr>
+<tr><td>Merge</td><td>Hợp nhất branches</td></tr>
+<tr><td>Revert</td><td>Đảo ngược hiệu quả thay đổi trước bằng một thay đổi mới</td></tr>
+</tbody></table>
+<p>Ví dụ sửa <code>TransformSales</code> để hỗ trợ cột <code>Discount</code>: Git ghi nhận phiên bản; nhóm có thể xác định commit gây lỗi. <strong>Khôi phục định nghĩa item không đồng nghĩa tự động khôi phục dữ liệu Lakehouse đã bị thay đổi.</strong></p>
+<p>Git integration hỗ trợ các providers được Microsoft công bố như Azure DevOps Services, GitHub và GitHub Enterprise cloud được hỗ trợ. Kết nối đặt ở <strong>workspace level</strong>, với một repository/branch/folder chọn tại một thời điểm. Không phải mọi item và dữ liệu OneLake đều có cùng mức độ hỗ trợ Git.</p>
+<p><strong>Chuẩn bị:</strong> Fabric workspace trên capacity hợp lệ; repository; Workspace Admin; tenant cho phép Git; quyền repository và phương thức authentication phù hợp (ví dụ GitHub PAT với phạm vi được yêu cầu).</p>
+<p><strong>Các bước:</strong></p>
+<ol>
+<li><code>Fabric → Workspaces → [workspace]</code>.</li>
+<li><code>Workspace settings → Git integration</code>.</li>
+<li>Chọn GitHub hoặc Azure DevOps.</li>
+<li>Xác thực, chọn repository, branch, folder.</li>
+<li><code>Connect</code>; xử lý đồng bộ ban đầu theo trạng thái workspace/repository.</li>
+</ol>
+<p>Ví dụ: workspace <code>SalesAnalytics-Dev</code>, repository <code>fabric-sales-analytics</code>, branch <code>main</code>, folder <code>fabric</code>.</p>
+<p><strong>Không nhầm:</strong> Kết nối Git chỉ tạo quan hệ source control, không tự triển khai Production.</p>
+<h4>3.2. Commit and update the Fabric workspace and Git repository</h4>
+<pre><code class="language-mermaid">flowchart LR
+ W[Fabric Workspace] --&gt;|Commit to Git| G[Git branch]
+ G --&gt;|Update from Git| W</code></pre>
+<p><strong>Workspace → Git:</strong> Mở Fabric item và chỉnh sửa; <code>Source control → Changes → Commit</code> ghi định nghĩa được hỗ trợ lên Git branch.</p>
+<p><strong>Git → Workspace:</strong> Một developer khác sửa định nghĩa rồi push lên repository; trong Fabric sử dụng <code>Source control → Updates → Update</code> để nhận thay đổi về workspace.</p>
+<p><strong>Git status</strong> có thể phản ánh: workspace thay đổi chưa commit, Git có commits mới, hai bên đồng bộ, hoặc có khác biệt/xung đột cả hai phía. Khi cả hai phía đều sửa, không được cập nhật mù quáng vì có thể ghi đè.</p>
+<h4>3.3. Branching scenarios</h4>
+<p><strong>A. Isolated Fabric workspace:</strong> Mỗi developer phát triển trên feature branch, gắn với workspace độc lập. Ví dụ:</p>
+<table><thead><tr><th>Developer</th><th>Workspace</th><th>Git branch</th></tr></thead><tbody>
+<tr><td>A</td><td>Sales-Feature-A</td><td><code>feature/sales-cleaning</code></td></tr>
+<tr><td>B</td><td>Sales-Feature-B</td><td><code>feature/sales-model</code></td></tr>
+<tr><td>Shared team</td><td>Sales-Development</td><td><code>main</code></td></tr>
+</tbody></table>
+<p><strong>B. Client tools:</strong> Dùng Power BI Desktop, VS Code hoặc Git tooling để chỉnh item dưới dạng tệp; đẩy thay đổi lên repository, rồi cập nhật Fabric workspace phù hợp.</p>
+<h4>3.4. Create a dedicated branch, issue pull requests and sync a workspace with Git</h4>
+<pre><code class="language-mermaid">flowchart TD
+ A[Main branch + Shared Dev workspace] --&gt; B[Feature branch + Isolated workspace]
+ B --&gt; C[Developer changes + Commit]
+ C --&gt; D[Pull Request + Review / Tests]
+ D --&gt; E[Merge into shared branch]
+ E --&gt; F[Update Dev workspace from Git]</code></pre>
+<p><strong>Các bước thực tế:</strong></p>
+<ol>
+<li><code>Source control → Branch out to new workspace</code> để tạo feature branch và isolated workspace (nếu chức năng được hỗ trợ/cấp quyền).</li>
+<li>Sửa Notebook/Pipeline/item trong workspace mới.</li>
+<li>Commit thay đổi lên feature branch.</li>
+<li>Tạo Pull Request trên GitHub hoặc Azure DevOps; chạy review/CI theo chính sách nhóm.</li>
+<li>Merge vào nhánh chung; shared Development workspace chọn <code>Update from Git</code>.</li>
+</ol>
+<p><strong>Quyền và giới hạn:</strong> Workspace Admin thiết lập Git connection; tenant phải bật Git integration; capacity tương thích; <code>My Workspace</code> không hỗ trợ; việc commit/update phụ thuộc vào quyền sửa item và Git. Microsoft cũng công bố thay đổi chính sách read-write item vào 28/02/2027 trong tài liệu, nên cần kiểm tra lại khi triển khai.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Scenario</th><th>Cách chọn</th></tr></thead><tbody>
+<tr><td>Hai người cần sửa độc lập</td><td>Feature branches + isolated workspaces</td></tr>
+<tr><td>Xem lịch sử thay đổi Notebook</td><td>Git version history</td></tr>
+<tr><td>Git đã merge, workspace chưa cập nhật</td><td>Update from Git</td></tr>
+<tr><td>Workspace sửa rồi nhưng Git chưa có</td><td>Commit to Git</td></tr>
+<tr><td>Promote nội dung sang Production</td><td>Deployment pipeline, không chỉ commit</td></tr>
+</tbody></table>
+<h3>Unit 4 — Implement deployment pipelines</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo Deployment pipelines, gán các workspaces vào stages và đưa các định nghĩa Fabric item được hỗ trợ qua Development, Test, Production.</p>
+<h4>4.1. What are deployment pipelines?</h4>
+<pre><code class="language-mermaid">flowchart LR
+ D[Development workspace] --&gt;|Deploy| T[Test workspace]
+ T --&gt;|Deploy| P[Production workspace]</code></pre>
+<table><thead><tr><th>Stage</th><th>Mục đích</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Development</td><td>Phát triển và sửa đổi</td><td>Sửa Notebook</td></tr>
+<tr><td>Test</td><td>Kiểm thử, UAT, validation</td><td>Kiểm tra Notebook và Report</td></tr>
+<tr><td>Production</td><td>Cung cấp chính thức</td><td>Dashboard doanh thu</td></tr>
+</tbody></table>
+<p><strong>Deployment pipeline vs Data Pipeline:</strong> Data Pipeline trong Fabric Data Factory điều phối ETL/ELT, còn Deployment pipeline thuộc lifecycle management, chuyển định nghĩa item giữa stages. Dữ liệu Lakehouse không tự sao chép qua các stages chỉ vì item đã được deploy.</p>
+<h4>4.2. Create a deployment pipeline</h4>
+<ol>
+<li><code>Workspaces → Deployment pipelines → New pipeline</code> (hoặc lệnh từ workspace nếu có).</li>
+<li>Đặt <code>SalesAnalytics-Release</code>, mô tả và số stages.</li>
+<li>Tạo stages <code>Development</code>, <code>Test</code>, <code>Production</code>.</li>
+<li>Gán workspace tương ứng: <code>SalesAnalytics-Dev</code>, <code>SalesAnalytics-Test</code>, <code>SalesAnalytics-Prod</code>.</li>
+</ol>
+<p>Fabric hỗ trợ <strong>2–10 stages</strong> trong một Deployment pipeline theo tài liệu được đối chiếu; số stage xác định lúc tạo và không thể thay đổi tùy ý về sau. Cần role phù hợp để gán workspace. Không nên cấp Contributor hoặc Admin Production cho mọi developer.</p>
+<h4>4.3. Deploy content to a pipeline stage</h4>
+<p>Ví dụ Development có <code>TransformSales</code>, Test chưa có:</p>
+<ol>
+<li>Mở Deployment pipeline.</li>
+<li>Chọn Test stage và xem item differences.</li>
+<li>Chọn <code>TransformSales</code>.</li>
+<li>Chọn <code>Deploy</code>, xác nhận.</li>
+<li>Kiểm tra item tại Test workspace.</li>
+</ol>
+<p><strong>Full deployment</strong> đưa toàn bộ nội dung phù hợp theo phạm vi triển khai; <strong>Selective deployment</strong> chỉ đưa các items đã chọn. Nếu chỉ hai trong năm items hoàn tất kiểm thử, có thể dùng selective deployment. Nhưng cần kiểm tra dependencies: Report có thể phụ thuộc Semantic Model chưa tồn tại ở đích.</p>
+<p><strong>Item pairing:</strong> Fabric thiết lập quan hệ item nguồn–đích để nhận biết item cần update ở lần deploy tiếp theo. Với paired item, Fabric duy trì ID và URL item đích theo cơ chế hỗ trợ thay vì đơn giản xóa/tạo mới mỗi lần.</p>
+<p><strong>Autobinding:</strong> Khi triển khai <code>SalesReport</code> và <code>SalesSemanticModel</code> cùng nhau từ Dev sang Test, Fabric cố gắng gắn Report-Test với Model-Test thay vì Model-Dev. Tính năng phụ thuộc vào loại item và sự tồn tại của dependency; không tự sửa mọi source connection.</p>
+<p><strong>Deployment rules:</strong> Cấu hình khác nhau theo stage đối với các item/rule hỗ trợ như data source rules, parameter rules và default lakehouse rules cho Notebook.</p>
+<table><thead><tr><th>Cấu hình</th><th>Development</th><th>Production</th></tr></thead><tbody>
+<tr><td>Data source</td><td>SQL-DEV</td><td>SQL-PROD</td></tr>
+<tr><td>Database</td><td>SalesDev</td><td>SalesProd</td></tr>
+<tr><td>Data</td><td>Sample</td><td>Production data</td></tr>
+</tbody></table>
+<p><strong>Không mặc định triển khai các nội dung sau:</strong> toàn bộ dữ liệu thực tế; Workspace permissions; Item permissions; Workspace settings; data source credentials; Semantic Model refresh schedule; role assignments trên Semantic Model. Triển khai thành công không bảo đảm quyền, dữ liệu và kết nối Production đã đúng.</p>
+<h4>4.4. Use deployment pipelines with Git</h4>
+<p>Workflow phổ biến được giảng:</p>
+<pre><code class="language-mermaid">flowchart TD
+ G[Git repository] --&gt; D[Development workspace - Git integration]
+ D --&gt; T[Test workspace - Deployment pipeline]
+ T --&gt; P[Production workspace - Deployment pipeline]</code></pre>
+<ol>
+<li>Developer phát triển ở branch riêng.</li>
+<li>Merge changes vào shared Git branch.</li>
+<li>Development workspace <code>Update from Git</code>.</li>
+<li>Deploy Development → Test.</li>
+<li>Chạy validation.</li>
+<li>Deploy Test → Production.</li>
+<li>Kiểm tra data, permissions, credentials, dependencies và refresh.</li>
+</ol>
+<p>Đây là <strong>một pattern phổ biến</strong>, không phải quy tắc cấm Test/Production kết nối Git trong những workflow khác.</p>
+<h4>Exam notes</h4>
+<ul>
+<li><code>Deploy</code> không tự copy toàn bộ dữ liệu OneLake.</li>
+<li>Git integration không tự thay thế Deployment pipelines.</li>
+<li>Deployment pipeline không phải Data Pipeline.</li>
+<li>Autobinding có điều kiện và phụ thuộc item types.</li>
+<li>Deployment rules không áp dụng giống nhau cho mọi item.</li>
+<li>Deployment success không bảo đảm permissions/credentials/schedules đầy đủ.</li>
+</ul>
+<h3>Unit 5 — Automate CI/CD using Fabric APIs</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng Fabric REST APIs để tự động hóa đồng bộ Git và Deployment pipelines bằng GitHub Actions hoặc Azure DevOps thay vì thao tác portal thủ công.</p>
+<h4>5.1. Use the Fabric REST APIs for CI/CD to automate processes</h4>
+<p><strong>Nhóm Git APIs:</strong> Get Status; Commit To Git; Update From Git; Connect; Disconnect; Get Connection. Một workflow sau Pull Request merge có thể đọc Git status rồi cập nhật Dev workspace bằng Update From Git.</p>
+<p><strong>Nhóm Deployment pipelines APIs:</strong> Tạo pipeline; quản lý stage và assignments; lấy danh sách items; gọi deployment; đọc trạng thái tác vụ theo APIs được hỗ trợ.</p>
+<p>Ví dụ endpoint tạo pipeline:</p>
+<pre><code class="language-http">POST https://api.fabric.microsoft.com/v1/deploymentPipelines</code></pre>
+<p>Request cần access token, permissions/scopes phù hợp (ví dụ delegated <code>Pipeline.ReadWrite.All</code> cho operation được hỗ trợ), tên pipeline và stages.</p>
+<pre><code class="language-mermaid">flowchart TD
+ A[Merge Pull Request] --&gt; B[CI validation]
+ B --&gt; C{Tests passed?}
+ C --&gt;|No| X[Stop release]
+ C --&gt;|Yes| D[Update Dev from Git]
+ D --&gt; E[Deploy to Test via Fabric REST API]
+ E --&gt; F[Test validation]
+ F --&gt; G{Approved?}
+ G --&gt;|No| X
+ G --&gt;|Yes| H[Deploy to Production]
+ H --&gt; I[Post-deployment checks]</code></pre>
+<p><strong>Security/governance:</strong> Microsoft Entra authentication; quyền trên pipeline và workspace; tenant settings; quản lý secrets không commit plaintext vào Git; xử lý lỗi HTTP 401, 403, 429; long-running operations; logging và audit trail. DevOps tools không vượt qua Fabric authorization.</p>
+<h4>Exam notes</h4>
+<ul>
+<li>Programmatically deploy items → Fabric REST APIs.</li>
+<li>Automate Git updates → Git REST APIs.</li>
+<li>Deploy Test/Production → Deployment pipeline APIs.</li>
+<li>Run on PR merge → DevOps workflow + APIs.</li>
+</ul>
+<h3>Unit 6 — Exercise: Implement deployment pipelines in Microsoft Fabric</h3>
+<p>Nguồn Lab: https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/21-implement-cicd.html</p>
+<h4>Unit này dạy gì</h4>
+<p>Tạo pipeline ba stage, tạo Lakehouse ở Development và triển khai định nghĩa Lakehouse đến Test, Production. Lab này không yêu cầu Git.</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Thành phần</th><th>Điều kiện</th></tr></thead><tbody>
+<tr><td>Portal</td><td>https://app.fabric.microsoft.com</td></tr>
+<tr><td>Account</td><td>Tài khoản tổ chức truy cập Fabric</td></tr>
+<tr><td>Capacity</td><td>Paid hoặc Fabric trial còn hiệu lực</td></tr>
+<tr><td>Permissions</td><td>Workspace Admin/permissions phù hợp</td></tr>
+<tr><td>Workspaces</td><td>Tạo mới 3 workspace</td></tr>
+<tr><td>Git repository</td><td>Không bắt buộc</td></tr>
+<tr><td>Sample data</td><td>Sample tích hợp của Lakehouse</td></tr>
+<tr><td>Chi phí</td><td>Paid capacity có thể phát sinh chi phí; cần cleanup</td></tr>
+</tbody></table>
+<h4>Các bước thực hiện</h4>
+<p><strong>Bước 1 — Tạo ba workspaces.</strong> <code>Workspaces → New workspace</code>. Tạo Development, Test, Production; chọn capacity hợp lệ. Kết quả: ba workspaces có khả năng chứa Fabric items.</p>
+<p><strong>Bước 2 — Tạo Deployment pipeline.</strong> <code>Workspaces → Deployment pipelines → New pipeline</code>. Tên <code>Lab-Fabric-CICD</code>, ba stages Development/Test/Production, chọn Create. Kết quả: pipeline rỗng, ba stages theo thứ tự.</p>
+<p><strong>Bước 3 — Gán workspaces.</strong> Mỗi stage chọn <code>Assign a workspace</code>: Development → Development; Test → Test; Production → Production. Kết quả: mỗi stage liên kết đúng workspace.</p>
+<p><strong>Bước 4 — Tạo Lakehouse trong Development.</strong> <code>Workspaces → Development → New item → Lakehouse</code>; tên <code>LabLakehouse</code>; chọn bật Lakehouse schemas; <code>Start with sample data</code>. Kết quả: Lakehouse có dữ liệu mẫu trong Dev; các stage khác chưa có item tương ứng.</p>
+<p><strong>Bước 5 — Deploy Development sang Test.</strong> Vào Deployment pipeline, chọn Test stage, chọn <code>LabLakehouse</code>, <code>Deploy</code>, xác nhận. Kiểm tra Test workspace có item. <strong>Chú ý:</strong> Dữ liệu vật lý đã nạp trong Dev không tự đi theo deployment.</p>
+<p><strong>Bước 6 — Deploy Test sang Production.</strong> Chọn Production stage và triển khai <code>LabLakehouse</code> từ Test. Kiểm tra cả ba workspaces đều có item tương ứng.</p>
+<p><strong>Bước 7 — Kiểm tra:</strong></p>
+<ul>
+<li>Đủ 3 workspaces và pipeline ba stages.</li>
+<li><code>LabLakehouse</code> tại Development, Test, Production.</li>
+<li>Giao diện thể hiện trạng thái differences/sync hợp lý.</li>
+<li>Đã phân biệt item definitions với dữ liệu vật lý.</li>
+<li>Đã biết permissions/credentials không tự đi theo.</li>
+</ul>
+<h4>Lỗi thường gặp</h4>
+<table><thead><tr><th>Tình huống</th><th>Nguyên nhân/cách xử lý</th></tr></thead><tbody>
+<tr><td>Không thấy Deployment pipelines</td><td>Kiểm tra capacity, license, quyền workspace/tenant</td></tr>
+<tr><td>Không assign được workspace</td><td>Kiểm tra workspace role/capacity/điều kiện gán</td></tr>
+<tr><td>Deploy lỗi</td><td>Xem permissions, dependencies, cấu hình source/target</td></tr>
+<tr><td>Lakehouse Test không có sample data</td><td>Đây không nhất thiết là lỗi; nạp dữ liệu riêng nếu cần</td></tr>
+<tr><td>Report ở Prod lỗi</td><td>Kiểm tra dependency, autobinding, connections, credentials</td></tr>
+</tbody></table>
+<h4>Cleanup</h4>
+<p>Xóa Deployment pipeline qua settings, sau đó <code>Workspace settings → General → Remove this workspace</code> cho ba workspaces <strong>chỉ khi đó là tài nguyên Lab riêng</strong>. Kiểm tra paid capacity tránh phí không cần thiết.</p>
+<h4>Liên hệ exam — Năm điều luyện tay</h4>
+<ol>
+<li>Một stage liên kết với workspace phù hợp.</li>
+<li>Stages mô tả Development/Test/Production.</li>
+<li>Deployment chủ yếu triển khai item definitions.</li>
+<li>Data, permissions, connections cần kiểm tra/thiết lập riêng.</li>
+<li>Không cần Git chỉ để thực hiện Lab Deployment pipeline.</li>
+</ol>
+<h3>Unit 7 — Module assessment</h3>
+<p><em>Ba câu được diễn giải tiếng Việt theo nội dung assessment đã giảng; không phải trích nguyên văn Microsoft Learn.</em></p>
+<h4>Câu 1 — Git có vai trò gì trong CI/CD Fabric?</h4>
+<ul>
+<li>A. Triển khai thay đổi giữa các môi trường.</li>
+<li>B. Tự động kiểm thử mọi thay đổi.</li>
+<li><strong>C. Hỗ trợ version control, branches, cộng tác và lịch sử thay đổi.</strong></li>
+</ul>
+<p><strong>Đáp án C.</strong> Git quản lý phiên bản và cộng tác. A nhầm với Deployment pipelines. B nhầm với CI tests phải được cấu hình riêng. <em>Mẹo:</em> historical changes/branches → Git. Liên hệ Unit 2, Unit 3.</p>
+<h4>Câu 2 — Mục đích kết nối workspace với Git?</h4>
+<ul>
+<li>A. Tự động deploy mọi thay đổi lên Production.</li>
+<li><strong>B. Đồng bộ nội dung được hỗ trợ giữa workspace và Git repository.</strong></li>
+<li>C. Đảm bảo nhiều developer không bao giờ xung đột.</li>
+</ul>
+<p><strong>Đáp án B.</strong> Git integration cho phép Commit/Update, không tự tạo Production deployment; xung đột merge vẫn có thể xảy ra. Liên hệ Unit 3.</p>
+<h4>Câu 3 — Chức năng chính của Deployment pipelines?</h4>
+<ul>
+<li>A. Tạo Fabric items thay người phát triển.</li>
+<li>B. Xóa các items cũ.</li>
+<li><strong>C. Quản lý triển khai nội dung qua Development, Test, Production.</strong></li>
+</ul>
+<p><strong>Đáp án C.</strong> Công cụ promote nội dung qua stages, không có nhiệm vụ chính là tạo/xóa các item nghiệp vụ. Liên hệ Unit 4.</p>
+<h3>Unit 8 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết ba nhóm công cụ quản lý vòng đời Fabric.</p>
+<h4>Nội dung chính trong unit</h4>
+<ol>
+<li>Developer phát triển trong workspace/branch phù hợp.</li>
+<li>Git quản lý source definitions, lịch sử, branches, commits và Pull Requests.</li>
+<li>Shared Development workspace cập nhật từ Git sau tích hợp.</li>
+<li>Deployment pipelines đưa các item từ Development qua Test rồi Production.</li>
+<li>Fabric REST APIs cho phép tự động hóa các hoạt động được hỗ trợ.</li>
+<li>Sau triển khai cần kiểm tra dữ liệu, quyền, kết nối, credentials, schedule và dependencies.</li>
+</ol>
+<h4>Scenario nhanh</h4>
+<table><thead><tr><th>Scenario</th><th>Đáp án ưu tiên</th></tr></thead><tbody>
+<tr><td>Nhiều developers làm độc lập</td><td>Branches + isolated workspaces</td></tr>
+<tr><td>Xem lịch sử định nghĩa</td><td>Git</td></tr>
+<tr><td>Workspace → repository</td><td>Commit To Git</td></tr>
+<tr><td>Repository → workspace</td><td>Update From Git</td></tr>
+<tr><td>Chỉ deploy một số item</td><td>Selective deployment</td></tr>
+<tr><td>Report kết nối model tương ứng ở Test</td><td>Autobinding có điều kiện</td></tr>
+<tr><td>Source khác nhau giữa stages</td><td>Deployment rules nếu item/rule được hỗ trợ</td></tr>
+<tr><td>CI pipeline kích hoạt deployment</td><td>Fabric REST API + DevOps workflow</td></tr>
+<tr><td>Copy data vật lý</td><td>Data movement/ingestion, không chỉ Deployment pipeline</td></tr>
+</tbody></table>
+<h3>Coverage check — Module 1</h3>
+<table><thead><tr><th>Unit</th><th>Đã đi qua</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction; lifecycle management</td></tr>
+<tr><td>2</td><td>Continuous Integration/Delivery/Deployment; CI/CD in Fabric</td></tr>
+<tr><td>3</td><td>Git connection; commit/update; branching; PR/synchronization</td></tr>
+<tr><td>4</td><td>Pipeline; create; deploy; Git combination; pairing/autobinding/rules</td></tr>
+<tr><td>5</td><td>Git API; deployment API; automation và security</td></tr>
+<tr><td>6</td><td>Lab 3 workspaces, deployment pipeline, Lakehouse, kiểm tra, cleanup</td></tr>
+<tr><td>7</td><td>3 câu assessment, phân tích từng lựa chọn</td></tr>
+<tr><td>8</td><td>Summary</td></tr>
+</tbody></table>
+<p><strong>Coverage:</strong> 8/8 Unit, đủ headings chính đã xác định. Có giải thích security, roles, capacity, cost và limitations. Không tự nhận đã chạy Lab; Lab được trình bày dựa trên hướng dẫn. Không đi sâu API reference hoàn chỉnh hoặc mọi item types. Trọng tâm thi: Git vs Deployment pipelines; Commit vs Update; branches; pairing/autobinding; deployment rules; deployment không tự mang theo data/permissions.</p>
+<hr>

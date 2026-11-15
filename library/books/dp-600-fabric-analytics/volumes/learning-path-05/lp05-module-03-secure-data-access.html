@@ -1,0 +1,390 @@
+<h2>Module 3 — Secure data access in Microsoft Fabric</h2>
+<p><strong>LP5 · Module 3/3 · 7 Unit · khoảng 70 phút theo Microsoft Learn</strong></p>
+<p>Nguồn: https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/</p>
+<p>Đây là module cuối của Learning Path 5. Học cách quyết định ai được truy cập Fabric, workspace và item nào, được xem/chỉnh sửa những dữ liệu cụ thể nào. Trọng tâm: layered security, least privilege, Workspace roles, Item permissions, SQL granular permissions và OneLake security.</p>
+<h3>Structure check — Module 3</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/subheading hoặc loại</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Layered security và least privilege; không có heading nội bộ</td></tr>
+<tr><td>2</td><td>Understand the Fabric security model</td><td>Three levels of access evaluation; How the layers work together</td></tr>
+<tr><td>3</td><td>Configure workspace and item permissions</td><td>Grant workspace access with roles; Assign a workspace role; Refine access with item permissions; Lakehouse sharing permissions</td></tr>
+<tr><td>4</td><td>Apply granular permissions</td><td>Apply granular permissions using T-SQL; Apply granular permissions using OneLake security</td></tr>
+<tr><td>5</td><td>Exercise: Secure data access in Microsoft Fabric</td><td>Create workspace; data warehouse; lakehouse; workspace access; item access; OneLake security; cleanup</td></tr>
+<tr><td>6</td><td>Module assessment</td><td>3 câu hỏi</td></tr>
+<tr><td>7</td><td>Summary</td><td>Tổng kết</td></tr>
+</tbody></table>
+<p><strong>Coverage:</strong> 7/7 Unit, headings Unit 2–5 đã được giảng; Lab từ Microsoft Learning độc lập, assessment được diễn giải theo nội dung đã học.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giới thiệu các lớp bảo mật của Microsoft Fabric và <strong>Principle of Least Privilege</strong>: người dùng chỉ nhận những quyền cần để làm đúng việc được giao.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Ví dụ workspace có Lakehouse dữ liệu bán hàng, Warehouse tài chính, Semantic Model, Notebook và Report. Các nhóm người dùng khác nhau:</p>
+<table><thead><tr><th>Nhóm</th><th>Nhu cầu</th></tr></thead><tbody>
+<tr><td>Fabric Administrator</td><td>Quản lý workspace và permissions</td></tr>
+<tr><td>Data Engineer</td><td>Tạo Pipeline, Notebook và biến đổi dữ liệu</td></tr>
+<tr><td>Data Analyst</td><td>Truy vấn bảng phân tích được phép</td></tr>
+<tr><td>Report Consumer</td><td>Xem báo cáo được chia sẻ</td></tr>
+</tbody></table>
+<p>Nếu cấp Admin tất cả, rủi ro là thay đổi/xóa nhầm items, tiếp cận dữ liệu nhạy cảm, thiếu tách biệt nhiệm vụ và khó kiểm soát Production.</p>
+<pre><code class="language-mermaid">flowchart TD
+ W[Workspace roles: toàn workspace] --&gt; I[Item permissions: item cụ thể]
+ I --&gt; D[Granular data permissions: table, folder, row, column]</code></pre>
+<p>Đây là mô hình về phạm vi quyền, không phải thứ tự authentication. Một nhân viên chỉ cần bảng Sales trong Lakehouse nên thường không cần Workspace Contributor; có thể chia sẻ Lakehouse ở mức Read và dùng OneLake role chỉ cho bảng Sales.</p>
+<h3>Unit 2 — Understand the Fabric security model</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu ba cấp đánh giá truy cập và cách các lớp quyền phối hợp.</p>
+<h4>2.1. Three levels of access evaluation</h4>
+<pre><code class="language-mermaid">flowchart TD
+ A[Level 1: Microsoft Entra ID authentication] --&gt; B[Level 2: Fabric access]
+ B --&gt; C[Level 3: Data security]</code></pre>
+<p><strong>Level 1 — Microsoft Entra ID authentication:</strong> Xác thực danh tính bằng tài khoản tổ chức, SSO, MFA hoặc Conditional Access theo policies. Tài khoản Entra bị disable thì không vượt qua authentication dù từng có permissions.</p>
+<p><strong>Level 2 — Fabric access:</strong> Sau xác thực, kiểm tra người dùng có quyền sử dụng Fabric/Workspace/Item cần truy cập không. Có thể đăng nhập M365 nhưng không được xem workspace; một user cũng có thể chỉ được chia sẻ một item mà không là thành viên cả workspace.</p>
+<p><strong>Level 3 — Data security:</strong> Kiểm tra quyền trên thao tác dữ liệu cụ thể qua compute engines, SQL policies, OneLake security. Ví dụ có Lakehouse Read/metadata nhưng không có quyền đọc table <code>Customers</code>.</p>
+<p><strong>Authentication ≠ Authorization:</strong> Authentication trả lời <em>bạn là ai</em>, authorization trả lời <em>bạn được phép làm gì</em>.</p>
+<h4>2.2. How the layers work together</h4>
+<table><thead><tr><th>Cơ chế</th><th>Phạm vi</th><th>Ví dụ</th></tr></thead><tbody>
+<tr><td>Workspace roles</td><td>Toàn bộ workspace</td><td>Viewer trên Finance workspace</td></tr>
+<tr><td>Item permissions</td><td>Một item</td><td>Read Lakehouse Sales</td></tr>
+<tr><td>Compute/granular permissions</td><td>Query engine cụ thể</td><td>SQL <code>GRANT SELECT</code> trên view</td></tr>
+<tr><td>OneLake security</td><td>Dữ liệu trong OneLake</td><td>Cho phép đọc hai bảng Sales/Customers</td></tr>
+</tbody></table>
+<p><strong>Workspace roles:</strong> Một Contributor được tạo/sửa items và truy cập nhiều dữ liệu trong workspace, phù hợp người phát triển, không phù hợp một người chỉ cần một bảng.</p>
+<p><strong>Item permissions:</strong> Chia sẻ Warehouse <code>Accounting</code> mà không cấp quyền các Lakehouses khác trong workspace.</p>
+<p><strong>Compute permissions:</strong> SQL engine/semantic engine có policies tương ứng. GRANT trên SQL view không có nghĩa tự có quyền đọc file vật lý qua OneLake APIs.</p>
+<p><strong>OneLake security:</strong> Chọn đúng tables/folders/rows/columns theo loại chính sách hỗ trợ; phân quyền tập trung thay vì mở toàn bộ Lakehouse.</p>
+<h4>2.3. Control plane vs Data plane (mở rộng tài liệu kỹ thuật)</h4>
+<table><thead><tr><th>Control plane</th><th>Data plane</th></tr></thead><tbody>
+<tr><td>Ai được tạo/quản lý/chia sẻ items</td><td>Ai được đọc/ghi dữ liệu</td></tr>
+<tr><td>Workspace roles, Item permissions</td><td>OneLake security, compute data permissions</td></tr>
+<tr><td>Ví dụ tạo Notebook</td><td>Ví dụ đọc rows của bảng Sales</td></tr>
+</tbody></table>
+<p>Người được xem metadata Lakehouse chưa chắc được đọc dữ liệu. Phải đánh giá cả khả năng truy cập item lẫn nguồn dữ liệu.</p>
+<h4>Scenario kết hợp</h4>
+<p>Một nhân viên xác thực Entra thành công, truy cập Fabric, được chia sẻ Lakehouse Read nhưng không có OneLake/compute data permissions: có thể thấy metadata, nhưng <strong>không mặc nhiên đọc được mọi table</strong>. Để chỉ đọc <code>Sales</code>, dùng OneLake security role phù hợp, kiểm tra quyền rộng khác.</p>
+<h4>Exam notes</h4>
+<ul>
+<li>Authenticate → Entra ID.</li>
+<li>Manage all items → Workspace role.</li>
+<li>Share one item → Item permissions.</li>
+<li>Restrict SQL operations → SQL granular security trong mode phù hợp.</li>
+<li>Restrict tables/folders via OneLake → OneLake security.</li>
+<li><strong>Thứ tự:</strong> Microsoft Entra ID authentication → Fabric access → Data security.</li>
+</ul>
+<h3>Unit 3 — Configure workspace and item permissions</h3>
+<h4>Unit này dạy gì</h4>
+<p>Biết khi nào cấp Workspace role cho cả workspace, khi nào chỉ cấp Item permissions, và các permissions đặc thù Lakehouse.</p>
+<h4>3.1. Grant workspace access with roles</h4>
+<p>Bốn Workspace roles:</p>
+<table><thead><tr><th>Role</th><th>Xem items</th><th>Tạo/sửa</th><th>Quản lý/chia sẻ</th></tr></thead><tbody>
+<tr><td>Admin</td><td>Có</td><td>Có</td><td>Quản trị toàn workspace, permissions, settings</td></tr>
+<tr><td>Member</td><td>Có</td><td>Có</td><td>Có thể quản lý chia sẻ và thành viên trong phạm vi hỗ trợ</td></tr>
+<tr><td>Contributor</td><td>Có</td><td>Có</td><td>Không có quyền quản lý workspace members như Admin/Member</td></tr>
+<tr><td>Viewer</td><td>Có</td><td>Không</td><td>Không quản trị workspace</td></tr>
+</tbody></table>
+<p><strong>Admin:</strong> Tạo/sửa/xóa items, workspace settings, manage access, xóa workspace; dành cho người thực sự quản trị. Không chọn chỉ vì cần tạo Notebook.</p>
+<p><strong>Member:</strong> Phát triển/chia sẻ và quản lý nội dung, có quyền chia sẻ hoặc bổ sung thành viên theo khả năng hỗ trợ; không có toàn bộ quyền của Admin (ví dụ quản lý Admin hoặc xóa workspace).</p>
+<p><strong>Contributor:</strong> Tạo và chỉnh sửa items, chạy Notebook/Pipeline, đọc và ghi dữ liệu được role cho phép. Dành cho Data Engineer cần làm việc trên workspace nhưng không quản lý thành viên.</p>
+<p><strong>Viewer:</strong> Xem items, không sửa. Không tự có quyền đọc mọi dữ liệu OneLake. Một số quyền truy vấn SQL endpoint vẫn tùy role và access mode; không đồng nhất quyền SQL với quyền đọc OneLake trực tiếp.</p>
+<p><strong>Ví dụ:</strong> Data Engineer cần tạo Notebook và đọc Lakehouse data → <strong>Contributor</strong> theo least privilege; Admin quá rộng, Viewer thiếu quyền.</p>
+<h4>3.2. Assign a workspace role</h4>
+<ol>
+<li><code>Fabric → Workspaces → [workspace]</code>.</li>
+<li><code>Manage access → Add people or groups</code>.</li>
+<li>Chọn user hoặc Entra group.</li>
+<li>Chọn Admin/Member/Contributor/Viewer.</li>
+<li><code>Add</code>.</li>
+</ol>
+<p>Ví dụ:</p>
+<table><thead><tr><th>Đối tượng</th><th>Role</th></tr></thead><tbody>
+<tr><td>Platform Admin</td><td>Admin</td></tr>
+<tr><td>Data Engineering Lead</td><td>Member</td></tr>
+<tr><td>Data Engineering Team</td><td>Contributor</td></tr>
+<tr><td>UAT Reviewers</td><td>Viewer</td></tr>
+</tbody></table>
+<p>Có thể cấp qua users, security groups và các nhóm được hỗ trợ. Với 20 engineers, sử dụng group <code>Fabric-DataEngineers</code> để dễ quản lý membership. Khi người dùng nhận quyền qua nhiều nhóm, phải kiểm tra tổng quyền/effective permissions. Bỏ direct permission không đủ nếu group vẫn cấp quyền.</p>
+<h4>3.3. Refine access with item permissions</h4>
+<p>Nếu một Data Engineer chuyển vai trò và chỉ cần Warehouse <code>Accounting</code>, không nên giữ Workspace Contributor:</p>
+<ol>
+<li>Gỡ Workspace Contributor nếu không còn cần.</li>
+<li>Chia sẻ item cụ thể.</li>
+<li>Cấp Read và data permissions phù hợp.</li>
+<li>Nếu cần giới hạn objects/rows/columns, cấu hình granular security.</li>
+</ol>
+<p>Ví dụ Workspace <code>Finance</code> chứa <code>Sales</code> Lakehouse, <code>Accounting</code> Warehouse, <code>Payroll</code> Lakehouse, <code>FinancialSummary</code> Report. Một Analyst chỉ cần Sales → chia sẻ riêng Sales Lakehouse, không mở Workspace Viewer nếu không cần nhìn tất cả items.</p>
+<p>Thao tác: <code>Workspace → Item → ... → Manage permissions → Add user</code> và chọn permissions cần thiết.</p>
+<p><strong>Bẫy:</strong> Gỡ item permission không đủ nếu user vẫn có Workspace role hoặc membership trong group cấp quyền cao hơn.</p>
+<h4>3.4. Lakehouse sharing permissions</h4>
+<table><thead><tr><th>Permission</th><th>Chức năng</th></tr></thead><tbody>
+<tr><td>Read</td><td>Xem item và metadata; không tự có toàn bộ data</td></tr>
+<tr><td>Read all SQL endpoint data</td><td>Truy cập SQL endpoint data theo mode</td></tr>
+<tr><td>Read all Apache Spark and subscribe to events</td><td>Đọc qua Spark/OneLake APIs theo quyền hỗ trợ</td></tr>
+<tr><td>Build reports on default semantic model</td><td>Tạo report dựa trên semantic model tương ứng</td></tr>
+</tbody></table>
+<p>Các tên permission trong APIs/tài liệu có thể là <code>Read</code>, <code>ReadData</code>, <code>ReadAll</code>.</p>
+<ul>
+<li><strong>Read:</strong> Quyền cơ bản trên item/metadata.</li>
+<li><strong>ReadData:</strong> Liên quan đến SQL data access trong Delegated identity mode; ở User identity mode quyền đọc bảng do OneLake security quyết định.</li>
+<li><strong>ReadAll:</strong> Quyền đọc rộng qua OneLake/Spark tương ứng, có thể được phản ánh qua role <code>DefaultReader</code> khi OneLake security dùng cơ chế này.</li>
+</ul>
+<p>Nếu mục tiêu là giới hạn vài bảng cụ thể, tránh quyền rộng như ReadAll/DefaultReader vượt qua yêu cầu least privilege.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Scenario</th><th>Chọn</th></tr></thead><tbody>
+<tr><td>Create items and read Lakehouse</td><td>Contributor</td></tr>
+<tr><td>Full administration</td><td>Admin</td></tr>
+<tr><td>Develop + manage sharing</td><td>Member khi không cần Admin</td></tr>
+<tr><td>View workspace only</td><td>Viewer</td></tr>
+<tr><td>Access one Warehouse only</td><td>Item permissions</td></tr>
+<tr><td>Selected Lakehouse tables</td><td>Item Read + OneLake security role</td></tr>
+<tr><td>Remove effective role-based access</td><td>Sửa/gỡ Workspace role và groups liên quan</td></tr>
+</tbody></table>
+<h3>Unit 4 — Apply granular permissions</h3>
+<h4>Unit này dạy gì</h4>
+<p>Dùng T-SQL và OneLake security để kiểm soát dữ liệu chi tiết: bảng, folder, row, column, thay vì chỉ cấp quyền trên workspace/item.</p>
+<h4>4.1. Apply granular permissions using T-SQL</h4>
+<p><strong>T-SQL = Transact-SQL</strong>, ngôn ngữ SQL của Microsoft. Nhóm DCL quan trọng:</p>
+<table><thead><tr><th>Lệnh</th><th>Nghĩa</th></tr></thead><tbody>
+<tr><td><code>GRANT</code></td><td>Cấp quyền</td></tr>
+<tr><td><code>DENY</code></td><td>Từ chối quyền</td></tr>
+<tr><td><code>REVOKE</code></td><td>Gỡ thiết lập GRANT hoặc DENY</td></tr>
+</tbody></table>
+<p>Ví dụ role <code>SalesAnalysts</code> đã tồn tại:</p>
+<pre><code class="language-sql">GRANT SELECT ON OBJECT::dbo.Sales
+TO SalesAnalysts;</code></pre>
+<p>Cho role đọc bảng Sales theo SQL security model.</p>
+<pre><code class="language-sql">DENY SELECT ON OBJECT::dbo.Payroll
+TO SalesAnalysts;</code></pre>
+<p>Từ chối quyền SELECT trên Payroll theo các quy tắc SQL.</p>
+<pre><code class="language-sql">REVOKE SELECT ON OBJECT::dbo.Sales
+FROM SalesAnalysts;</code></pre>
+<p>Gỡ GRANT; <strong>REVOKE không đồng nghĩa DENY</strong>. User vẫn có thể nhận quyền từ role khác. DENY thường ưu tiên hơn GRANT trong tính effective SQL permissions, với các ngoại lệ theo SQL model.</p>
+<p><strong>Các cơ chế khác:</strong></p>
+<ul>
+<li><strong>Row-Level Security (RLS):</strong> Giới hạn rows (ví dụ nhân viên Hà Nội chỉ thấy đơn hàng miền Bắc).</li>
+<li><strong>Column-Level Security (CLS):</strong> Giới hạn columns (ví dụ không được đọc <code>Phone</code>).</li>
+<li><strong>Dynamic Data Masking (DDM):</strong> Che giá trị nhạy cảm trong kết quả truy vấn với người dùng không có đặc quyền phù hợp. DDM không thay thế RLS/CLS.</li>
+</ul>
+<h5>SQL analytics endpoint modes — Cập nhật cần biết</h5>
+<table><thead><tr><th>Mode</th><th>Cơ chế điều khiển dữ liệu bảng</th></tr></thead><tbody>
+<tr><td>Delegated identity mode</td><td>SQL permissions</td></tr>
+<tr><td>User identity mode</td><td>OneLake security roles</td></tr>
+</tbody></table>
+<p>Trong <strong>Delegated identity mode</strong>, engine dùng delegated identity để truy cập OneLake rồi áp SQL permissions. Trong <strong>User identity mode</strong>, danh tính người dùng được chuyển tới OneLake và quyền bảng được đánh giá bởi OneLake security; <code>GRANT</code>/<code>REVOKE</code> trên table không phải cơ chế điều khiển đọc bảng ở mode này, dù SQL permissions vẫn có thể áp dụng cho views/stored procedures theo khả năng hỗ trợ.</p>
+<p>Tài liệu kỹ thuật tại thời điểm giảng ghi SQL analytics endpoints mới mặc định ở Delegated identity mode. Chuyển mode có thể ảnh hưởng queries; cần đánh giá trước khi đổi trên Production.</p>
+<p>Thao tác tham khảo: <code>SQL analytics endpoint → Security → View data access mode → Data access mode settings</code>.</p>
+<h4>4.2. Apply granular permissions using OneLake security</h4>
+<p><strong>OneLake security</strong> tổ chức bằng <strong>Role-Based Access Control (RBAC)</strong>. Role cho biết data nào được truy cập, được làm gì, ai là member và constraints dữ liệu.</p>
+<p>Ví dụ <code>HRLakehouse</code> có <code>Employees</code>, <code>Departments</code>, <code>Payroll</code>, <code>Attendance</code>. Group <code>HRAnalysts</code> chỉ cần Employees và Departments. Tạo custom role chỉ cho hai bảng; không cấp quyền rộng trên Payroll.</p>
+<p><strong>Bốn thành phần của role:</strong></p>
+<table><thead><tr><th>Thành phần</th><th>Nội dung</th></tr></thead><tbody>
+<tr><td>Data</td><td>Tables/schemas/folders được chọn</td></tr>
+<tr><td>Permission</td><td>Read hoặc ReadWrite nếu được hỗ trợ</td></tr>
+<tr><td>Members</td><td>Users/Entra groups</td></tr>
+<tr><td>Constraints</td><td>RLS/CLS constraints nếu được hỗ trợ</td></tr>
+</tbody></table>
+<ul>
+<li><strong>Data:</strong> Ví dụ <code>Tables/dbo/Employees</code>.</li>
+<li><strong>Read:</strong> Đọc dữ liệu trong phạm vi role.</li>
+<li><strong>ReadWrite:</strong> Đọc/ghi khi loại item, dữ liệu và engine hỗ trợ; không kết hợp tùy ý với RLS/CLS constraints trong cùng role.</li>
+<li><strong>Members:</strong> Entra group <code>HR-Analysts</code>.</li>
+<li><strong>Constraints:</strong> Ví dụ Department = Finance hoặc chỉ một số columns.</li>
+</ul>
+<p><strong>Tạo role:</strong></p>
+<ol>
+<li><code>Workspace → [Lakehouse] → Manage OneLake security</code>.</li>
+<li><code>New role</code>, đặt tên.</li>
+<li>Chọn Read hoặc ReadWrite nếu UI hỏi.</li>
+<li>Chọn tables/folders/schemas.</li>
+<li>Thêm members.</li>
+<li>Cấu hình constraints phù hợp.</li>
+<li>Save/Create.</li>
+</ol>
+<p>Workspace Admin và Member có quyền cấu hình OneLake security roles theo tài liệu. <strong>Contributor đã có quyền dữ liệu rộng</strong> trong workspace nên không thể dùng một custom OneLake role để thu hẹp thành chỉ một bảng cho người có Workspace Contributor.</p>
+<h5>DefaultReader và effective permissions</h5>
+<p>Role <strong>DefaultReader</strong> được Fabric tạo và có thể phản ánh những người có quyền <code>ReadAll</code> thành quyền đọc rộng. Nếu user thuộc custom role <code>SalesOnly</code> <strong>nhưng vẫn có ReadAll/DefaultReader</strong>, họ có thể đọc các bảng khác. Phải kiểm tra/gỡ những nguồn quyền rộng để least privilege thực sự có hiệu lực.</p>
+<p>Khi người dùng thuộc nhiều OneLake roles, grants có thể kết hợp (ví dụ role Sales và Customers cho quyền cả hai bảng). RLS từ nhiều roles đối với cùng table có thể kết hợp theo logic OR; CLS có các quy tắc riêng với SQL endpoint. OneLake roles không đơn giản là deny roles để trừ quyền khỏi một grant rộng.</p>
+<h5>So sánh T-SQL và OneLake security</h5>
+<table><thead><tr><th>Tiêu chí</th><th>T-SQL granular security</th><th>OneLake security</th></tr></thead><tbody>
+<tr><td>Phạm vi</td><td>SQL compute engine</td><td>OneLake data</td></tr>
+<tr><td>Đối tượng</td><td>SQL objects, views, tables, policies</td><td>Tables, folders, schemas, rows, columns</td></tr>
+<tr><td>Cách cấu hình</td><td>DCL và SQL policies</td><td>RBAC roles</td></tr>
+<tr><td>Spark/OneLake APIs</td><td>Không trực tiếp kiểm soát</td><td>Quyền OneLake theo đường truy cập được hỗ trợ</td></tr>
+<tr><td>SQL endpoint</td><td>Phù hợp Delegated identity mode cho table permissions</td><td>User identity mode cho table access</td></tr>
+<tr><td>Ví dụ</td><td>Chỉ SELECT view tài chính</td><td>Chỉ đọc một số Lakehouse tables</td></tr>
+</tbody></table>
+<p><strong>Scenario A:</strong> User chỉ truy vấn SQL Warehouse và cần cấm một số SQL objects → T-SQL permissions.</p>
+<p><strong>Scenario B:</strong> Workspace Viewer chỉ đọc <code>Sales</code> qua Lakehouse Explorer/Spark → OneLake security role.</p>
+<p><strong>Scenario C:</strong> Muốn OneLake policies nhất quán cho SQL endpoint tables → xem User identity mode và giới hạn engine tương ứng.</p>
+<h4>Exam notes</h4>
+<ul>
+<li>GRANT cấp, DENY từ chối, REVOKE gỡ thiết lập.</li>
+<li>Read item ≠ quyền đọc data.</li>
+<li>DefaultReader/ReadAll có thể cấp quyền rộng ngoài custom role.</li>
+<li>Workspace Contributor có quyền dữ liệu rộng, custom OneLake role không thu hẹp quyền này.</li>
+<li>SQL endpoint access mode ảnh hưởng cách quyền table được thực thi.</li>
+</ul>
+<h3>Unit 5 — Exercise: Secure data access in Microsoft Fabric</h3>
+<p>Nguồn Lab: https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/19-secure-data-access.html</p>
+<h4>Unit này dạy gì</h4>
+<p>Áp dụng Workspace roles, Item permissions, OneLake security roles qua việc dùng hai tài khoản để kiểm chứng <strong>effective permissions</strong> chứ không chỉ nhìn cấu hình.</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Thành phần</th><th>Yêu cầu</th></tr></thead><tbody>
+<tr><td>Portal</td><td>https://app.fabric.microsoft.com</td></tr>
+<tr><td>Capacity</td><td>Paid/trial hợp lệ</td></tr>
+<tr><td>Account 1</td><td>Quyền tạo workspace, Workspace Admin</td></tr>
+<tr><td>Account 2</td><td>User thử nghiệm, nhận Viewer/item permissions</td></tr>
+<tr><td>Browser</td><td>Hai sessions; có thể InPrivate</td></tr>
+<tr><td>Warehouse</td><td>Sample warehouse</td></tr>
+<tr><td>Lakehouse</td><td>Sample public holidays data</td></tr>
+<tr><td>Git</td><td>Không cần</td></tr>
+<tr><td>Chi phí</td><td>Có thể tiêu thụ Fabric capacity; cleanup</td></tr>
+</tbody></table>
+<p>Nếu không có tài khoản thứ hai, vẫn có thể học cách cấu hình nhưng không thể xác minh end-user effective permissions đầy đủ. Không tự mở paid resources khi chưa được chấp thuận.</p>
+<h4>5.1. Create a workspace</h4>
+<p>Account 1 → <code>Fabric → Workspaces → New workspace</code>, đặt <code>DP600-Security-Lab</code>, chọn capacity và Create. Kết quả: Account 1 là Workspace Admin, workspace trống.</p>
+<h4>5.2. Create a data warehouse</h4>
+<p><code>New item → Store Data → Sample warehouse</code>, đặt <code>SecurityWarehouse</code>. Kiểm tra có sample tables, bao gồm <code>Date</code>; Account 1 truy vấn dữ liệu được.</p>
+<h4>5.3. Create a lakehouse</h4>
+<p><code>New item → Lakehouse</code>; đặt <code>SecurityLakehouse</code>, bật Lakehouse schemas; <code>Start with sample data</code> để nạp public holidays. Kiểm tra bảng <code>publicholidays</code> (thường trong schema dbo).</p>
+<h4>5.4. Apply workspace access controls</h4>
+<p><strong>Bước 1 — Chưa cấp quyền:</strong> Account 2 đăng nhập bằng InPrivate, tìm workspace <code>DP600-Security-Lab</code>. Dự kiến không thấy workspace khi chưa có bất kỳ quyền/nhóm kế thừa nào.</p>
+<p><strong>Bước 2 — Cấp Viewer:</strong> Account 1 → <code>Workspace → Manage access → Add people or groups</code>; nhập Account 2, chọn <code>Viewer</code>, Add.</p>
+<p><strong>Bước 3 — Kiểm tra:</strong> Account 2 refresh, thấy workspace/items, mở <code>SecurityWarehouse</code> và xem bảng <code>Date</code>; thử <code>SecurityLakehouse → SQL analytics endpoint → publicholidays</code> theo cấu hình SQL endpoint của Lab. Đây là <strong>SQL access</strong>, không tự chứng minh quyền đọc trực tiếp mọi OneLake data qua Spark.</p>
+<h4>5.5. Apply item access control</h4>
+<p><strong>Bước 4 — Gỡ Viewer:</strong> Account 1 → <code>Workspace → Manage access</code>; tìm Account 2, Remove Workspace Viewer.</p>
+<p><strong>Bước 5 — Chia sẻ Warehouse:</strong> <code>SecurityWarehouse → ... → Manage permissions → Add user</code>; thêm Account 2; cho Read và <code>ReadData</code>, không cấp quyền rộng khác; Grant.</p>
+<p><strong>Bước 6 — Kiểm chứng:</strong> Account 2 không còn là Workspace Viewer nhưng có thể tìm <code>SecurityWarehouse</code> trong <code>OneLake catalog → Data items</code>, mở và xem <code>Date</code> qua quyền được cấp, trong SQL mode tương ứng. Không tự có quyền các item khác.</p>
+<p><strong>Nếu SQL data không hiện:</strong> Kiểm tra access mode, SQL GRANT/ReadData, effective permissions và kết nối.</p>
+<h4>5.6. Apply OneLake security in a lakehouse</h4>
+<p><strong>Bước 7 — Share Read only:</strong> Account 1 → <code>SecurityLakehouse → ... → Manage permissions → Add user</code>; thêm Account 2, chỉ Read, không thêm data permissions. Account 2 có thể mở item/metadata nhưng chưa đọc trực tiếp dữ liệu bảng <code>publicholidays</code> qua OneLake theo đường truy cập Lab kiểm tra.</p>
+<p><strong>Bước 8 — Tạo OneLake role:</strong> Account 1 → <code>SecurityLakehouse → Manage OneLake security → New</code>. Đặt role <code>publicholidays</code>, chọn Read như hướng dẫn, không bật thêm các quyền không cần thiết.</p>
+<p><strong>Bước 9 — Chọn table:</strong> <code>Selected data → Edit → Tables → dbo → publicholidays → Add data → Next</code>.</p>
+<p><strong>Bước 10 — Thêm member:</strong> Chọn Account 2 vào Members, xác nhận và Create.</p>
+<p><strong>Bước 11 — Test:</strong> Account 2 Refresh, mở Lakehouse, kiểm tra bảng <code>publicholidays</code> hiển thị dữ liệu.</p>
+<p><strong>Thay đổi quyền quan sát được:</strong></p>
+<table><thead><tr><th>Giai đoạn</th><th>Workspace</th><th>Warehouse</th><th>Lakehouse</th></tr></thead><tbody>
+<tr><td>Ban đầu</td><td>Không truy cập</td><td>Không</td><td>Không</td></tr>
+<tr><td>Cấp Workspace Viewer</td><td>Có thể xem items</td><td>Đọc SQL theo role/mode</td><td>Đọc SQL endpoint theo cấu hình Lab</td></tr>
+<tr><td>Gỡ Viewer + Warehouse ReadData</td><td>Không còn là workspace member</td><td>Có quyền trực tiếp</td><td>Không</td></tr>
+<tr><td>Thêm Lakehouse Read</td><td>Không là workspace member</td><td>Có</td><td>Metadata Lakehouse</td></tr>
+<tr><td>Thêm OneLake role trên <code>publicholidays</code></td><td>Không là workspace member</td><td>Có</td><td>Đọc bảng <code>publicholidays</code></td></tr>
+</tbody></table>
+<p>Đây là minh họa của three-layer permissions: workspace, item và granular data security.</p>
+<h4>5.7. Clean up resources</h4>
+<p>Account 1 → <code>Workspace settings → General → Remove this workspace</code>. Chỉ xóa tài nguyên Lab riêng; không xóa workspace đang có data sản xuất.</p>
+<h4>Lỗi thường gặp</h4>
+<table><thead><tr><th>Triệu chứng</th><th>Kiểm tra/cách xử lý</th></tr></thead><tbody>
+<tr><td>Account 2 vẫn thấy mọi item</td><td>Workspace Viewer qua direct/group membership vẫn còn</td></tr>
+<tr><td>Account 2 có Read nhưng không đọc bảng</td><td>Thiếu OneLake role/SQL permission theo access mode</td></tr>
+<tr><td>Custom role hạn chế nhưng vẫn đọc mọi bảng</td><td>ReadAll/DefaultReader hoặc quyền rộng khác</td></tr>
+<tr><td>SQL endpoint từ chối</td><td>Item Read, data permissions, SQL access mode</td></tr>
+<tr><td>Không tạo được OneLake role</td><td>Workspace Admin/Member, tenant settings, item hỗ trợ</td></tr>
+<tr><td>Không thấy bảng publicholidays</td><td>Sample load chưa xong, refresh metadata</td></tr>
+</tbody></table>
+<h4>Năm điểm luyện tay</h4>
+<ol>
+<li>Cấp và gỡ Workspace Viewer.</li>
+<li>Share riêng Warehouse với ReadData.</li>
+<li>Share Lakehouse chỉ Read/metadata.</li>
+<li>Tạo OneLake role cho một bảng.</li>
+<li>Dùng danh tính thứ hai để kiểm tra quyền thực tế.</li>
+</ol>
+<h3>Unit 6 — Module assessment</h3>
+<p><em>Ba câu được diễn giải theo nội dung assessment đã giảng; không trích nguyên văn Microsoft Learn.</em></p>
+<h4>Câu 1 — Trình tự Fabric đánh giá truy cập?</h4>
+<ul>
+<li>A. Data security → Fabric access → Entra authentication.</li>
+<li><strong>B. Microsoft Entra ID authentication → Fabric access → Data security.</strong></li>
+<li>C. Fabric access → Entra authentication → Data security.</li>
+</ul>
+<p><strong>Đáp án B.</strong> Phải xác thực trước khi kiểm tra Fabric và hành động dữ liệu. A/C đảo thứ tự. Mẹo: Authenticate → Fabric authorization → Data authorization. Liên hệ Unit 2.</p>
+<h4>Câu 2 — Data Engineer cần tạo items và đọc Lakehouse data, chọn Workspace role nào?</h4>
+<ul>
+<li>A. Viewer.</li>
+<li><strong>B. Contributor.</strong></li>
+<li>C. Admin.</li>
+</ul>
+<p><strong>Đáp án B.</strong> Viewer không tạo được items; Admin có quyền thừa. Contributor đủ quyền phát triển và đọc dữ liệu theo role. Mẹo: create items + read data + không quản trị permissions → Contributor. Liên hệ Unit 3.</p>
+<h4>Câu 3 — Workspace Viewer chỉ được đọc một số bảng trong Lakehouse, dùng gì?</h4>
+<ul>
+<li><strong>A. OneLake security roles.</strong></li>
+<li>B. Data Manipulation Language (DML).</li>
+<li>C. Item permissions.</li>
+</ul>
+<p><strong>Đáp án A.</strong> OneLake security roles chọn tables/folders cụ thể. DML là nhóm thao tác dữ liệu, không cấu hình OneLake grants; item Read quá tổng quát, không tự giới hạn đến một số bảng. Liên hệ Unit 4.</p>
+<h3>Unit 7 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Lựa chọn cơ chế phân quyền phù hợp, từ toàn workspace tới một item và dữ liệu cụ thể.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Bắt đầu bằng <strong>người dùng cần làm gì và truy cập dữ liệu nào</strong>, không bắt đầu bằng việc cấp quyền thật cao để cho dễ. Nếu cần tạo/sửa nhiều items → Workspace role phù hợp. Nếu chỉ cần một Warehouse/Lakehouse → Item permissions. Nếu cần giới hạn SQL objects/rows/columns → compute permissions trong access mode phù hợp. Nếu cần giới hạn OneLake tables/folders/rows/columns → OneLake security roles. Cuối cùng, xác minh effective permissions bằng tài khoản đại diện thật.</p>
+<h4>Scenario tổng hợp</h4>
+<table><thead><tr><th>Scenario</th><th>Cách chọn</th></tr></thead><tbody>
+<tr><td>Developer tạo Notebook và đọc dữ liệu</td><td>Contributor</td></tr>
+<tr><td>Quản trị toàn workspace</td><td>Admin</td></tr>
+<tr><td>Phát triển và chia sẻ items</td><td>Member nếu không cần Admin</td></tr>
+<tr><td>Chỉ xem workspace</td><td>Viewer</td></tr>
+<tr><td>Chỉ vào một Warehouse</td><td>Item permissions</td></tr>
+<tr><td>Lakehouse metadata, chưa cấp data</td><td>Read</td></tr>
+<tr><td>Chỉ đọc <code>Sales</code> từ Lakehouse</td><td>OneLake security role</td></tr>
+<tr><td>Restrict SQL object access</td><td>T-SQL DCL trong mode phù hợp</td></tr>
+<tr><td>Truy vấn SQL table theo OneLake identity</td><td>User identity mode</td></tr>
+<tr><td>Gỡ SQL GRANT</td><td>REVOKE</td></tr>
+<tr><td>Người dùng còn quyền rộng dù custom role hẹp</td><td>Kiểm tra groups, ReadAll, DefaultReader và Workspace roles</td></tr>
+</tbody></table>
+<h3>Coverage check — Module 3</h3>
+<table><thead><tr><th>Unit</th><th>Heading/nội dung đã đi qua</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction; layered security; least privilege</td></tr>
+<tr><td>2</td><td>Three levels of access evaluation; How layers work together; control/data plane</td></tr>
+<tr><td>3</td><td>4 headings: grant workspace access; assign role; refine item; Lakehouse sharing</td></tr>
+<tr><td>4</td><td>2 headings: T-SQL granular; OneLake security; SQL mode, DefaultReader, effective permissions</td></tr>
+<tr><td>5</td><td>Lab: workspace, sample warehouse, sample lakehouse, workspace access, item access, OneLake security, cleanup</td></tr>
+<tr><td>6</td><td>3 câu assessment với giải thích từng lựa chọn</td></tr>
+<tr><td>7</td><td>Summary</td></tr>
+</tbody></table>
+<p><strong>Coverage:</strong> 7/7 Unit, đủ headings chính đã xác định. Đã giải thích Workspace roles, Item permissions, OneLake security, T-SQL, RLS, CLS, DDM, SQL endpoint identity modes, ReadAll/DefaultReader, permissions, capacity và Lab. Lab chưa chạy trực tiếp. Không đi sâu cú pháp triển khai đầy đủ từng RLS/CLS/DDM hoặc toàn bộ bảo mật Semantic Models vì không phải các heading chính của Module 3. AI/Copilot/Agent/Dataverse/Power Automate không có heading chuyên biệt trong module.</p>
+<p><strong>Các bẫy quan trọng:</strong></p>
+<ol>
+<li>Workspace Viewer không tự có toàn bộ quyền OneLake.</li>
+<li>Read item permission khác quyền đọc underlying data.</li>
+<li>Contributor khác Member về quản lý sharing/membership.</li>
+<li>Custom OneLake roles không thu hẹp Workspace Contributor/Admin/Member có quyền rộng.</li>
+<li>DefaultReader/ReadAll có thể khiến custom role hẹp không còn hiệu quả giới hạn.</li>
+<li><code>REVOKE</code> khác <code>DENY</code>.</li>
+<li>SQL analytics endpoint mode quyết định cách table permissions được đánh giá.</li>
+</ol>
+<hr>
+<h2>Tổng kết Learning Path 5</h2>
+<h3>Hoàn thành 3 Module — 22/22 Unit</h3>
+<table><thead><tr><th>Thứ tự</th><th>Module</th><th>Unit</th><th>Trọng tâm</th></tr></thead><tbody>
+<tr><td>1</td><td>Implement CI/CD in Microsoft Fabric</td><td>8</td><td>Git, branches, deployment pipelines, REST APIs</td></tr>
+<tr><td>2</td><td>Monitor activities in Microsoft Fabric</td><td>7</td><td>Monitoring hub, Workspace monitoring, Activator</td></tr>
+<tr><td>3</td><td>Secure data access in Microsoft Fabric</td><td>7</td><td>Workspace roles, item permissions, SQL và OneLake security</td></tr>
+<tr><td><strong>Tổng</strong></td><td></td><td><strong>22</strong></td><td></td></tr>
+</tbody></table>
+<p><strong>Tổng quan luồng vận hành:</strong></p>
+<pre><code class="language-mermaid">flowchart TD
+ A[Developer change] --&gt; B[Git version control / Pull Request]
+ B --&gt; C[Deployment pipeline: Dev → Test → Prod]
+ C --&gt; D[Monitoring hub / Workspace monitoring]
+ D --&gt; E{Có vấn đề?}
+ E --&gt;|Yes| F[Activator / Operations response]
+ E --&gt;|No| G[Tiếp tục vận hành]
+ F --&gt; D
+ S[Entra ID + Workspace + Item + OneLake / SQL security] -.-&gt; C
+ S -.-&gt; D</code></pre>
+<h3>Khuyến nghị ôn thi DP-600 theo scenario</h3>
+<ul>
+<li><strong>ALM/CI/CD:</strong> Nhận diện khi nào dùng Git, Deployment pipelines, REST APIs. Phân biệt định nghĩa item và dữ liệu được lưu trữ; không mặc định deploy mang theo credentials, schedule và access rules.</li>
+<li><strong>Monitoring:</strong> Phân biệt status, performance trend và business data correctness. Monitoring hub để xem runs; Workspace monitoring để phân tích KQL logs; Activator để phản ứng tự động với events.</li>
+<li><strong>Security:</strong> Xác thực trước, sau đó đánh giá quyền Fabric, rồi quyền dữ liệu. Chọn workspace role theo least privilege; dùng Item permissions hoặc granular T-SQL/OneLake security khi cần giới hạn rõ phạm vi dữ liệu.</li>
+</ul>
+<h3>Tài liệu chính thức tham khảo</h3>
+<ol>
+<li><a href="https://learn.microsoft.com/en-us/training/modules/implement-cicd-in-fabric/" rel="noopener noreferrer">Module 1 — Implement CI/CD</a></li>
+<li><a href="https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/21-implement-cicd.html" rel="noopener noreferrer">Lab 1 — Implement deployment pipelines</a></li>
+<li><a href="https://learn.microsoft.com/en-us/fabric/cicd/git-integration/intro-to-git-integration" rel="noopener noreferrer">Fabric Git integration</a></li>
+<li><a href="https://learn.microsoft.com/en-us/fabric/cicd/deployment-pipelines/intro-to-deployment-pipelines" rel="noopener noreferrer">Fabric Deployment pipelines</a></li>
+<li><a href="https://learn.microsoft.com/en-us/training/modules/monitor-fabric-items/" rel="noopener noreferrer">Module 2 — Monitor activities</a></li>
+<li><a href="https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/18-monitor-hub.html" rel="noopener noreferrer">Lab 2 — Monitor hub</a></li>
+<li><a href="https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/" rel="noopener noreferrer">Module 3 — Secure data access</a></li>
+<li><a href="https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/19-secure-data-access.html" rel="noopener noreferrer">Lab 3 — Secure data access</a></li>
+</ol>
+<blockquote><p><strong>Trạng thái học:</strong> Tất cả 22 Unit đã được giảng trong cuộc trò chuyện. Các Lab, assessment và kết quả vận hành chưa được xác nhận đã hoàn thành trên Microsoft Learn profile hoặc trong Fabric tenant thực tế.</p></blockquote>

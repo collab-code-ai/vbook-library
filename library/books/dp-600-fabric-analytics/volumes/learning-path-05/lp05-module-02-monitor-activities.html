@@ -1,0 +1,358 @@
+<h2>Module 2 — Monitor activities in Microsoft Fabric</h2>
+<p><strong>LP5 · Module 2/3 · 7 Unit · khoảng 61 phút theo Microsoft Learn</strong></p>
+<p>Nguồn: https://learn.microsoft.com/en-us/training/modules/monitor-fabric-items/</p>
+<p>Module dạy giám sát Fabric activities, phát hiện lỗi, so sánh hiệu năng, xem diagnostic logs và phản ứng với sự kiện. Tính năng Monitoring hub đã được Microsoft phát triển thêm trong năm 2026; bài học vừa giữ thuật ngữ theo module, vừa chú thích UI/tính năng mới.</p>
+<h3>Structure check — Module 2</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading/subheading hoặc loại</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction</td><td>Vai trò monitoring; không có heading nhỏ</td></tr>
+<tr><td>2</td><td>Understand monitoring</td><td>Why monitoring matters; Types of Fabric activities to monitor (Data pipelines, Dataflow Gen2, Semantic model refreshes, Spark jobs and notebooks, Eventstreams); Establish a monitoring baseline</td></tr>
+<tr><td>3</td><td>Use the Microsoft Fabric monitoring hub</td><td>Open the monitoring hub; Understand activity status; View activity details; View historical runs; Filter and customize the view; Manage failure notifications; Workspace monitoring</td></tr>
+<tr><td>4</td><td>Respond to Fabric events with Activator</td><td>Fabric job events; Set up an alert from Real-Time hub; Actions available; When to use Activator vs. Schedule failures</td></tr>
+<tr><td>5</td><td>Exercise - Monitor Fabric activity in the monitoring hub</td><td>Lab: workspace, Lakehouse, Dataflow, Notebook, history, view customization, cleanup</td></tr>
+<tr><td>6</td><td>Module assessment</td><td>3 câu hỏi</td></tr>
+<tr><td>7</td><td>Summary</td><td>Tổng kết</td></tr>
+</tbody></table>
+<p><strong>Coverage nguồn:</strong> Các heading Unit 2–4 và Lab/assessment đã được xác định. Lab sử dụng hướng dẫn Microsoft Learning độc lập.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu tại sao cần giám sát trạng thái và chất lượng vận hành của toàn bộ quá trình xử lý dữ liệu, không chỉ một job riêng lẻ.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Ví dụ dòng dữ liệu:</p>
+<pre><code class="language-mermaid">flowchart TD
+ D[Dataflow Gen2: nạp dữ liệu] --&gt; L[Lakehouse: lưu dữ liệu]
+ L --&gt; N[Spark Notebook: biến đổi]
+ N --&gt; S[Semantic Model]
+ S --&gt; R[Power BI Report]</code></pre>
+<p>Dataflow hằng ngày có thể thất bại do nguồn đổi schema. Notebook vẫn chạy thành công trên dữ liệu cũ; report vẫn mở bình thường. Vì thế, người dùng có thể xem <strong>data stale</strong> mà không biết. Monitoring phải xét trạng thái, thời gian, xu hướng, retry, dependencies, freshness và đôi khi dữ liệu đầu ra.</p>
+<p>Ba khả năng được giảng:</p>
+<ul>
+<li><strong>Monitoring hub:</strong> Theo dõi job runs gần đây, trạng thái và chi tiết.</li>
+<li><strong>Workspace monitoring:</strong> Diagnostic logs/metrics sâu hơn, truy vấn bằng KQL.</li>
+<li><strong>Activator:</strong> Phản ứng tự động với Fabric events bằng notifications hoặc khởi chạy hoạt động khác.</li>
+</ul>
+<p>Monitoring phát hiện/chẩn đoán vấn đề, còn Activator hỗ trợ phản ứng; không tự bảo đảm mọi sự cố được khắc phục.</p>
+<h3>Unit 2 — Understand monitoring</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu monitoring, năm loại Fabric activities và phương pháp xây dựng baseline để nhận diện bất thường.</p>
+<h4>2.1. Why monitoring matters</h4>
+<p>Monitoring là thu thập, quan sát và phân tích hoạt động nhằm xác định tình trạng hệ thống và sự suy giảm hiệu năng.</p>
+<table><thead><tr><th>Nhóm</th><th>Câu hỏi</th></tr></thead><tbody>
+<tr><td>Execution status</td><td>Job thành công/thất bại/đang chạy?</td></tr>
+<tr><td>Performance</td><td>Thời lượng và hiệu năng có bất thường không?</td></tr>
+<tr><td>Reliability</td><td>Lỗi hoặc retries có tăng không?</td></tr>
+</tbody></table>
+<p>Ví dụ Notebook chạy thành công trong 25 phút nhưng trước đó thường chỉ 3 phút. Không được bỏ qua chỉ vì status Succeeded: có thể do dữ liệu tăng, data skew, transformation chưa tối ưu, capacity bị cạnh tranh hoặc nguồn chậm.</p>
+<p>Một Semantic Model refresh thường xuyên retry rồi mới thành công cũng có thể báo hiệu hệ thống nguồn không ổn định.</p>
+<h4>2.2. Types of Fabric activities to monitor</h4>
+<h5>A. Data pipelines</h5>
+<p>Data Pipeline điều phối nhiều activities như:</p>
+<p><code>Copy Data → Run Notebook → Execute SQL → Refresh Semantic Model</code></p>
+<p>Cần theo dõi pipeline run status, activity run status, start/end times, duration, error details.</p>
+<p>Ví dụ:</p>
+<table><thead><tr><th>Activity</th><th>Kết quả</th></tr></thead><tbody>
+<tr><td>Copy Data</td><td>Succeeded</td></tr>
+<tr><td>Validate Row Count</td><td>Failed</td></tr>
+<tr><td>Send Warning</td><td>Succeeded</td></tr>
+</tbody></table>
+<p>Một pipeline có failure-handling logic có thể hoàn tất theo trạng thái cuối cho phép, dù activity ở giữa thất bại. Đừng mặc định mọi activity thành công chỉ từ trạng thái pipeline. Để điều tra, mở activity run cụ thể.</p>
+<h5>B. Dataflow Gen2</h5>
+<p>Dataflow Gen2 ingest/transform qua Power Query. Có thể chạy manual, scheduled, từ Data Pipeline. Theo dõi start/end, duration, status, error details.</p>
+<p>Ví dụ file nguồn thay đổi kiểu dữ liệu cột <code>OrderDate</code> → Power Query conversion error. Từ Monitoring hub, mở Dataflow run và tìm query/table bị lỗi. Không mặc định mọi query hay destination đều bị lỗi nếu chỉ một bước thất bại.</p>
+<h5>C. Semantic model refreshes</h5>
+<p>Theo dõi refresh result, duration, retries, reliability và lịch sử. Ví dụ:</p>
+<table><thead><tr><th>Ngày</th><th>Retry</th><th>Status</th></tr></thead><tbody>
+<tr><td>Thứ Hai</td><td>0</td><td>Succeeded</td></tr>
+<tr><td>Thứ Ba</td><td>1</td><td>Succeeded</td></tr>
+<tr><td>Thứ Tư</td><td>2</td><td>Succeeded</td></tr>
+<tr><td>Thứ Năm</td><td>3</td><td>Succeeded</td></tr>
+</tbody></table>
+<p>Retry tăng liên tục là dấu hiệu cần điều tra dù cuối cùng refresh đều thành công. <strong>Import, Direct Lake và DirectQuery</strong> có cơ chế dữ liệu khác nhau; không mặc định mọi Semantic Model đều dùng full Import refresh.</p>
+<h5>D. Spark jobs and notebooks</h5>
+<p>Theo dõi job progress, execution duration, Spark logs, resource usage và lỗi. Ví dụ phép join tăng từ 1 triệu lên 40 triệu dòng có thể gặp data skew hoặc shuffle tốn tài nguyên. Dùng Monitoring hub để xác định job, sau đó Spark monitoring/logs để tìm bottleneck.</p>
+<h5>E. Eventstreams</h5>
+<p>Eventstream xử lý liên tục, khác batch job có điểm bắt đầu/kết thúc rõ. Theo dõi:</p>
+<table><thead><tr><th>Metric</th><th>Diễn giải</th></tr></thead><tbody>
+<tr><td>Ingestion throughput</td><td>Lượng dữ liệu ingest trên một khoảng thời gian</td></tr>
+<tr><td>Latency</td><td>Độ trễ chuyển tiếp/xử lý</td></tr>
+<tr><td>Error rate</td><td>Tỷ lệ ingest/processing errors</td></tr>
+</tbody></table>
+<p>Ví dụ thiết bị IoT gửi nhiệt độ mỗi giây vào Eventhouse. Throughput đột ngột giảm có thể do upstream ngừng gửi. Latency tăng khiến báo cáo real-time bị chậm.</p>
+<p><strong>Scenario:</strong> Batch tập trung status/duration; streaming phải thêm throughput/latency/error rate.</p>
+<h4>2.3. Establish a monitoring baseline</h4>
+<p><strong>Baseline</strong> là tham chiếu cho hành vi thông thường của hệ thống. Ví dụ sáu ngày đầu Dataflow chạy 4–5 phút, ngày thứ bảy chạy 20 phút nhưng vẫn Succeeded. Đây là performance anomaly.</p>
+<p>Microsoft Learn hướng dẫn năm hoạt động:</p>
+<ol>
+<li><strong>Track metrics consistently:</strong> Dùng nhất quán duration, status, error rates, retries qua nhiều lần chạy.</li>
+<li><strong>Define normal behavior:</strong> Dựa trên historical runs để xác lập dải thường gặp (ví dụ 3–5 phút).</li>
+<li><strong>Set up notifications:</strong> Gửi cảnh báo khi job thất bại thay vì chờ người trực mở portal.</li>
+<li><strong>Investigate anomalies promptly:</strong> Điều tra ngay cả khi status Succeeded nhưng duration/retries tăng.</li>
+<li><strong>Review and adjust:</strong> Baseline thay đổi cùng data volume và workloads; không giữ ngưỡng cứng mãi mãi.</li>
+</ol>
+<h4>Exam notes</h4>
+<p><code>Succeeded but slow</code>, <code>retry patterns</code>, <code>historical trends</code>, <code>unexpected duration</code> → Kiểm tra historical runs và baseline, đừng bỏ qua hay xóa/recreate job khi chưa biết nguyên nhân.</p>
+<h3>Unit 3 — Use the Microsoft Fabric monitoring hub</h3>
+<h4>Unit này dạy gì</h4>
+<p>Dùng Monitoring hub để xem trạng thái, chi tiết, lịch sử, filters, notifications; biết khi nào cần Workspace monitoring để phân tích logs bằng KQL.</p>
+<h4>3.1. Open the monitoring hub</h4>
+<p>Trong giao diện được module giảng: <code>Microsoft Fabric → Monitor</code>, phần Activities thường có Activity name, Status, Item type, Start time, Duration, Location. Đây là nơi tập trung những runs người dùng có quyền truy cập.</p>
+<p><strong>Cập nhật UI 2026:</strong> Tài liệu giới thiệu Monitor hub mới với các khu như <code>Job runs</code>, <code>Alerts</code>, <code>Applications</code>, <code>Capacity and cost</code>, <code>Agents</code>. Để xem job runs, vào khu tương ứng. UI và tên nút có thể khác ảnh trong Learn; Monitor hub mới được ghi nhận Preview tại thời điểm bài giảng.</p>
+<h4>3.2. Understand activity status</h4>
+<table><thead><tr><th>Status</th><th>Ý nghĩa</th><th>Hành động</th></tr></thead><tbody>
+<tr><td>Succeeded</td><td>Hoàn thành</td><td>So sánh duration nếu bất thường</td></tr>
+<tr><td>Failed</td><td>Thất bại</td><td>Xem errors/logs</td></tr>
+<tr><td>In progress</td><td>Đang chạy</td><td>Kiểm tra progress/duration</td></tr>
+<tr><td>Cancelled</td><td>Bị dừng</td><td>Tìm nguyên nhân cancel</td></tr>
+</tbody></table>
+<p>Giao diện mới còn có thể hiển thị <code>Queued</code>, <code>Not started</code>. Không phải mọi Succeeded đều có dữ liệu đầu ra đúng về nghiệp vụ.</p>
+<h4>3.3. View activity details</h4>
+<p>Trong module: <code>Monitor → Activity → View details</code>. Xem Start time, End time, Duration, Status, Error codes/messages, metadata theo item type.</p>
+<ul>
+<li>Dataflow lỗi schema → xem query/transformation và source fields.</li>
+<li>Notebook lỗi → mở Spark application/logs.</li>
+<li>Data Pipeline lỗi → xuống activity cụ thể, không chỉ xem pipeline status.</li>
+</ul>
+<p>Monitor hub mới có thể cung cấp <code>Run history</code>, <code>Advanced details</code>, activity table hoặc Gantt chart tùy loại job.</p>
+<h4>3.4. View historical runs</h4>
+<p><code>Monitor → [Item] → ... → Historical runs</code> trong UI được module mô tả. Lịch sử có thể xem trong khoảng tối đa 30 ngày theo giao diện và retention được hỗ trợ; ở UI mới tìm <code>Run history</code>.</p>
+<table><thead><tr><th>Ngày</th><th>Duration</th><th>Status</th></tr></thead><tbody>
+<tr><td>10/11</td><td>5 phút</td><td>Succeeded</td></tr>
+<tr><td>11/11</td><td>5 phút</td><td>Succeeded</td></tr>
+<tr><td>12/11</td><td>8 phút</td><td>Succeeded</td></tr>
+<tr><td>13/11</td><td>12 phút</td><td>Succeeded</td></tr>
+<tr><td>14/11</td><td>18 phút</td><td>Failed</td></tr>
+</tbody></table>
+<p>Bảng cho thấy suy giảm từ trước khi failure xuất hiện. Historical runs trả lời: lỗi bắt đầu lúc nào, job có chậm dần không, retry có lặp lại không?</p>
+<h4>3.5. Filter and customize the view</h4>
+<p>Đối với hàng trăm jobs, lọc theo Status, Item type; chọn columns như Activity name, Location, Duration, End time, Submitted by, Refresh type.</p>
+<p>Ví dụ: <code>Monitor → Filter → Status: Failed → Item type: Dataflow Gen2</code> để chỉ xem failed Dataflow jobs. UI mới có <code>Manage view → Column options</code> và Saved views theo tính năng hỗ trợ.</p>
+<h4>3.6. Manage failure notifications</h4>
+<p><strong>Schedule failures</strong> phục vụ email khi <strong>scheduled job</strong> thất bại. Trên Monitor hub mới, tài liệu mô tả đường dẫn kiểu:</p>
+<p><code>Monitor → Manage → Alerts → Schedule failure emails → Configure notifications</code></p>
+<p>Chọn item và recipients. Ví dụ <code>DailySalesLoad</code> chạy 02:00, failed → gửi email cho nhóm vận hành.</p>
+<p><strong>Giới hạn cần nhớ:</strong></p>
+<ul>
+<li>Thường yêu cầu Workspace Contributor hoặc Write permission trên item để cấu hình.</li>
+<li>Áp dụng cho <strong>scheduled runs</strong>, không phải mọi manual runs.</li>
+<li>Recipients là user/group được hỗ trợ trong Microsoft Entra tenant, gồm B2B guests phù hợp.</li>
+<li>Semantic Models chưa được hỗ trợ trên Schedule failures page theo tài liệu giảng.</li>
+<li>Schedule failure email được mô tả miễn phí, còn Activator-based alerts có capacity consumption/chi phí riêng.</li>
+<li>Một số job alert management features còn Preview.</li>
+</ul>
+<h4>3.7. Workspace monitoring</h4>
+<p><strong>Workspace monitoring</strong> cho phép thu thập telemetry/diagnostic logs/metrics từ những Fabric items được hỗ trợ vào monitoring database dựa trên Eventhouse/KQL Database, để truy vấn bằng <strong>Kusto Query Language (KQL)</strong>.</p>
+<pre><code class="language-mermaid">flowchart TD
+ A[Fabric items: Pipelines / Dataflows / Semantic Models] --&gt; M[Monitoring Item / Eventhouse]
+ M --&gt; K[KQL Database: telemetry / logs]
+ K --&gt; Q[KQL queries]
+ K --&gt; D[Dashboards]
+ K --&gt; E[Alerts]</code></pre>
+<p>Ví dụ câu hỏi: trong 30 ngày gần nhất, pipeline nào thất bại nhiều nhất? Duration có tăng từng tuần? Nhiều jobs cùng failed có trùng thời điểm throttling hay không?</p>
+<p>Ví dụ KQL:</p>
+<pre><code class="language-kusto">ItemJobEventLogs
+| top 100 by Timestamp desc</code></pre>
+<p>Lệnh lấy 100 job event records mới nhất theo <code>Timestamp</code> nếu bảng/columns được cung cấp trong cấu hình. Logs/telemetry hỗ trợ phụ thuộc item và workspace.</p>
+<p><strong>Cập nhật kiến trúc:</strong> Microsoft phát triển cách quản lý bằng <strong>Monitoring Item</strong>, thay cho chỉ một monitoring Eventhouse legacy. Một Monitoring Item có thể giám sát nhiều workspaces trong các điều kiện thích hợp, với yêu cầu region, capacity và permissions.</p>
+<p>Các bước minh họa:</p>
+<ol>
+<li><code>Workspace settings → Monitoring</code>.</li>
+<li>Chọn Monitoring Item/Eventhouse đích hoặc tạo mới.</li>
+<li>Bật data collection.</li>
+<li>Sử dụng KQL để truy vấn.</li>
+</ol>
+<p><strong>Lưu ý:</strong> Không backfill logs trước khi bật collection; retention mặc định 30 ngày nhưng có thể cấu hình; monitoring database read-only; tiêu thụ Fabric capacity; cần Workspace Admin/tenant settings; logs có thể chứa dữ liệu nhạy cảm nên phải bảo mật.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Yêu cầu</th><th>Công cụ</th></tr></thead><tbody>
+<tr><td>Kiểm tra status job gần đây</td><td>Monitoring hub</td></tr>
+<tr><td>Xem các lần chạy cũ</td><td>Historical runs</td></tr>
+<tr><td>Điều tra duration trends</td><td>Historical runs; Workspace monitoring nếu cần chuyên sâu</td></tr>
+<tr><td>Truy vấn diagnostic logs bằng KQL</td><td>Workspace monitoring</td></tr>
+<tr><td>Gửi email scheduled failures</td><td>Schedule failure emails</td></tr>
+<tr><td>Điều tra bottleneck Spark</td><td>Spark monitoring/logs</td></tr>
+<tr><td>Capacity usage toàn hệ thống</td><td>Capacity monitoring</td></tr>
+</tbody></table>
+<h3>Unit 4 — Respond to Fabric events with Activator</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng Activator để xử lý Fabric job events và tự động gửi notifications hoặc kích hoạt remediation activities.</p>
+<h4>4.1. Fabric job events</h4>
+<p>Các sự kiện chính trong module:</p>
+<table><thead><tr><th>Event</th><th>Nghĩa</th></tr></thead><tbody>
+<tr><td>Job created</td><td>Job được tạo/kích hoạt</td></tr>
+<tr><td>Job failed</td><td>Job thất bại</td></tr>
+<tr><td>Job succeeded</td><td>Job thành công</td></tr>
+<tr><td>Job status changed</td><td>Trạng thái job thay đổi</td></tr>
+</tbody></table>
+<pre><code class="language-mermaid">flowchart LR
+ J[Fabric job] --&gt; E[Fabric job event]
+ E --&gt; R[Real-Time hub]
+ R --&gt; A[Activator rule]
+ A --&gt; X[Email / Teams / Fabric activity]</code></pre>
+<p>Phân biệt <strong>Event</strong> (đã xảy ra gì?), <strong>Condition</strong> (khi nào phản ứng?) và <strong>Action</strong> (thực hiện gì?). Ví dụ: event <code>ItemJobFailed</code> của pipeline <code>DailySalesLoad</code> → condition khớp item → post vào Teams channel.</p>
+<h4>4.2. Set up an alert from Real-Time hub</h4>
+<ol>
+<li><code>Real-Time → Fabric events → Job events</code>.</li>
+<li>Chọn <code>Set alert</code>.</li>
+<li>Trong Monitor, <code>Select source events</code> và chọn loại event, workspace, item.</li>
+<li>Ví dụ event type <code>Microsoft.Fabric.JobEvents.ItemJobFailed</code>, workspace <code>Sales-Production</code>, item <code>DailySalesLoad</code>.</li>
+<li>Đặt điều kiện <code>On each event</code> nếu muốn phản ứng với mỗi failure đã lọc.</li>
+<li>Chọn Action, chẳng hạn Teams Channel post hoặc Run Fabric Activities.</li>
+<li>Chọn workspace/Activator item để lưu rule; tạo và kiểm tra cấu hình.</li>
+</ol>
+<p>Kết quả mong muốn: job phát sinh event khớp điều kiện thì Activator thực hiện action được cấu hình. Cần kiểm tra quyền, region và trạng thái rule.</p>
+<h4>4.3. Actions available</h4>
+<p><strong>A. Email:</strong> Gửi email cho người phụ trách khi event khớp. Ví dụ báo Semantic Model refresh succeeded.</p>
+<p><strong>B. Teams:</strong> Gửi tin nhắn tới cá nhân, group chat hoặc channel. Phù hợp khi cả nhóm cùng xử lý sự cố.</p>
+<p><strong>C. Run a Fabric activity:</strong> Kích hoạt những item types được hỗ trợ như Dataflow, Pipeline, Spark job, Notebook, Function, Copy job. Ví dụ failure tạo các temporary tables → kích hoạt cleanup Notebook để dọn dẹp.</p>
+<p><strong>Không tự động retry mọi trường hợp.</strong> Nếu lỗi do source xóa một cột hoặc code logic sai, retry liên tục không xử lý nguyên nhân và có thể gây tác hại. Các actions mở rộng như custom Power Automate/publish business event có thể nằm trong tài liệu ngoài module hoặc Preview.</p>
+<h4>4.4. When to use Activator vs. Schedule failures</h4>
+<table><thead><tr><th>Scenario</th><th>Chọn</th></tr></thead><tbody>
+<tr><td>Email khi scheduled Pipeline failed</td><td>Schedule failure emails</td></tr>
+<tr><td>Teams message khi Notebook failed</td><td>Activator</td></tr>
+<tr><td>Notification khi job succeeded</td><td>Activator</td></tr>
+<tr><td>Cleanup Notebook sau pipeline failed</td><td>Activator</td></tr>
+<tr><td>Quản lý người nhận email lỗi scheduled job</td><td>Schedule failures</td></tr>
+<tr><td>Kích hoạt pipeline khác theo event</td><td>Activator</td></tr>
+</tbody></table>
+<p><strong>Governance/cost:</strong> Schedule failure emails được mô tả miễn phí; Activator dùng capacity và có thể phát sinh chi phí. Cần permissions tạo Activator, quyền event source, phù hợp region, network settings. Một số tính năng alerting còn Preview. Không tự động chạy hoạt động tác động lớn lên Production mà không kiểm soát idempotency/quyền/lỗi.</p>
+<h4>Exam notes</h4>
+<ul>
+<li><em>See what failed</em> → Monitoring hub.</li>
+<li><em>Send simple scheduled failure email</em> → Schedule failures.</li>
+<li><em>Respond to job event with Teams/email</em> → Activator.</li>
+<li><em>Automatically run cleanup or recovery Notebook</em> → Activator + Run a Fabric activity.</li>
+<li><em>Analyze telemetry at scale</em> → Workspace monitoring + KQL.</li>
+</ul>
+<h3>Unit 5 — Exercise: Monitor Fabric activity in the monitoring hub</h3>
+<p>Nguồn Lab: https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/18-monitor-hub.html</p>
+<h4>Unit này dạy gì</h4>
+<p>Tạo workspace, Lakehouse, Dataflow Gen2 và Notebook; phát sinh job runs; xem Monitor, history và điều chỉnh view. Lab <strong>không yêu cầu</strong> cấu hình Workspace monitoring hoặc Activator.</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Thành phần</th><th>Điều kiện</th></tr></thead><tbody>
+<tr><td>Portal</td><td>https://app.fabric.microsoft.com</td></tr>
+<tr><td>Account</td><td>Tài khoản tổ chức có quyền Fabric</td></tr>
+<tr><td>Capacity</td><td>Paid/trial hợp lệ</td></tr>
+<tr><td>Permissions</td><td>Có thể tạo workspace/items</td></tr>
+<tr><td>Source CSV</td><td>https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/products.csv</td></tr>
+<tr><td>Authentication CSV</td><td>Anonymous</td></tr>
+<tr><td>Tài nguyên</td><td>Workspace, Lakehouse, Dataflow Gen2, Notebook</td></tr>
+<tr><td>Chi phí</td><td>Dataflow/Spark tiêu thụ capacity; cleanup khi xong</td></tr>
+</tbody></table>
+<h4>5.1. Create a workspace</h4>
+<p><code>Workspaces → New workspace</code>; tên ví dụ <code>DP600-Monitoring-Lab</code>; chọn capacity hợp lệ; Apply/Create. Kết quả: workspace rỗng có thể tạo Fabric items. Nếu không chọn được capacity, kiểm tra subscription/quyền, không tự kích hoạt paid capacity.</p>
+<h4>5.2. Create a lakehouse</h4>
+<p><code>New item → Lakehouse → Create</code>; tên <code>ProductsLakehouse</code>; bật <code>Lakehouse schemas</code>. Kết quả: có khu Tables và Files, chưa có dữ liệu.</p>
+<h4>5.3. Create and monitor a Dataflow</h4>
+<ol>
+<li>Từ Lakehouse chọn <code>Get data → New Dataflow Gen2</code>.</li>
+<li>Đặt tên <code>Get Product Data</code>.</li>
+<li>Trong Dataflow designer chọn <code>Import from Text/CSV file</code>.</li>
+<li>Nhập <code>https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/products.csv</code> và chọn Anonymous.</li>
+<li>Kiểm tra preview; xác nhận destination Lakehouse <code>ProductsLakehouse</code>, bảng <code>products</code> nếu UI yêu cầu.</li>
+<li>Chọn <code>Save and run</code>.</li>
+<li>Mở <code>Monitor → Activities</code> (hoặc Monitor mới <code>Job runs</code>). Tìm <code>Get Product Data</code>, xem In progress/Succeeded hoặc Failed.</li>
+<li>Quay về Lakehouse, Refresh Tables nếu cần, kiểm tra bảng <code>products</code> có dữ liệu.</li>
+</ol>
+<p><strong>Kết quả đúng:</strong> Dataflow run thành công và bảng <code>products</code> tồn tại, có dữ liệu. Nếu success nhưng không thấy bảng, kiểm tra destination và metadata refresh.</p>
+<h4>5.4. Create and monitor a Spark notebook</h4>
+<ol>
+<li><code>New item → Notebook</code>; đặt tên <code>Query Products</code>.</li>
+<li>Notebook Explorer → <code>Add data items → From OneLake catalog</code>.</li>
+<li>Thêm <code>ProductsLakehouse</code> và mở phần Tables.</li>
+<li>Tại <code>products</code>, chọn <code>... → Load data → Spark</code> để sinh code cell truy vấn Spark.</li>
+<li>Chọn <code>Run all</code>; kiểm tra output.</li>
+<li><code>Stop session</code> khi không còn cần Spark session.</li>
+<li>Vào Monitor tìm run của <code>Query Products</code>.</li>
+</ol>
+<p><strong>Kết quả đúng:</strong> Notebook query được bảng và có thông tin thực thi; có thể xem status, duration và logs/metadata tương ứng.</p>
+<h4>5.5. Monitor history for an item</h4>
+<ol>
+<li>Ở Dataflow <code>Get Product Data</code>, chọn <code>Refresh now</code> để tạo lần chạy thứ hai.</li>
+<li>Mở Monitor; chọn Dataflow → <code>... → Historical runs</code> hoặc <code>Run history</code> trên UI mới.</li>
+<li>Chọn từng run và <code>View detail</code>.</li>
+<li>So sánh Status, Start time, End time, Duration.</li>
+</ol>
+<p>Kết quả: phân biệt được ít nhất hai lần chạy của cùng item.</p>
+<h4>5.6. Customize monitoring hub views</h4>
+<p>Lọc <code>Status = Succeeded</code>, <code>Item type = Dataflow Gen2 (CI/CD)</code> theo Lab; một số tenant hiện thị tên <code>Dataflow Gen2</code> nên chọn đúng item type thực tế.</p>
+<p>Dùng <code>Column options</code> để xem:</p>
+<table><thead><tr><th>Column</th><th>Mục đích</th></tr></thead><tbody>
+<tr><td>Activity name</td><td>Tên công việc</td></tr>
+<tr><td>Status</td><td>Trạng thái</td></tr>
+<tr><td>Item type</td><td>Loại item</td></tr>
+<tr><td>Start time</td><td>Bắt đầu</td></tr>
+<tr><td>Submitted by</td><td>Ai/cơ chế kích hoạt</td></tr>
+<tr><td>Location</td><td>Workspace</td></tr>
+<tr><td>End time</td><td>Kết thúc</td></tr>
+<tr><td>Duration</td><td>Thời lượng</td></tr>
+<tr><td>Refresh type</td><td>Manual/scheduled/triggered tùy job</td></tr>
+</tbody></table>
+<h4>5.7. Clean up resources</h4>
+<p><code>Workspace → Workspace settings → General → Remove this workspace</code>; chỉ xóa workspace Lab riêng và đã sao lưu dữ liệu cần giữ.</p>
+<h4>Lỗi thường gặp</h4>
+<table><thead><tr><th>Lỗi</th><th>Cách xử lý</th></tr></thead><tbody>
+<tr><td>Không tạo được Lakehouse</td><td>Kiểm tra workspace capacity</td></tr>
+<tr><td>CSV không tải</td><td>Kiểm tra URL, Anonymous, khả năng truy cập source</td></tr>
+<tr><td>Dataflow success nhưng không có bảng</td><td>Kiểm tra destination, Refresh Lakehouse Explorer</td></tr>
+<tr><td>Notebook không thấy bảng</td><td>Add Lakehouse từ catalog, kiểm tra Dataflow output</td></tr>
+<tr><td>Spark khởi động chậm</td><td>Kiểm tra session/capacity và Spark logs</td></tr>
+<tr><td>Monitor không thấy job</td><td>Kiểm tra quyền, status filters, time range và Refresh</td></tr>
+</tbody></table>
+<h4>Năm điểm luyện tay</h4>
+<ol>
+<li>Tạo và chạy Fabric jobs để sinh runs.</li>
+<li>Xem status trong Monitor.</li>
+<li>Xem run history theo cùng item.</li>
+<li>Sử dụng filters, columns.</li>
+<li>Kiểm tra dữ liệu đầu ra, không chỉ status thành công.</li>
+</ol>
+<h3>Unit 6 — Module assessment</h3>
+<p><em>Ba câu được diễn giải theo bài giảng, không phải trích nguyên văn Microsoft Learn.</em></p>
+<h4>Câu 1 — Mục đích chính của Monitoring hub?</h4>
+<ul>
+<li>A. Tạo và lên lịch mọi Data Pipelines/Dataflows.</li>
+<li><strong>B. Giao diện tập trung xem trạng thái, details và lịch sử hoạt động.</strong></li>
+<li>C. Mặc định tự động gửi alerts khi mọi Data Pipeline failed.</li>
+</ul>
+<p><strong>Đáp án B.</strong> A thuộc công cụ phát triển/orchestration; C không phải hành vi mặc định của Monitoring hub. Monitoring hub cung cấp tập trung thông tin job run. Mẹo: centralized activity status/history → Monitoring hub. Liên hệ Unit 3.</p>
+<h4>Câu 2 — Dataflow thường chạy 4 phút, hôm nay 20 phút nhưng Succeeded?</h4>
+<ul>
+<li>A. Bỏ qua vì success.</li>
+<li><strong>B. Xem activity details và historical runs, đối chiếu baseline.</strong></li>
+<li>C. Xóa Dataflow và tạo lại ngay.</li>
+</ul>
+<p><strong>Đáp án B.</strong> A bỏ qua performance degradation; C gây rủi ro, chưa chẩn đoán. Mẹo: Succeeded but unusually slow → baseline + history. Liên hệ Unit 2–3.</p>
+<h4>Câu 3 — Tự động khắc phục sau job failure bằng hoạt động Fabric?</h4>
+<ul>
+<li>A. Send an email.</li>
+<li>B. Post a Teams message.</li>
+<li><strong>C. Run a Fabric activity.</strong></li>
+</ul>
+<p><strong>Đáp án C.</strong> Email và Teams chỉ thông báo; Run Fabric activity có thể kích hoạt cleanup Notebook/Pipeline theo thiết kế. Mẹo: automate remediation → Activator. Liên hệ Unit 4.</p>
+<h3>Unit 7 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết quan sát, phân tích và phản ứng tự động trong Microsoft Fabric.</p>
+<h4>Nội dung chính trong unit</h4>
+<p><strong>Lớp 1: Monitoring hub</strong> — job runs, status, duration, details, history. <strong>Lớp 2: Workspace monitoring</strong> — telemetry, KQL logs, trends và dashboards. <strong>Lớp 3: Activator</strong> — xử lý events bằng Teams/email hoặc chạy Fabric activities.</p>
+<p>Ví dụ vận hành: Pipeline failed → Activator gửi Teams → kỹ sư xem Monitoring hub → mở KQL logs khi cần → sửa lỗi/kiểm tra dữ liệu → chạy lại job. Monitoring phát hiện vấn đề, nhưng không tự xác nhận đầu ra nghiệp vụ đã đúng.</p>
+<h4>Scenario tổng hợp</h4>
+<table><thead><tr><th>Yêu cầu</th><th>Công cụ</th></tr></thead><tbody>
+<tr><td>Kiểm tra job status gần đây</td><td>Monitoring hub</td></tr>
+<tr><td>Phân tích lịch sử duration</td><td>Historical runs</td></tr>
+<tr><td>Truy vấn diagnostics qua KQL</td><td>Workspace monitoring</td></tr>
+<tr><td>Email scheduled-job failure</td><td>Schedule failure emails</td></tr>
+<tr><td>Teams notification theo event</td><td>Activator</td></tr>
+<tr><td>Cleanup Notebook sau failure</td><td>Activator Run Fabric activity</td></tr>
+<tr><td>Throughput/latency streaming</td><td>Eventstream monitoring metrics</td></tr>
+<tr><td>Success nhưng nhiều retries</td><td>History + diagnostics</td></tr>
+</tbody></table>
+<h3>Coverage check — Module 2</h3>
+<table><thead><tr><th>Unit</th><th>Heading/nội dung đã đi qua</th></tr></thead><tbody>
+<tr><td>1</td><td>Introduction; data freshness; vai trò monitoring</td></tr>
+<tr><td>2</td><td>Why monitoring matters; đủ 5 nhóm activities; baseline với 5 bước</td></tr>
+<tr><td>3</td><td>7 headings: Open Monitor; status; details; history; filter; notifications; Workspace monitoring</td></tr>
+<tr><td>4</td><td>4 headings: job events; alert setup; actions; Activator vs Schedule failures</td></tr>
+<tr><td>5</td><td>Lab: workspace, lakehouse, dataflow, notebook, history, columns, cleanup</td></tr>
+<tr><td>6</td><td>3 câu assessment và phân tích đáp án</td></tr>
+<tr><td>7</td><td>Summary</td></tr>
+</tbody></table>
+<p><strong>Coverage:</strong> 7/7 Unit và headings đã xác định. Có permissions, capacity, chi phí, Preview, retention và hạn chế alerts. Lab chưa chạy thực tế. Không triển khai toàn bộ APIs/telemetry schema hay Operations Agent chuyên sâu ngoài phạm vi module. AI/Copilot/Agent không là heading chính. Trọng tâm thi: Monitoring hub vs Workspace monitoring; Succeeded vs hiệu năng; Schedule failures vs Activator; remediation qua Run Fabric activity.</p>
+<hr>
