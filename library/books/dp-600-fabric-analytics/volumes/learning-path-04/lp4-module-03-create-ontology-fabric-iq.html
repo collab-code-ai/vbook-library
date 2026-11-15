@@ -1,0 +1,294 @@
+<h2>Module 3 — Create an ontology with Fabric IQ</h2>
+<p><strong>Learning Path:</strong> Prepare AI-ready analytics data in Microsoft Fabric<br><strong>Vị trí:</strong> LP4 — Module 3/3<br><strong>Cấu trúc:</strong> 11 Units; 2 Exercise/Lab; assessment hiện hiển thị 4 câu chính thức (không phải 5).<br><strong>Thời lượng theo bài đã giảng:</strong> 2 giờ 23 phút.<br><strong>Nguồn:</strong> https://learn.microsoft.com/en-us/training/modules/create-ontology-with-fabric-iq/</p>
+<blockquote><p>Mục tiêu: tạo Ontology bằng hai cách (manual và generate từ Semantic Model), cấu hình Entity Types, Keys, Properties, Data Bindings, Time-series, Relationship Bindings và Validate Instances.</p></blockquote>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Thời lượng</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>3 phút</td></tr><tr><td>2</td><td>Choose an ontology creation approach</td><td>7 phút</td></tr><tr><td>3</td><td>Build an ontology manually</td><td>10 phút</td></tr><tr><td>4</td><td>Generate an ontology from a Power BI semantic model</td><td>7 phút</td></tr><tr><td>5</td><td>Connect an ontology to data</td><td>10 phút</td></tr><tr><td>6</td><td>Configure ontology relationships</td><td>8 phút</td></tr><tr><td>7</td><td>Preview the ontology</td><td>5 phút</td></tr><tr><td>8</td><td>Exercise: Build an ontology manually</td><td>45 phút</td></tr><tr><td>9</td><td>Exercise: Generate an ontology from a Power BI semantic model</td><td>40 phút</td></tr><tr><td>10</td><td>Module assessment</td><td>5 phút</td></tr><tr><td>11</td><td>Summary</td><td>3 phút</td></tr></tbody></table>
+<p><strong>Heading/subheading kiểm chứng:</strong></p>
+<ul><li>Unit 1: Lamna Healthcare; hai hướng tạo Ontology; kết nối Lakehouse/Eventhouse.</li><li>Unit 2: Generate from Power BI semantic model; Build directly from OneLake.</li><li>Unit 3: Create entity types → Define entity type, Add properties; Define property characteristics; Add properties → Entity metadata, Entity key; Create relationship types → Structure, Review configuration.</li><li>Unit 4: Generate ontology structure; Review what was generated; Complete remaining configuration.</li><li>Unit 5: Understand data bindings; Bind properties to a primary source; Add a related observation source.</li><li>Unit 6: Understand relationship types and configuration; Create relationship types; Choose direct matching or a mapping table.</li><li>Unit 7: Explore entity instances; Understand relationship exploration.</li><li>Unit 8: Exercise/Lab độc lập tạo thủ công (hướng dẫn chi tiết phía dưới).</li><li>Unit 9: Exercise/Lab độc lập generate từ Semantic Model (hướng dẫn chi tiết phía dưới).</li><li>Unit 10: Module assessment, <strong>4 câu thực tế</strong>.</li><li>Unit 11: Summary, hai phương pháp, bindings, continue learning.</li></ul>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng tình huống Lamna Healthcare (mô hình y tế giả định), xây dựng Ontology để kết nối dữ liệu tổ chức bệnh viện với các chỉ số sinh tồn theo thời gian.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Lamna Healthcare có hai nhóm nguồn:</p>
+<table><thead><tr><th>Data source</th><th>Dữ liệu</th></tr></thead><tbody><tr><td>Lakehouse</td><td>Hospital, Department, Room, Patient, VitalSignEquipment</td></tr><tr><td>Eventhouse</td><td>VitalSignsReadings: HeartRate, OxygenSaturation, RespiratoryRate theo thời gian</td></tr></tbody></table>
+<p>Người dùng muốn biết thiết bị nào đang theo dõi bệnh nhân, bệnh nhân ở phòng nào, phòng thuộc khoa/bệnh viện nào và measurements liên quan.</p>
+<pre><code class="language-mermaid">flowchart TB
+  H[&quot;Hospital&quot;] --&gt;|contains| D[&quot;Department&quot;]
+  D --&gt;|has| R[&quot;Room&quot;]
+  P[&quot;Patient&quot;] --&gt;|assignedTo| R
+  E[&quot;VitalSignEquipment&quot;] --&gt;|monitors| P
+  E --&gt;|locatedIn| R
+  E -.-&gt; V[&quot;VitalSignsReadings in Eventhouse&quot;]</code></pre>
+<p>Hai cách học trong module: (1) manual tạo entity definitions rồi bind nguồn; (2) generate từ Power BI Semantic Model rồi bổ sung thiếu. Outcome là Ontology có business concepts, identifiers, relationships và static/time-series bindings có thể xác minh bằng Instances. Fabric IQ còn ở trạng thái Preview theo tài liệu đã học.</p>
+<h3>Unit 2 — Choose an ontology creation approach</h3>
+<h4>Unit này dạy gì</h4>
+<p>Chọn phương pháp phù hợp giữa generate dựa trên model hiện có và thiết kế business concepts trực tiếp từ OneLake sources.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>2.1. Generate from Power BI semantic model</h5>
+<p>Một Semantic Model có <code>hospitals</code>, <code>departments</code>, <code>rooms</code>, <code>patients</code>, <code>vitalsignequipment</code> đã chứa tables, columns, relationships và có thể có DAX measures. Fabric IQ giúp lấy cấu trúc này làm khởi điểm.</p>
+<table><thead><tr><th>Semantic Model</th><th>Generated Ontology</th></tr></thead><tbody><tr><td>Table</td><td>Entity type</td></tr><tr><td>Column</td><td>Property</td></tr><tr><td>Data type</td><td>Property type</td></tr><tr><td>Table data</td><td>Initial entity data binding khi nguồn hỗ trợ</td></tr><tr><td>Relationship</td><td>Relationship type definition</td></tr><tr><td>DAX measure</td><td>Metric liên kết nguồn</td></tr></tbody></table>
+<p>Generate không bảo đảm mọi entity key được sinh đúng/đủ, Relationship Bindings hoàn chỉnh hay dữ liệu Eventhouse tự được thêm. Cần review names, identifiers, directions, source bindings, metrics và Time-series Bindings.</p>
+<p><strong>Khi chọn:</strong> Semantic Model đã chuẩn hóa tốt, có business-friendly tables, đúng relationships và logic có thể tái sử dụng. Cần Read/Build permission tới source model, cùng quyền tạo Ontology ở workspace đích.</p>
+<h5>2.2. Build directly from OneLake</h5>
+<p>Tự khai báo:</p>
+<pre><code class="language-text">Hospital
+Department
+Room
+Patient
+VitalSignEquipment</code></pre>
+<p>Định nghĩa Properties, Keys, Relationships rồi Bind các nguồn Lakehouse/Eventhouse. Hữu ích khi chưa có Semantic Model, model hiện có quá thiên về một report, source naming quá kỹ thuật hoặc muốn thiết kế shared business vocabulary trước.</p>
+<table><thead><tr><th>Tiêu chí</th><th>Generate</th><th>Manual</th></tr></thead><tbody><tr><td>Model tốt đã có</td><td>Tái sử dụng</td><td>Không bắt buộc</td></tr><tr><td>Entity types/properties</td><td>Sinh ban đầu</td><td>Tự tạo</td></tr><tr><td>Keys</td><td>Review, bổ sung thiếu</td><td>Khai báo chủ động</td></tr><tr><td>Relationship types</td><td>Sinh từ model</td><td>Tự định nghĩa</td></tr><tr><td>Relationship Bindings</td><td>Kiểm tra và hoàn thiện</td><td>Cấu hình</td></tr><tr><td>Time-series</td><td>Bổ sung riêng</td><td>Bổ sung riêng</td></tr><tr><td>Business vocabulary</td><td>Refine sau generation</td><td>Kiểm soát từ đầu</td></tr></tbody></table>
+<p><strong>Exam trap:</strong> <code>Automatically creates every relationship binding</code> là nhận định sai; DAX metric không biến thành DAX logic tự chạy độc lập trong Ontology.</p>
+<h3>Unit 3 — Build an ontology manually</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thiết kế Entity types, Properties, Metadata, Entity keys và Relationship types từ đầu. Unit này tập trung cấu trúc logic, chưa nối dữ liệu nguồn thực tế.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>3.1. Create entity types</h5>
+<p>Trong Fabric Portal: <code>Workspace</code> → <code>Ontology</code> → <code>Add entity type</code>. Nhập <code>Hospital</code>, bấm <code>Add Entity Type</code>. Entity type xuất hiện trong Explorer/Canvas nhưng chưa mặc định truy vấn được bảng <code>hospitals</code>.</p>
+<p>Chọn <code>Hospital</code> → <code>View entity type details</code> → <code>Configure</code> → <code>Manage property bindings</code> → <code>Add properties</code>:</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Ý nghĩa</th></tr></thead><tbody><tr><td>HospitalId</td><td>Integer</td><td>Mã bệnh viện</td></tr><tr><td>HospitalName</td><td>String</td><td>Tên bệnh viện</td></tr><tr><td>City</td><td>String</td><td>Thành phố</td></tr><tr><td>State</td><td>String</td><td>Khu vực/bang</td></tr></tbody></table>
+<p>Thêm các Properties rồi Save. Chúng có thể hiển thị trạng thái <strong>Unbound</strong> cho đến khi ánh xạ với nguồn.</p>
+<h5>3.2. Define property characteristics</h5>
+<p>Property nên có tên và kiểu đúng ý nghĩa nghiệp vụ. Các kiểu thường gặp: String, Integer, Boolean, Datetime, Double. <code>PatientName</code> hoặc <code>HospitalName</code> dễ hiểu hơn <code>Name</code> khi có nhiều entity types.</p>
+<p><strong>Unknown type</strong>: Một Property có thể được định nghĩa khi chưa biết nguồn/kiểu và sau đó được xác định khi Data Binding. Unbound Unknown Property không xuất hiện trong query preview. Đây là kỹ thuật conceptual modeling, không thay thế binding nếu cần dữ liệu.</p>
+<h5>3.3. Add properties to entity type</h5>
+<p>Sau khi <code>Save</code>, vào Configure bổ sung:</p>
+<ul><li>Description: ví dụ “A healthcare facility providing clinical services”.</li><li>Synonyms: “Medical facility”.</li><li>Additional metadata: business domain hoặc key-value mô tả.</li></ul>
+<p><strong>Entity type key</strong>: <code>Configure</code> → <code>Define entity type key</code> → chọn <code>HospitalId</code> → <code>Save</code>.</p>
+<table><thead><tr><th>Entity</th><th>Example key</th></tr></thead><tbody><tr><td>Hospital</td><td>HospitalId</td></tr><tr><td>Department</td><td>DepartmentId</td></tr><tr><td>Room</td><td>RoomId</td></tr><tr><td>Patient</td><td>PatientId</td></tr><tr><td>VitalSignEquipment</td><td>EquipmentId</td></tr></tbody></table>
+<p>Keys giúp nhận diện ổn định từng instance. Có thể là một hoặc nhiều String/Integer properties. <code>DepartmentName</code> không unique khi nhiều hospital đều có ICU; có thể cần composite key.</p>
+<p><strong>Quan trọng:</strong> Trải nghiệm Ontology mới hỗ trợ keyless entity types, nên không nói mọi Ontology entity luôn bắt buộc có key để định nghĩa/bind. Tuy nhiên, key cần cho một số tác vụ như Graph Materialization và cho lab này.</p>
+<h5>3.4. Create relationship types</h5>
+<p><code>Ontology Canvas</code> → <code>Add relationship</code>, chọn Name, Origin, Target.</p>
+<p>Ví dụ:</p>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Name</td><td>contains</td></tr><tr><td>Origin</td><td>Hospital</td></tr><tr><td>Target</td><td>Department</td></tr></tbody></table>
+<p>Định nghĩa <code>Hospital contains Department</code> không giống <code>Department contains Hospital</code>. Direction mang business meaning. Sau khi Create, có thể review Description, Origin, Target, metadata và relationship name. Tạo Relationship type <strong>chưa xác định được các cặp entity instances</strong>; Relationship Binding cần cấu hình riêng ở Unit 6.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Scenario</th><th>Thành phần</th></tr></thead><tbody><tr><td>Định nghĩa Patient</td><td>Entity type</td></tr><tr><td>DateOfBirth</td><td>Property</td></tr><tr><td>Mã duy nhất của Patient</td><td>Entity key</td></tr><tr><td>“Medical facility” dùng thay Hospital</td><td>Synonym</td></tr><tr><td>Hospital contains Department</td><td>Relationship type</td></tr><tr><td>D001 thực sự thuộc H001</td><td>Relationship Binding</td></tr></tbody></table>
+<h3>Unit 4 — Generate an ontology from a Power BI semantic model</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thực hiện generation, hiểu phần nào tự tạo và cách review/complete cấu hình còn thiếu.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>4.1. Generate ontology structure</h5>
+<p>Cần Fabric-enabled capacity, quyền tạo item, tenant settings và Read/Build permissions với Semantic Model nguồn.</p>
+<p>Tại Semantic Model chọn <code>Generate Ontology</code> (hoặc menu <code>...</code> nếu ribbon không thấy) → chọn destination workspace → tên Ontology → <code>Create</code> → mở Ontology Editor.</p>
+<p>Model Lamna có 5 tables tạo 5 Entity types ban đầu.</p>
+<h5>4.2. Review what was generated</h5>
+<table><thead><tr><th>Object</th><th>Cần kiểm tra</th></tr></thead><tbody><tr><td>Entity type</td><td>Tên và business meaning</td></tr><tr><td>Properties</td><td>Columns, data types, mô tả</td></tr><tr><td>Static Data Bindings</td><td>Source và column mappings</td></tr><tr><td>Keys</td><td>Đã định nghĩa/unique chưa</td></tr><tr><td>Relationships</td><td>Origin, target, direction</td></tr><tr><td>Metrics</td><td>Liên kết DAX measures mong đợi</td></tr></tbody></table>
+<p>Ví dụ <code>patients.CurrentRoomId</code> liên kết <code>rooms.RoomId</code>; không nhầm với <code>PatientId</code>.</p>
+<h5>4.3. Complete remaining configuration</h5>
+<ol><li>Chuẩn hóa names/identifiers; thêm keys chưa có.</li><li>Hoàn thiện và test Relationship Bindings.</li><li>Bổ sung riêng Time-series Bindings từ Eventhouse (<code>VitalSignsReadings</code>).</li></ol>
+<p><strong>Exam trap:</strong> Generate Ontology ≠ Completed Ontology; không tự hoàn thiện mọi keys, relationship bindings và time-series fields.</p>
+<h3>Unit 5 — Connect an ontology to data</h3>
+<h4>Unit này dạy gì</h4>
+<p>Bind các Properties tới dữ liệu nguồn, phân biệt static/primary source và time-series/observation source, đồng thời chọn đúng identifiers và timestamps.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>5.1. Understand data bindings</h5>
+<table><thead><tr><th>Ontology Property</th><th>Source Column</th></tr></thead><tbody><tr><td>Hospital.HospitalId</td><td>hospitals.HospitalId</td></tr><tr><td>Hospital.HospitalName</td><td>hospitals.HospitalName</td></tr><tr><td>Patient.CurrentRoomId</td><td>patients.CurrentRoomId</td></tr><tr><td>VitalSignEquipment.EquipmentType</td><td>vitalsignequipment.EquipmentType</td></tr></tbody></table>
+<p>Property Unbound có định nghĩa nhưng không có physical source để tra giá trị. Binding chỉ ánh xạ, không mặc định ETL/copy toàn bộ records.</p>
+<p><strong>Static Properties</strong> mô tả entity (HospitalName, EquipmentType, MonitoringStartDate), không nhất thiết bất biến về thời gian. <strong>Time-series Properties</strong> có nhiều observations theo timestamp (HeartRate, OxygenSaturation, RespiratoryRate).</p>
+<h5>5.2. Bind properties to a primary source</h5>
+<p><code>Hospital</code> → <code>View Entity Type details</code> → <code>Configure</code> → <code>Manage property bindings</code> → <code>Add binding and properties</code> → <code>Sources: Add</code> → <code>OneLake Catalog</code> → <code>LamnaHealthcareLH</code> → <code>dbo.hospitals</code> → map four properties → Save/Create.</p>
+<p>Primary source xác định entity instances và các thuộc tính nền tảng. Ví dụ <code>vitalsignequipment</code> có EquipmentId, PatientId, RoomId, EquipmentType, MonitoringStartDate.</p>
+<h5>5.3. Add a related observation source</h5>
+<p>Eventhouse table <code>VitalSignsReadings</code> gồm <code>ReadingId</code>, <code>EquipmentId</code>, <code>Timestamp</code>, <code>HeartRate</code>, <code>OxygenSaturation</code>, <code>RespiratoryRate</code>. Mỗi EquipmentId có thể có nhiều readings:</p>
+<table><thead><tr><th>ReadingId</th><th>EquipmentId</th><th>Timestamp</th><th>HeartRate</th></tr></thead><tbody><tr><td>1</td><td>VS-1001</td><td>08:00</td><td>78</td></tr><tr><td>2</td><td>VS-1001</td><td>08:05</td><td>82</td></tr><tr><td>3</td><td>VS-1002</td><td>08:00</td><td>92</td></tr></tbody></table>
+<p>Để bind time-series:</p>
+<ul><li>Match EquipmentId ở primary source với EquipmentId tại observation source.</li><li>Chọn Timestamp làm time column.</li><li>Bind HeartRate/OxygenSaturation/RespiratoryRate thành <code>Timeseries&lt;Integer&gt;</code>; ReadingId có thể là <code>Timeseries&lt;String&gt;</code> trong lab.</li><li>Không biến nhiều readings thành một static field duy nhất.</li></ul>
+<p><strong>EquipmentId</strong> định danh Equipment instance, <strong>ReadingId</strong> định danh một lần quan sát; <code>Timestamp</code> xác định trục thời gian. Không dùng ReadingId làm Equipment key.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Scenario</th><th>Hướng</th></tr></thead><tbody><tr><td>Stable descriptive property</td><td>Static binding</td></tr><tr><td>Repeated observations with timestamp</td><td>Time-series binding</td></tr><tr><td>Group readings by equipment</td><td>EquipmentId</td></tr><tr><td>Identify observation</td><td>ReadingId</td></tr><tr><td>Sort measurements</td><td>Timestamp</td></tr></tbody></table>
+<h3>Unit 6 — Configure ontology relationships</h3>
+<h4>Unit này dạy gì</h4>
+<p>Cấu hình dữ liệu xác định các Relationship instances, phân biệt Direct Matching và Mapping Table.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>6.1. Understand relationship types and configuration</h5>
+<p>Relationship type <code>Hospital contains Department</code> chưa cho biết Department instance nào thuộc Hospital nào. Ví dụ:</p>
+<p><strong>hospitals</strong>:</p>
+<table><thead><tr><th>HospitalId</th><th>HospitalName</th></tr></thead><tbody><tr><td>1</td><td>Central Hospital</td></tr><tr><td>2</td><td>North Hospital</td></tr></tbody></table>
+<p><strong>departments</strong>:</p>
+<table><thead><tr><th>DepartmentId</th><th>DepartmentName</th><th>HospitalId</th></tr></thead><tbody><tr><td>101</td><td>ICU</td><td>1</td></tr><tr><td>102</td><td>Emergency</td><td>1</td></tr><tr><td>201</td><td>ICU</td><td>2</td></tr></tbody></table>
+<p>Bind <code>Hospital.HospitalId</code> = <code>Department.HospitalId</code>, không nối tới DepartmentId.</p>
+<h5>6.2. Create relationship types</h5>
+<p><code>Canvas</code> → <code>Add relationship</code> → Name, Origin, Target, ví dụ <code>monitors</code>, <code>VitalSignEquipment</code>, <code>Patient</code>; tiếp tục bind <code>VitalSignEquipment.PatientId</code> với <code>Patient.PatientId</code>.</p>
+<h5>6.3. Choose direct matching or a mapping table</h5>
+<p><strong>Direct matching</strong> khi nguồn hai Entity types đã chứa các Properties dùng để liên kết:</p>
+<ul><li>Hospital.HospitalId → Department.HospitalId.</li><li>Patient.CurrentRoomId → Room.RoomId.</li></ul>
+<p>Trong Configure: <code>Use mapping table? = Off</code> → Origin Property → Target Property → Save.</p>
+<p><strong>Mapping Table</strong> khi quan hệ lưu trong bảng nối chứa định danh của cả hai đầu. Ví dụ <code>PatientProgramAssignment(PatientId, ProgramId)</code> cho many-to-many Patient ↔ ClinicalProgram. Trong Configure: <code>Use mapping table? = On</code> → chọn mapping table → map origin/target identifiers → Save.</p>
+<table><thead><tr><th>Scenario</th><th>Chọn</th></tr></thead><tbody><tr><td>Department source đã có HospitalId</td><td>Direct matching</td></tr><tr><td>Patient source có CurrentRoomId</td><td>Direct matching</td></tr><tr><td>Bridge PatientId/ProgramId riêng</td><td>Mapping Table</td></tr><tr><td>Nhiều-nhiều có assignment table</td><td>Mapping Table</td></tr></tbody></table>
+<p><strong>Bẫy:</strong> Cùng kiểu Integer hoặc trùng giá trị không chứng minh hai keys cùng business meaning. Relationship Bindings phải dựa trên ý nghĩa của identifiers.</p>
+<h3>Unit 7 — Preview the ontology</h3>
+<h4>Unit này dạy gì</h4>
+<p>Validate Entities, Properties và Bindings thông qua Instances, đồng thời phân biệt preview Ontology với Graph Materialization.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>7.1. Explore entity instances</h5>
+<p>Ba khu vực chính:</p>
+<ul><li><strong>Home Canvas:</strong> Entity/Relationship definitions.</li><li><strong>Configure:</strong> Keys, Properties, Data Bindings.</li><li><strong>Instances:</strong> Records được liên kết từ nguồn và ánh xạ Properties.</li></ul>
+<p>Ví dụ <code>Room</code> → <code>View Entity Type details</code> → <code>Instances</code>:</p>
+<table><thead><tr><th>RoomId</th><th>RoomNumber</th><th>DepartmentId</th><th>RoomType</th></tr></thead><tbody><tr><td>1</td><td>ICU-301</td><td>1</td><td>Critical Care</td></tr><tr><td>2</td><td>ICU-302</td><td>1</td><td>Critical Care</td></tr><tr><td>3</td><td>ER-101</td><td>2</td><td>Emergency</td></tr></tbody></table>
+<p>Kiểm tra số instances, IDs, values và bindings. Nếu một Property trống trong preview dù nguồn có dữ liệu, xem lại mapping và quyền.</p>
+<h5>7.2. Understand relationship exploration</h5>
+<p>Canvas không phải Graph đã materialize. Graph cần chọn entities/relationships đủ điều kiện, <code>Manage graph</code> → Materialization → <code>Explore graph</code> để duyệt nodes/edges. Graph Materialization là tùy chọn, không bắt buộc để xây dựng Ontology. Cần keys, supported data sources, refresh và chú ý dữ liệu stale.</p>
+<h3>Unit 8 — Exercise: Build an ontology manually</h3>
+<p><strong>Thời lượng ghi ở Module:</strong> 45 phút (hướng dẫn lab độc lập có thể ghi khoảng 40 phút).<br><strong>Lab chính thức:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/23-build-ontology-manually.html<br><strong>Sample ZIP:</strong> https://github.com/MicrosoftLearning/mslearn-fabric/raw/main/Allfiles/Labs/23-24/sample-data.zip</p>
+<h4>Unit này dạy gì</h4>
+<p>Thực hành end-to-end: tạo Lakehouse/Eventhouse, manual Ontology, năm Entity types, năm Relationship types, static/time-series Data Bindings, Relationship Bindings, Instances validation.</p>
+<h4>8.1. Chuẩn bị</h4>
+<table><thead><tr><th>Hạng mục</th><th>Yêu cầu</th></tr></thead><tbody><tr><td>Portal</td><td>https://app.fabric.microsoft.com</td></tr><tr><td>Capacity</td><td>Fabric-enabled paid hoặc Trial được bài lab hỗ trợ</td></tr><tr><td>Workspace</td><td>Quyền tạo items</td></tr><tr><td>Tenant</td><td><code>Users can create Fabric items</code>; <code>Users can create ontology (preview) items</code></td></tr><tr><td>Data</td><td>Sample ZIP 6 CSV</td></tr><tr><td>Graph</td><td>Không cần materialize</td></tr><tr><td>Copilot/AI Agent</td><td>Không bắt buộc</td></tr><tr><td>Chi phí</td><td>Có thể có capacity/storage fees; không tự kích hoạt paid resources</td></tr></tbody></table>
+<p><strong>Files:</strong> <code>Hospitals.csv</code>, <code>Departments.csv</code>, <code>Rooms.csv</code>, <code>Patients.csv</code>, <code>VitalSignEquipment.csv</code> cho Lakehouse; <code>VitalSignsReadings.csv</code> cho Eventhouse.</p>
+<h4>8.2. Bước 1 — Tạo Workspace</h4>
+<ol><li><code>Workspaces</code> → <code>New workspace</code>.</li><li>Đặt tên ví dụ <code>DP600_LP4_Lab_Manual</code>.</li><li>Trong Advanced chọn Fabric capacity hoặc Fabric Trial hợp lệ.</li><li>Chọn <code>Apply</code>.</li><li>Kiểm tra Workspace đã xuất hiện, còn trống.</li></ol>
+<h4>8.3. Bước 2 — Lakehouse &amp; 5 Tables</h4>
+<ol><li><code>Workspace</code> → <code>+ New item</code> → <code>Lakehouse</code>.</li><li>Name <code>LamnaHealthcareLH</code>; Enable Lakehouse schemas.</li><li><code>Get data</code> → <code>Upload files</code> → chọn 5 CSV, trừ VitalSignsReadings.csv.</li><li>Trong Lakehouse Explorer, từng file ở <code>Files</code> → <code>...</code> → <code>Load to Tables</code> → <code>New table</code>.</li><li>Schema <code>dbo</code>; Use header for column names = Enabled; Separator = Comma.</li><li>Tạo lần lượt các tables:</li></ol>
+<table><thead><tr><th>CSV</th><th>dbo table</th></tr></thead><tbody><tr><td>Hospitals.csv</td><td>hospitals</td></tr><tr><td>Departments.csv</td><td>departments</td></tr><tr><td>Rooms.csv</td><td>rooms</td></tr><tr><td>Patients.csv</td><td>patients</td></tr><tr><td>VitalSignEquipment.csv</td><td>vitalsignequipment</td></tr></tbody></table>
+<p><strong>Kết quả:</strong> <code>Tables</code> → <code>dbo</code> có đủ năm tables. Phải kiểm tra upload đã chuyển thành Tables, không chỉ nằm trong Files; đợi mỗi load hoàn tất trước khi tiếp tục.</p>
+<h4>8.4. Bước 3 — Eventhouse &amp; Readings</h4>
+<ol><li><code>Workspace</code> → <code>+ New item</code> → <code>Eventhouse</code>, tên <code>LamnaHealthcareEH</code>.</li><li>Mở KQL Database mặc định.</li><li><code>Get data</code> → <code>Local file</code>, chọn <code>VitalSignsReadings.csv</code>.</li><li>Destination table = New table, name <code>VitalSignsReadings</code>.</li><li>Format CSV, First row header Enabled; kiểm tra ReadingId, EquipmentId, Timestamp, HeartRate, OxygenSaturation, RespiratoryRate.</li><li><code>Next</code> → preview → <code>Finish</code>.</li><li>Kiểm tra KQL:</li></ol>
+<pre><code class="language-kusto">VitalSignsReadings
+| count</code></pre>
+<p><strong>Expected count: 20 records.</strong> Đây là CSV lịch sử, không phải streaming pipeline real-time.</p>
+<h4>8.5. Bước 4 — Create Ontology</h4>
+<p><code>Workspace</code> → <code>+ New item</code> → <code>Ontology (preview)</code> → name <code>LamnaHealthcareOntology</code> → <code>Create</code>. Kết quả Canvas rỗng, chưa có Entity types.</p>
+<h4>8.6. Bước 5 — Five Entity Types + Keys</h4>
+<p>Tại Ontology Canvas: <code>Add entity type</code> → Name → <code>Add Entity Type</code> → <code>View entity type details</code> → <code>Configure</code> → <code>Manage property bindings</code> → <code>Add properties</code> → Save → <code>Define entity type key</code>.</p>
+<table><thead><tr><th>Entity type</th><th>Properties : types</th><th>Entity type key</th></tr></thead><tbody><tr><td>Hospital</td><td>HospitalId: Integer; HospitalName: String; City: String; State: String</td><td>HospitalId</td></tr><tr><td>Department</td><td>DepartmentId: Integer; DepartmentName: String; HospitalId: Integer; Floor: Integer</td><td>DepartmentId</td></tr><tr><td>Room</td><td>RoomId: Integer; RoomNumber: String; DepartmentId: Integer; RoomType: String</td><td>RoomId</td></tr><tr><td>Patient</td><td>PatientId: Integer; FirstName: String; LastName: String; DateOfBirth: Datetime; AdmissionDate: Datetime; CurrentRoomId: Integer</td><td>PatientId</td></tr><tr><td>VitalSignEquipment</td><td>EquipmentId: String; PatientId: Integer; RoomId: Integer; EquipmentType: String; MonitoringStartDate: Datetime</td><td>EquipmentId</td></tr></tbody></table>
+<p>Ví dụ Hospital: Add Entity Type <code>Hospital</code> → Add Properties <code>HospitalId</code>, <code>HospitalName</code>, <code>City</code>, <code>State</code> theo types → Save → Define key <code>HospitalId</code> → Save. Lặp quy trình cho bốn entities khác. Không tạo entity riêng tên VitalSignsReadings vì nó là observation source của Equipment.</p>
+<p><strong>Expected:</strong> năm Entity types với đầy đủ Properties và keys, Properties chưa bound vẫn có thể hiển thị Unbound.</p>
+<h4>8.7. Bước 6 — Five Relationship Types</h4>
+<p>Tại Canvas <code>Add relationship</code> → Name, Origin, Target → <code>Create</code> cho từng quan hệ:</p>
+<table><thead><tr><th>Relationship</th><th>Origin</th><th>Target</th></tr></thead><tbody><tr><td>contains</td><td>Hospital</td><td>Department</td></tr><tr><td>has</td><td>Department</td><td>Room</td></tr><tr><td>assignedTo</td><td>Patient</td><td>Room</td></tr><tr><td>monitors</td><td>VitalSignEquipment</td><td>Patient</td></tr><tr><td>locatedIn</td><td>VitalSignEquipment</td><td>Room</td></tr></tbody></table>
+<pre><code class="language-mermaid">flowchart TD
+  H[&quot;Hospital&quot;] --&gt;|contains| D[&quot;Department&quot;]
+  D --&gt;|has| R[&quot;Room&quot;]
+  P[&quot;Patient&quot;] --&gt;|assignedTo| R
+  E[&quot;VitalSignEquipment&quot;] --&gt;|monitors| P
+  E --&gt;|locatedIn| R</code></pre>
+<p><strong>Expected:</strong> Canvas có đúng năm Relationship types; chưa có instance mappings cho đến bước 8.9.</p>
+<h4>8.8. Bước 7 — Static + Time-series Data Bindings</h4>
+<p><strong>Bind Hospital:</strong> <code>Hospital</code> → <code>View Entity Type details</code> → <code>Configure</code> → <code>Manage property bindings</code> → <code>Add binding and properties</code> → Sources <code>Add</code> → OneLake Catalog → <code>LamnaHealthcareLH</code> → <code>dbo</code> → <code>hospitals</code>.</p>
+<table><thead><tr><th>Ontology Property</th><th>Source Column</th></tr></thead><tbody><tr><td>HospitalId</td><td>hospitals.HospitalId</td></tr><tr><td>HospitalName</td><td>hospitals.HospitalName</td></tr><tr><td>City</td><td>hospitals.City</td></tr><tr><td>State</td><td>hospitals.State</td></tr></tbody></table>
+<p>Save/Create. Không tạo duplicate Properties nếu đã khai báo trước.</p>
+<p><strong>Bind ba entities:</strong></p>
+<table><thead><tr><th>Entity</th><th>Source</th></tr></thead><tbody><tr><td>Department</td><td>dbo.departments</td></tr><tr><td>Room</td><td>dbo.rooms</td></tr><tr><td>Patient</td><td>dbo.patients</td></tr></tbody></table>
+<p>Map Property ↔ Column theo cùng tên và business meaning, gồm <code>Patient.CurrentRoomId</code> ↔ <code>patients.CurrentRoomId</code>.</p>
+<p><strong>Bind VitalSignEquipment primary:</strong> source <code>dbo.vitalsignequipment</code>.</p>
+<table><thead><tr><th>Ontology Property</th><th>Source Column</th></tr></thead><tbody><tr><td>EquipmentId</td><td>EquipmentId</td></tr><tr><td>PatientId</td><td>PatientId</td></tr><tr><td>RoomId</td><td>RoomId</td></tr><tr><td>EquipmentType</td><td>EquipmentType</td></tr><tr><td>MonitoringStartDate</td><td>MonitoringStartDate</td></tr></tbody></table>
+<p><strong>Add observation source:</strong> Trên cùng <code>VitalSignEquipment</code> → <code>Manage property bindings</code> → <code>Add binding and properties</code> → Source <code>LamnaHealthcareEH</code> → KQL Database → <code>VitalSignsReadings</code>. Trong <code>Relationship with primary data source</code>, chọn EquipmentId ở cả hai phía → Save.</p>
+<p><strong>Time-series properties:</strong></p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Time column</th></tr></thead><tbody><tr><td>ReadingId</td><td><code>Timeseries&lt;String&gt;</code></td><td>Timestamp</td></tr><tr><td>HeartRate</td><td><code>Timeseries&lt;Integer&gt;</code></td><td>Timestamp</td></tr><tr><td>OxygenSaturation</td><td><code>Timeseries&lt;Integer&gt;</code></td><td>Timestamp</td></tr><tr><td>RespiratoryRate</td><td><code>Timeseries&lt;Integer&gt;</code></td><td>Timestamp</td></tr></tbody></table>
+<p>Sau Save có thể dùng Cancel để đóng binding editor nếu hướng dẫn UI dùng cách đó; các thay đổi đã Save không bị hủy. Đừng tạo duplicate EquipmentId; không dùng ReadingId làm entity key; Timestamp là time column, không cần Measurement property riêng.</p>
+<h4>8.9. Bước 8 — Bind Relationships bằng Direct Matching</h4>
+<p>Trong Explorer chọn Relationship Type → Configure. <code>Use mapping table? = Off</code> cho cả năm:</p>
+<table><thead><tr><th>Relationship</th><th>Origin Property</th><th>Target Property</th></tr></thead><tbody><tr><td>contains</td><td>Hospital.HospitalId</td><td>Department.HospitalId</td></tr><tr><td>has</td><td>Department.DepartmentId</td><td>Room.DepartmentId</td></tr><tr><td>assignedTo</td><td>Patient.CurrentRoomId</td><td>Room.RoomId</td></tr><tr><td>monitors</td><td>VitalSignEquipment.PatientId</td><td>Patient.PatientId</td></tr><tr><td>locatedIn</td><td>VitalSignEquipment.RoomId</td><td>Room.RoomId</td></tr></tbody></table>
+<p>Chọn Save sau mỗi cấu hình. Năm quan hệ lab không cần Mapping Table.</p>
+<p><strong>Bẫy:</strong> <code>Patient.PatientId</code> không được nối <code>Room.RoomId</code> dù cùng type Integer; phải dùng <code>CurrentRoomId</code>.</p>
+<h4>8.10. Bước 9 — Validate</h4>
+<p>Trong Ontology: <code>Room</code> → <code>View Entity Type details</code> → <code>Instances</code>, kiểm tra Room records; kiểm tra <code>VitalSignEquipment</code> → Configure để xem cả static/time-series sources.</p>
+<table><thead><tr><th>Entity type</th><th>Expected Instances</th></tr></thead><tbody><tr><td>Hospital</td><td>1</td></tr><tr><td>Department</td><td>3</td></tr><tr><td>Room</td><td>10</td></tr><tr><td>Patient</td><td>5</td></tr><tr><td>VitalSignEquipment</td><td>5</td></tr></tbody></table>
+<p>Tại Room <code>ICU-302</code>:</p>
+<table><thead><tr><th>Property</th><th>Expected</th></tr></thead><tbody><tr><td>RoomId</td><td>2</td></tr><tr><td>DepartmentId</td><td>1</td></tr><tr><td>RoomType</td><td>Critical Care</td></tr></tbody></table>
+<p>Eventhouse <code>VitalSignsReadings</code> phải có 20 rows. Không cần Graph Materialization để hoàn thành lab.</p>
+<h4>8.11. Troubleshooting</h4>
+<table><thead><tr><th>Triệu chứng</th><th>Xử lý</th></tr></thead><tbody><tr><td>Không thấy Ontology preview</td><td>Check tenant settings, capacity</td></tr><tr><td>Tables không có trong Catalog</td><td>CSV phải Load to Table, không chỉ Upload File</td></tr><tr><td>Unbound Property</td><td>Source binding/column mapping/Save</td></tr><tr><td>Entity key không hợp lệ</td><td>Type, uniqueness, composite ID</td></tr><tr><td>Time-series thiếu</td><td>Eventhouse, EquipmentId, Timestamp, property types</td></tr><tr><td>Không đủ 20 readings</td><td>CSV ingest, header, KQL count</td></tr><tr><td>Relationship sai</td><td>Origin/Target/properties đúng business meaning</td></tr><tr><td>Instances trống</td><td>Binding, source, permissions, refresh</td></tr></tbody></table>
+<h4>8.12. Cleanup, exam practice, validation status</h4>
+<p>Workspace thử nghiệm có thể được xóa ở <code>Workspace settings</code> → <code>General</code> → <code>Remove this workspace</code> nếu chắc chắn không cần dữ liệu và không phải workspace production. Luyện tay: tạo Entity Types/Keys, Bind Static, Bind Time-series, Direct Relationship Bindings, xác minh Instances.</p>
+<p><strong>Chưa thực thi lab trong tenant; các expected results dựa trên hướng dẫn chính thức.</strong></p>
+<h3>Unit 9 — Exercise: Generate an ontology from a Power BI semantic model</h3>
+<p><strong>Thời lượng theo Module:</strong> 40 phút (trang lab độc lập có thể ghi khoảng 45 phút).<br><strong>Lab chính thức:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/24-build-ontology-semantic-model.html<br><strong>Data sample:</strong> https://github.com/MicrosoftLearning/mslearn-fabric/raw/main/Allfiles/Labs/23-24/sample-data.zip</p>
+<h4>Unit này dạy gì</h4>
+<p>Tận dụng Direct Lake Semantic Model để generate Ontology, kiểm tra four generated Relationship types và bổ sung Eventhouse readings bằng Time-series Binding. Khác lab Manual là không phải tự tạo five Entity types và initial static bindings.</p>
+<h4>9.1. Chuẩn bị</h4>
+<p>Paid/Trial Fabric capacity được bài lab hỗ trợ; quyền tạo Lakehouse, Eventhouse, Semantic Model, Ontology; Read và Build đối với Semantic Model; tenant settings cho Fabric items và Ontology preview; cùng bộ 6 CSV; không cần materialize Graph.</p>
+<p>Nên dùng Workspace riêng để không trùng <code>LamnaHealthcareOntology</code> với Exercise 1.</p>
+<h4>9.2. Bước 1 — Workspace &amp; Lakehouse</h4>
+<ol><li><code>Workspaces</code> → <code>New workspace</code> → ví dụ <code>DP600_LP4_Lab_Generated</code> → capacity hợp lệ.</li><li><code>+ New item</code> → <code>Lakehouse</code> → <code>LamnaHealthcareLH</code>, enable schemas.</li><li>Upload 5 CSV <code>Hospitals</code>, <code>Departments</code>, <code>Rooms</code>, <code>Patients</code>, <code>VitalSignEquipment</code>.</li><li><code>Files</code> → <code>...</code> → <code>Load to Tables</code> → <code>New table</code> → schema <code>dbo</code>, headers, comma separator.</li><li>Confirm <code>dbo.hospitals</code>, <code>dbo.departments</code>, <code>dbo.rooms</code>, <code>dbo.patients</code>, <code>dbo.vitalsignequipment</code>.</li></ol>
+<h4>9.3. Bước 2 — Eventhouse</h4>
+<ol><li><code>+ New item</code> → <code>Eventhouse</code> → <code>LamnaHealthcareEH</code>.</li><li>Trong KQL Database mặc định: <code>Get data</code> → <code>Local file</code> → <code>VitalSignsReadings.csv</code> → new table <code>VitalSignsReadings</code>.</li><li>Check columns/types:</li></ol>
+<table><thead><tr><th>Column</th><th>Type</th></tr></thead><tbody><tr><td>ReadingId</td><td>String</td></tr><tr><td>EquipmentId</td><td>String</td></tr><tr><td>Timestamp</td><td>Datetime</td></tr><tr><td>HeartRate</td><td>Numeric</td></tr><tr><td>OxygenSaturation</td><td>Numeric</td></tr><tr><td>RespiratoryRate</td><td>Numeric</td></tr></tbody></table>
+<ol><li>Finish → KQL:</li></ol>
+<pre><code class="language-kusto">VitalSignsReadings
+| count</code></pre>
+<p>Expected = 20.</p>
+<h4>9.4. Bước 3 — Direct Lake Semantic Model</h4>
+<p>Trong Lakehouse <code>LamnaHealthcareLH</code> → <code>New semantic model</code>.</p>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Name</td><td>LamnaHealthcareModel</td></tr><tr><td>Storage mode</td><td>Direct Lake</td></tr><tr><td>Tables</td><td>Cả 5 Lakehouse tables</td></tr></tbody></table>
+<p>Confirm, mở Semantic Model Editor → <code>Manage relationships</code> → <code>+ New relationship</code>.</p>
+<p><strong>Relationship 1:</strong></p>
+<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>From</td><td>departments.HospitalId</td></tr><tr><td>To</td><td>hospitals.HospitalId</td></tr><tr><td>Cardinality</td><td>Many to one (*:1)</td></tr><tr><td>Cross-filter direction</td><td>Both</td></tr><tr><td>Active</td><td>Yes</td></tr></tbody></table>
+<p><strong>Ba relationships còn lại</strong>, cùng cardinality, cross-filter Both và Active:</p>
+<table><thead><tr><th>From</th><th>To</th></tr></thead><tbody><tr><td>rooms.DepartmentId</td><td>departments.DepartmentId</td></tr><tr><td>patients.CurrentRoomId</td><td>rooms.RoomId</td></tr><tr><td>vitalsignequipment.PatientId</td><td>patients.PatientId</td></tr></tbody></table>
+<p>Expected 4 active relationships. Lab sử dụng <code>Both</code>; trong production cần đánh giá ambiguity và performance, không mặc định mọi relationship bidirectional.</p>
+<p>Nếu hiện <code>Determining relationship cardinality</code>, đợi hoàn tất và chọn chính xác Many to one. Nếu table không hiện, refresh và kiểm tra Lakehouse tables.</p>
+<h4>9.5. Bước 4 — Generate Ontology</h4>
+<p>Mở <code>LamnaHealthcareModel</code> → <code>Generate Ontology</code> (hoặc menu <code>...</code>) → destination workspace → name <code>LamnaHealthcareOntology</code> → <code>Create</code> → mở Ontology Editor.</p>
+<p><strong>Expected generated structure:</strong></p>
+<ul><li>5 Entity types: <code>hospitals</code>, <code>departments</code>, <code>rooms</code>, <code>patients</code>, <code>vitalsignequipment</code>.</li><li>4 Relationship types từ 4 Semantic Model relationships.</li><li>Initial static property/data bindings từ Semantic Model.</li><li><strong>Chưa có</strong> Eventhouse time-series observations.</li></ul>
+<h4>9.6. Bước 5 — Review Entity Keys</h4>
+<p>Mở từng Entity: <code>View Entity Type details</code> → <code>Configure</code> → <code>Define entity type key</code> nếu key chưa tồn tại.</p>
+<table><thead><tr><th>Entity type</th><th>Key</th></tr></thead><tbody><tr><td>hospitals</td><td>HospitalId</td></tr><tr><td>departments</td><td>DepartmentId</td></tr><tr><td>rooms</td><td>RoomId</td></tr><tr><td>patients</td><td>PatientId</td></tr><tr><td>vitalsignequipment</td><td>EquipmentId</td></tr></tbody></table>
+<p>Không mặc định mọi Entity key được generate đầy đủ từ Semantic Model. Sau khi cập nhật Save và kiểm tra uniqueness.</p>
+<h4>9.7. Bước 6 — Review Relationship Bindings</h4>
+<p><code>Configure</code> → <code>Manage relationships</code> → kiểm tra từng relationship:</p>
+<table><thead><tr><th>Generated relationship</th><th>Origin Property</th><th>Target Property</th></tr></thead><tbody><tr><td>departments_to_hospitals</td><td>departments.HospitalId</td><td>hospitals.HospitalId</td></tr><tr><td>rooms_to_departments</td><td>rooms.DepartmentId</td><td>departments.DepartmentId</td></tr><tr><td>patients_to_rooms</td><td>patients.CurrentRoomId</td><td>rooms.RoomId</td></tr><tr><td>vitalsignequipment_to_patients</td><td>vitalsignequipment.PatientId</td><td>patients.PatientId</td></tr></tbody></table>
+<p><code>Use mapping table? = Off</code> cho cả bốn, sửa nếu sai hoặc thiếu; nếu mapping đã đúng thì không phải lưu lại thay đổi vô ích.</p>
+<p><strong>Điểm khác lab 1:</strong> Không có automatically generated <code>VitalSignEquipment locatedIn Room</code>, bởi vì Semantic Model ban đầu không có Relationship type này.</p>
+<h4>9.8. Bước 7 — Eventhouse Time-series Binding</h4>
+<p><code>vitalsignequipment</code> → <code>View Entity Type details</code> → <code>Configure</code> → <code>Manage property bindings</code> → <code>Add binding and properties</code>.</p>
+<ol><li>Giữ Primary Source được generate từ Semantic Model.</li><li>Sources <code>Add</code> → <code>LamnaHealthcareEH</code> → KQL Database → <code>VitalSignsReadings</code>.</li><li>Trong <code>Relationship with primary data source</code>, map EquipmentId ↔ EquipmentId.</li><li>Save; cấu hình các properties dưới đây:</li></ol>
+<table><thead><tr><th>Property</th><th>Type</th><th>Time column</th></tr></thead><tbody><tr><td>ReadingId</td><td><code>Timeseries&lt;String&gt;</code></td><td>Timestamp</td></tr><tr><td>HeartRate</td><td><code>Timeseries&lt;Integer&gt;</code></td><td>Timestamp</td></tr><tr><td>OxygenSaturation</td><td><code>Timeseries&lt;Integer&gt;</code></td><td>Timestamp</td></tr><tr><td>RespiratoryRate</td><td><code>Timeseries&lt;Integer&gt;</code></td><td>Timestamp</td></tr></tbody></table>
+<p>Các Static Properties ban đầu vẫn còn: EquipmentId, PatientId, RoomId, EquipmentType, MonitoringStartDate. Save, kiểm tra binding rồi đóng editor.</p>
+<h4>9.9. Bước 8 — Preview/Validation</h4>
+<p><code>rooms</code> → <code>View Entity Type details</code> → <code>Instances</code>:</p>
+<table><thead><tr><th>Check</th><th>Expected</th></tr></thead><tbody><tr><td>Room instances</td><td>10</td></tr><tr><td>ICU-302 RoomId</td><td>2</td></tr><tr><td>ICU-302 DepartmentId</td><td>1</td></tr><tr><td>ICU-302 RoomType</td><td>Critical Care</td></tr></tbody></table>
+<p>Những Entity instances khác: hospitals=1, departments=3, patients=5, vitalsignequipment=5. Ở patients, PatientId 1002 có CurrentRoomId 2; ở vitalsignequipment, VS-1002 có PatientId 1002, RoomId 2. Kiểm tra Eventhouse Time-series Binding còn hiện trong Configure.</p>
+<h4>9.10. Troubleshooting</h4>
+<table><thead><tr><th>Lỗi</th><th>Xử lý</th></tr></thead><tbody><tr><td>Không thấy Generate Ontology</td><td>Ribbon overflow, permission, tenant settings</td></tr><tr><td>Model chưa có tables</td><td>Load Lakehouse Tables, refresh</td></tr><tr><td>Không tạo được model</td><td>Workspace/capacity permissions</td></tr><tr><td>Không generate relationships</td><td>Kiểm tra 4 active relationships</td></tr><tr><td>Key thiếu</td><td>Bổ sung trong Ontology Configure</td></tr><tr><td>Property mapping sai</td><td>Sửa Relationship Binding</td></tr><tr><td>Eventhouse không hiện</td><td>KQL Database/table và quyền</td></tr><tr><td>Time-series thiếu</td><td>EquipmentId, Timestamp, types</td></tr><tr><td>Instances trống</td><td>Source Data Binding, quyền, refresh</td></tr></tbody></table>
+<h4>9.11. Cleanup và exam practice</h4>
+<p>Nếu Workspace chỉ dùng cho lab và không cần giữ để học Graph/Agent, có thể xóa sau kiểm tra. Năm kỹ năng cốt lõi: tạo Direct Lake Semantic Model, thiết lập bốn relationships, Generate, review keys/bindings và bổ sung time-series. <strong>Chưa thực thi lab thực tế trong tenant.</strong></p>
+<h4>So sánh hai Exercise</h4>
+<table><thead><tr><th>Exercise 1 — Manual</th><th>Exercise 2 — Generated</th></tr></thead><tbody><tr><td>Tạo 5 Entity types thủ công</td><td>Generate 5 Entity types</td></tr><tr><td>Tạo 5 Relationships thủ công</td><td>Generate 4 Relationships từ model</td></tr><tr><td>Static Binding từ Lakehouse</td><td>Initial Static Binding qua Semantic Model</td></tr><tr><td>Tạo Keys</td><td>Review/thêm Keys</td></tr><tr><td>Bổ sung Eventhouse Time-series</td><td>Bổ sung Eventhouse Time-series</td></tr><tr><td>Check 5 Relationship Bindings</td><td>Check 4 Relationship Bindings</td></tr></tbody></table>
+<p>Số lượng Relationships khác nhau là do design của hai labs, không phải lỗi. Manual lab thêm <code>VitalSignEquipment locatedIn Room</code> mà generated model không có.</p>
+<h3>Unit 10 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Đánh giá lựa chọn creation approach, Entity Keys, Static vs Time-series Bindings và Relationship Bindings. <strong>Trang Microsoft Learn tại thời điểm giảng hiển thị 4 câu</strong>, không phải 5. Một vài phương án chưa mô tả đủ tinh tế so với new ontology experience; cần phân biệt “đáp án bài học có vẻ muốn kiểm tra” và kỹ thuật thực tế.</p>
+<h4>Câu 1 — Lợi ích Generate từ Semantic Model</h4>
+<p><strong>A.</strong> Automatically creates all relationship data bindings. <strong>Sai:</strong> Relationship definitions có thể được generate nhưng Bindings cần review/complete.</p>
+<p><strong>B.</strong> Automatically creates Entity types, Properties, Keys and Entity Data Bindings from model. <strong>Đáp án dự kiến B:</strong> Chọn gần nhất với lợi ích generation; tuy nhiên <strong>không bảo đảm mọi keys đã đủ</strong>.</p>
+<p><strong>C.</strong> Allows business-friendly names from the start. <strong>Không phải ưu điểm riêng:</strong> Manual Creation giúp kiểm soát tên từ đầu.</p>
+<p><strong>Exam tip:</strong> Generate reuse structure nhưng không đồng nghĩa complete configuration. <strong>Liên hệ:</strong> Unit 2/4.</p>
+<h4>Câu 2 — Entity type cần gì trước khi Bind?</h4>
+<p><strong>A.</strong> Relationship types. Sai, entity có thể Bind độc lập.</p>
+<p><strong>B.</strong> Entity type key với String/Integer properties. <strong>Đáp án dự kiến B trong logic lab</strong>, nơi keys dùng để xác định instances. <strong>Giới hạn:</strong> New Ontology experience hỗ trợ <strong>keyless entity types</strong> nên chữ “must” không còn tuyệt đối khi nói mọi binding. Keys quan trọng và bắt buộc cho Graph Materialization.</p>
+<p><strong>C.</strong> At least one time-series property. Sai, Hospital và Department có thể chỉ có static properties.</p>
+<p><strong>Exam tip:</strong> Phân biệt yêu cầu của lab và khả năng sản phẩm hiện tại. <strong>Liên hệ:</strong> Unit 3/5.</p>
+<h4>Câu 3 — Static vs Time-series Binding</h4>
+<p><strong>A.</strong> Time-series dùng timestamped records/streams; Static Binding kết nối Lakehouse tables. <strong>Đáp án dự kiến A:</strong> Điểm đúng then chốt là repeated observations with timestamps. Tuy nhiên static không chỉ áp dụng riêng Lakehouse.</p>
+<p><strong>B.</strong> Tạo Time-series Binding trước Static Binding. Không phải workflow của lab, vốn xác định Primary Source trước.</p>
+<p><strong>C.</strong> Time-series không cần Key Property. Sai trong ngữ cảnh cần match readings với Equipment instance.</p>
+<p><strong>Exam tip:</strong> Timestamp + repeated measurements → Time-series. <strong>Liên hệ:</strong> Unit 5, Labs.</p>
+<h4>Câu 4 — Relationship Data Binding cần gì?</h4>
+<p><strong>A.</strong> Bảng source chứa thông tin định danh hai Entity types và columns nối chúng. <strong>Đáp án dự kiến A theo Mapping Table approach</strong>.</p>
+<p><strong>B.</strong> Chỉ Origin và Target types. Sai: mới đủ relationship definition.</p>
+<p><strong>C.</strong> Primary/Foreign Key columns trong database schema. Hợp với nhiều Direct Matching scenarios nhưng không diễn tả tất cả binding approaches.</p>
+<p><strong>Giới hạn assessment:</strong> Câu hỏi không phân biệt Direct Matching và Mapping Table; không nên học rằng mọi Relationship Binding bắt buộc có một mapping table riêng. <strong>Liên hệ:</strong> Unit 6.</p>
+<table><thead><tr><th>Câu</th><th>Đáp án dự kiến</th><th>Giới hạn</th></tr></thead><tbody><tr><td>1</td><td>B</td><td>Keys cần review, không luôn generate đủ</td></tr><tr><td>2</td><td>B</td><td>Keyless entities hiện được hỗ trợ trong một số cases</td></tr><tr><td>3</td><td>A</td><td>Static sources không chỉ Lakehouse</td></tr><tr><td>4</td><td>A</td><td>Direct Matching không bắt buộc Mapping Table</td></tr></tbody></table>
+<h3>Unit 11 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết việc tạo Ontology theo hai cách và cơ chế hoàn thiện cấu hình để Ontology dùng được bởi các consumers.</p>
+<h4>Nội dung chính trong unit</h4>
+<pre><code class="language-mermaid">flowchart TD
+  A[&quot;Manual concepts&quot;] --&gt; R[&quot;Review/refine entities, keys, relationships&quot;]
+  B[&quot;Generate from Semantic Model&quot;] --&gt; R
+  R --&gt; C[&quot;Bind static and time-series data&quot;]
+  C --&gt; D[&quot;Configure relationship bindings&quot;]
+  D --&gt; E[&quot;Validate instances and mappings&quot;]
+  E --&gt; F[&quot;Ontology ready for supported consumers&quot;]</code></pre>
+<p>Ontology Canvas có definitions chưa đủ chứng minh sản phẩm đã kết nối dữ liệu chính xác. Phải validate IDs, property mapping, time-series association, relationships và instance preview. Graph Materialization và GQL là bước mở rộng khi cần phân tích connections nhiều cấp, không bắt buộc trong hai lab.</p>
+<p><strong>Nguồn Unit Summary:</strong> https://learn.microsoft.com/en-us/training/modules/create-ontology-with-fabric-iq/</p>
+<h3>Coverage check — Module 3</h3>
+<table><thead><tr><th>Unit</th><th>Coverage đã thực hiện</th></tr></thead><tbody><tr><td>1</td><td>Lamna Healthcare, two sources, two methods</td></tr><tr><td>2</td><td>Generate vs Manual, khi chọn/khi không</td></tr><tr><td>3</td><td>Entity types, properties/types, metadata, keys, relationships</td></tr><tr><td>4</td><td>Generation, review, completion</td></tr><tr><td>5</td><td>Static primary and time-series observations</td></tr><tr><td>6</td><td>Relationship types, Direct Matching, Mapping Table</td></tr><tr><td>7</td><td>Instances, preview vs Graph Materialization</td></tr><tr><td>8</td><td>Manual Lab đầy đủ: workspace, 5 Lakehouse tables, Eventhouse, 5 entities, 5 relationships, bindings, validate</td></tr><tr><td>9</td><td>Generated Lab đầy đủ: Direct Lake Semantic Model, 4 relationships, Generate, review, time-series, validate</td></tr><tr><td>10</td><td>4/4 assessment và đánh dấu điểm thiếu nhất quán</td></tr><tr><td>11</td><td>Summary và learning continuation</td></tr></tbody></table>
+<p><strong>Kết luận:</strong> 11/11 Units; 2/2 labs được hướng dẫn chi tiết, chưa chạy thực tế; 4/4 assessment được phân tích. Đã bao phủ Fabric IQ Ontology, Entity Keys, Static/Time-series, Direct Matching, Mapping Table, permissions, capacity/trial, Graph limitations, timestamp/data freshness và troubleshooting. Chưa thực thi Graph Materialization hoặc Data Agent vì ngoài scope lab.</p>
+<p><strong>Bẫy scenario trọng tâm:</strong> Generate ≠ Complete; Entity type ≠ Entity instance; Relationship definition ≠ binding; Static ≠ Time-series; EquipmentId ≠ ReadingId; Direct Matching ≠ Mapping Table; Ontology Canvas ≠ Materialized Graph; Preview ≠ live verification.</p>
+<p><strong>Thông tin phiên bản:</strong> New Ontology experience và Old experience cùng xuất hiện trong giai đoạn Preview. Nội dung bài học nêu trải nghiệm cũ dự kiến ngừng ngày 31/01/2027; cần kiểm tra Microsoft Learn mới nhất nếu triển khai sau ngày này.</p>
+<hr>

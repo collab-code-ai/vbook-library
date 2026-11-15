@@ -1,0 +1,189 @@
+<h2>Module 2 — Understand Microsoft Fabric IQ fundamentals</h2>
+<p><strong>Learning Path:</strong> Prepare AI-ready analytics data in Microsoft Fabric<br><strong>Vị trí:</strong> LP4 — Module 2/3<br><strong>Cấu trúc:</strong> 6 Units; không có Exercise/Lab riêng; 5 câu Module assessment.<br><strong>Thời lượng Microsoft Learn:</strong> Khoảng 40 phút.<br><strong>Nguồn:</strong> https://learn.microsoft.com/en-us/training/modules/understand-fabric-iq-fundamentals/</p>
+<blockquote><p>Mục tiêu: hiểu kiến trúc Fabric IQ, Ontology, Business Entities, Relationships, Data Bindings, Graph, Data Agents, Operations Agents, Semantic Models và Planning trong Fabric.</p></blockquote>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên</th><th>Heading/subheading nội bộ</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Connect maintenance data to project readiness; Explore the module</td></tr><tr><td>2</td><td>Get started with Fabric IQ</td><td>Define an ontology; Position ontologies alongside semantic models; Where Fabric IQ fits in the data platform; Explore the ontology interface; Understand the build-bind-query workflow; How Fabric IQ connects to OneLake; Two paths to create an ontology</td></tr><tr><td>3</td><td>Explore Microsoft Fabric IQ components</td><td>Ontology items; Data agents; Graph in Microsoft Fabric; Semantic models; Operations agents; Planning</td></tr><tr><td>4</td><td>Understand the ontology modeling paradigm</td><td>Shift from report schemas to business concepts; Model entity types as reusable concepts; Understand entity instances; Define properties with semantic meaning; Establish relationships between concepts; Define explicit business rules; Bind concepts to data without duplication</td></tr><tr><td>5</td><td>Module assessment</td><td>5 câu hỏi chính thức</td></tr><tr><td>6</td><td>Summary</td><td>Tổng kết; Continue learning</td></tr></tbody></table>
+<p>Đã đối chiếu đầy đủ 6 Units. Fabric IQ ở trạng thái Preview theo nội dung đã giảng.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Microsoft mở đầu bằng tình huống <strong>Contoso Offshore</strong>, doanh nghiệp xây dựng công trình ngoài khơi. Nhiều nhóm như Project Planning, Fleet Management, Equipment và Maintenance giữ dữ liệu ở những hệ thống khác nhau. Thách thức là nối dữ liệu thành một cách hiểu thống nhất.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>1.1. Connect maintenance data to project readiness</h5>
+<p>Project Manager hỏi: “Which planned foundation installations are at risk tomorrow because required equipment is unavailable?”</p>
+<p>Để trả lời phải biết Project nào có InstallationTask nào, Task dùng Vessel/Equipment nào, Equipment nào có MaintenanceOrder chặn vận hành, trạng thái maintenance và thời gian chặn có trùng thời gian task không.</p>
+<pre><code class="language-mermaid">flowchart TD
+    P[&quot;Project P001&quot;] --&gt;|hasTask| T[&quot;InstallationTask T001&quot;]
+    T --&gt;|requiresEquipment| E[&quot;Equipment E001&quot;]
+    T --&gt;|assignedTo| V[&quot;Vessel V001&quot;]
+    T --&gt;|installs| F[&quot;Foundation F001&quot;]
+    M[&quot;MaintenanceOrder M001&quot;] --&gt;|affects| E</code></pre>
+<p>Một MaintenanceOrder gắn với Equipment <strong>chưa đủ</strong> để kết luận task bị chặn. Cần kiểm tra <code>Unresolved</code>, <code>BlocksOperation = true</code> và khoảng thời gian overlap với task.</p>
+<h5>1.2. Explore the module</h5>
+<p>Fabric IQ cung cấp business concepts và Relationships có tên/ý nghĩa nhất quán; Data Agent, Graph và các công cụ khác có thể khai thác context đó để trả lời câu hỏi. Các kết luận cần vẫn được kiểm tra bằng dữ liệu và business rules.</p>
+<h3>Unit 2 — Get started with Fabric IQ</h3>
+<h4>Unit này dạy gì</h4>
+<p>Định nghĩa Ontology, vị trí so với Semantic Models và OneLake, giao diện, workflow Build-Bind-Query và cách xây dựng Ontology.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>2.1. Define an ontology</h5>
+<p><strong>Ontology</strong> là mô hình khái niệm nghiệp vụ và các mối liên hệ có tên, giúp nhiều công cụ hiểu dữ liệu nhất quán, không chỉ là sơ đồ Database Relationship.</p>
+<table><thead><tr><th>Thành phần</th><th>Ý nghĩa</th><th>Ví dụ</th></tr></thead><tbody><tr><td>Entity type</td><td>Loại đối tượng</td><td>Equipment</td></tr><tr><td>Entity instance</td><td>Đối tượng cụ thể</td><td>Crane E001</td></tr><tr><td>Property</td><td>Đặc trưng</td><td>RatedCapacityTonnes</td></tr><tr><td>Relationship</td><td>Liên kết có tên và hướng</td><td>Task requiresEquipment Equipment</td></tr><tr><td>Business rule</td><td>Quy tắc diễn giải</td><td>Task gặp rủi ro nếu thiết bị bị maintenance chặn trong thời gian cần dùng</td></tr><tr><td>Metric</td><td>Chỉ số, tính toán</td><td>Equipment Utilization</td></tr><tr><td>Data binding</td><td>Ánh xạ khái niệm tới dữ liệu nguồn</td><td>Equipment → EquipmentRegister</td></tr></tbody></table>
+<p>Ví dụ:</p>
+<pre><code class="language-text">Entity type: Equipment
+Properties: EquipmentId, EquipmentName, RatedCapacityTonnes
+Relationships:
+  Vessel carries Equipment
+  InstallationTask requiresEquipment Equipment
+  MaintenanceOrder affects Equipment</code></pre>
+<p>Relationship diễn tả <strong>cái gì nối với cái gì</strong>; business rule diễn tả <strong>điều kiện để đánh giá tình trạng nghiệp vụ</strong>. Một rule trong Ontology không tự chạy như SQL constraint hoặc Power Automate flow. Consumer phải triển khai kiểm tra/automation phù hợp.</p>
+<h5>2.2. Position ontologies alongside semantic models</h5>
+<table><thead><tr><th>Power BI Semantic Model</th><th>Fabric Ontology</th></tr></thead><tbody><tr><td>Tables, columns, DAX measures, relationships</td><td>Entity types, properties, relationships, rules, data bindings</td></tr><tr><td>KPI, report, analytical filters</td><td>Shared business context, cross-system dependencies</td></tr><tr><td>“Utilization tháng trước là bao nhiêu?”</td><td>“Thiết bị hỏng ảnh hưởng những task/project nào?”</td></tr><tr><td>Tối ưu analytics</td><td>Tái sử dụng ý nghĩa nghiệp vụ cho Agents/Graph</td></tr></tbody></table>
+<p>Semantic Model vẫn là nguồn tính KPI đáng tin cậy. Ontology có thể được generate từ Semantic Model để giữ lại definitions và metrics liên kết với các DAX measures.</p>
+<h5>2.3. Where Fabric IQ fits in the data platform</h5>
+<p><strong>Microsoft IQ</strong> cung cấp enterprise context cho AI, với các nhóm được giới thiệu trong bài:</p>
+<ul><li><strong>Work IQ:</strong> Context về cách nhân viên làm việc và phối hợp.</li><li><strong>Foundry IQ:</strong> Context từ tài liệu và nguồn tri thức có thẩm quyền.</li><li><strong>Web IQ:</strong> Context từ thông tin trên web.</li><li><strong>Fabric IQ:</strong> Context từ business entities, relationships và enterprise data.</li></ul>
+<p>Nếu hỏi quan hệ giữa Equipment, Task và Maintenance, Fabric IQ đúng trọng tâm; nếu hỏi quy trình bảo trì theo tài liệu chính sách, Foundry IQ có thể hữu ích.</p>
+<p>Ba lớp khái niệm: OneLake unified data → Semantic Models/business intelligence → Ontology/operational intelligence. Đây là kiến trúc về vai trò, không phải yêu cầu mọi query vật lý phải đi qua cả ba lớp.</p>
+<p>OneLake hỗ trợ nền tảng dữ liệu thống nhất. Fabric IQ ánh xạ business concepts tới Lakehouse, Eventhouse, Semantic Model và những nguồn phù hợp; <strong>Data Binding không tự động sao chép toàn bộ dữ liệu</strong>.</p>
+<h5>2.4. Explore the ontology interface</h5>
+<ul><li><strong>Explorer / Canvas:</strong> Quan sát Entity types và Relationship definitions.</li><li><strong>Configure:</strong> Chỉnh Properties, Keys, Data Bindings, Relationship Bindings, metadata.</li><li><strong>Ontology Agent:</strong> Hỗ trợ đề xuất cấu trúc và bindings.</li></ul>
+<p>Ontology Agent có <strong>Plan mode</strong> (đề xuất, chưa áp dụng) và <strong>Act mode</strong> (áp dụng sau review); để ghi thay đổi cần quyền Contributor hoặc cao hơn theo trải nghiệm tương ứng. Vẫn cần người hiểu nghiệp vụ kiểm tra. Ví dụ thiết bị được tàu mang theo không đồng nghĩa thiết bị đó bắt buộc cho mọi task của tàu.</p>
+<pre><code class="language-mermaid">flowchart TD
+ P[&quot;Project&quot;] --&gt;|hasTask| T[&quot;InstallationTask&quot;]
+ T --&gt;|assignedTo| V[&quot;Vessel&quot;]
+ T --&gt;|requiresEquipment| E[&quot;Equipment&quot;]
+ V --&gt;|carries| E
+ M[&quot;MaintenanceOrder&quot;] --&gt;|affects| E</code></pre>
+<h5>2.5. Understand the build-bind-query workflow</h5>
+<p><strong>Build:</strong> Xác định Entity types, Properties, Relationships, keys, definitions. Chưa nhất thiết cần dữ liệu vật lý.</p>
+<p><strong>Bind:</strong> Ánh xạ những khái niệm tới Lakehouse, Eventhouse hoặc Semantic Model. Cần chuẩn hóa identifiers: <code>E001</code> khác <code>EQ-001</code> ở hai hệ thống có thể là cùng một thiết bị nhưng Ontology không tự suy ra.</p>
+<p><strong>Query:</strong> Consumer sử dụng các definitions và bindings để truy vấn nguồn thích hợp.</p>
+<table><thead><tr><th>Nguồn/cơ chế</th><th>Ngôn ngữ thường gặp</th></tr></thead><tbody><tr><td>Lakehouse SQL Endpoint / Warehouse</td><td>SQL</td></tr><tr><td>Eventhouse</td><td>KQL — Kusto Query Language</td></tr><tr><td>Power BI Semantic Model</td><td>DAX — Data Analysis Expressions</td></tr><tr><td>Materialized Graph</td><td>GQL — Graph Query Language</td></tr></tbody></table>
+<p>Không phải mọi câu hỏi đều cần GQL: KPI đơn giản thường xử lý qua DAX; truy vết nhiều Relationships mới thể hiện lợi thế Graph.</p>
+<h5>2.6. How Fabric IQ connects to OneLake</h5>
+<p>Lakehouse lưu records nghiệp vụ (Project, Vessel, MaintenanceOrder); Eventhouse phù hợp với measurements và events theo thời gian (temperature, pressure, sensor status); Semantic Model giữ business KPI/DAX logic. Ontology có thể liên kết những nguồn này quanh cùng <code>Equipment</code>.</p>
+<p><strong>Data Binding</strong>: Ánh xạ logical entities/properties đến dữ liệu có sẵn mà không mặc định copy toàn bộ records.</p>
+<p><strong>Graph Materialization</strong>: Nạp các entity/relationship instances đủ điều kiện thành Graph để traversal. Graph có refresh và có thể stale khi nguồn đã thay đổi.</p>
+<p>Không mặc định Fabric IQ luôn real-time hoặc mọi Ontology đều có materialized Graph.</p>
+<h5>2.7. Two paths to create an ontology</h5>
+<p><strong>Generate from Semantic Model</strong> nếu đã có model tốt: Tables → Entity types; Columns → Properties; Relationships → Definitions; DAX Measures → Metrics liên kết. Cần Read/Build permissions trên model; sau Generate phải validate Keys, Relationship Bindings, Metric và Data Binding.</p>
+<p><strong>Build from prepared sources</strong> khi chưa có model phù hợp: định nghĩa business concepts thủ công trước, rồi bind nguồn Lakehouse/Eventhouse. Ontology Agent có thể đề xuất nhưng cần review.</p>
+<table><thead><tr><th>Scenario</th><th>Hướng</th></tr></thead><tbody><tr><td>Semantic Model đã chuẩn hóa</td><td>Generate</td></tr><tr><td>Chưa có Semantic Model</td><td>Manual</td></tr><tr><td>Semantic Model thiếu sensor Eventhouse</td><td>Generate rồi mở rộng</td></tr><tr><td>Nguồn mang tên kỹ thuật khó hiểu</td><td>Thiết kế concepts trước, rồi Build/Bind</td></tr></tbody></table>
+<p>Tenant settings cần chú ý: <code>Users can create Fabric items</code>, <code>Users can create ontology (preview) items</code>; Agent có thể có các yêu cầu bổ sung.</p>
+<h4>Exam notes / Bẫy dễ nhầm</h4>
+<table><thead><tr><th>Từ khóa</th><th>Nhận diện</th></tr></thead><tbody><tr><td>Shared business vocabulary</td><td>Ontology</td></tr><tr><td>DAX/KPI trusted measures</td><td>Semantic Model</td></tr><tr><td>Define → connect → ask</td><td>Build → Bind → Query</td></tr><tr><td>No copying source by default</td><td>Data Binding</td></tr><tr><td>Nodes/edges for traversal</td><td>Graph Materialization</td></tr><tr><td>Agent drafts only</td><td>Plan mode</td></tr><tr><td>Agent applies reviewed changes</td><td>Act mode</td></tr></tbody></table>
+<h3>Unit 3 — Explore Microsoft Fabric IQ components</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt <strong>sáu loại item</strong> trong Fabric IQ workload theo scenario. OneLake là nền tảng dữ liệu, không phải item thứ bảy trong danh sách.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>3.1. Ontology items — Define your business vocabulary</h5>
+<p>Định nghĩa Project, Vessel, Equipment, Foundation, InstallationTask, MaintenanceOrder cùng Properties, Relationships và business rules. Ontology chuẩn hóa khái niệm giữa teams và tools. Built-in Ontology Agent hỗ trợ xây dựng/chỉnh sửa ontology; <strong>khác với Fabric Data Agent được tạo riêng</strong>.</p>
+<h5>3.2. Data agents — Query data with natural language</h5>
+<p>Fabric Data Agent giúp người dùng đặt câu hỏi tự nhiên rồi tạo <strong>read-only queries</strong> trên nguồn được cấu hình. Ví dụ: “Which tasks require equipment E001?” Agent phân tích business terms, chọn source, sinh query thích hợp, trả lời.</p>
+<p>Các nguồn được bài học mô tả bao gồm Lakehouse, Warehouse, KQL Database, Power BI Semantic Model và Ontology; giới hạn tối đa <strong>5 sources</strong> trong cấu hình Data Agent được nêu tại thời điểm đối chiếu.</p>
+<ul><li>Lakehouse/Warehouse → SQL.</li><li>KQL Database → KQL.</li><li>Semantic Model → DAX.</li><li>Ontology → dùng context/bindings và cơ chế query tương ứng.</li></ul>
+<p>Có thể cấu hình <strong>Instructions</strong> về cách chọn nguồn và <strong>Example question-query pairs</strong> ở những nguồn được hỗ trợ; tại thời điểm bài học, question-query pairs không được hỗ trợ cho Semantic Model sources.</p>
+<p>Chia sẻ Data Agent <strong>không tự cấp quyền</strong> cho người dùng tới data sources. Quyền của người hỏi áp dụng khi query. Data Agent có thể được tích hợp trong một số trải nghiệm Copilot theo điều kiện tương ứng.</p>
+<h5>3.3. Graph in Microsoft Fabric — Visualize and traverse relationships</h5>
+<p>Graph biểu diễn <strong>Node</strong> (entity instance), <strong>Edge</strong> (relationship instance), <strong>Properties</strong> và <strong>Traversal</strong> (lần theo các quan hệ). Ví dụ từ M001 tìm Equipment E001, từ E001 tìm những tasks yêu cầu nó, rồi tìm projects chứa tasks.</p>
+<pre><code class="language-mermaid">flowchart LR
+ M[&quot;Maintenance M001&quot;] --&gt;|affects| E[&quot;Equipment E001&quot;]
+ T[&quot;Task T001&quot;] --&gt;|requiresEquipment| E
+ P[&quot;Project P001&quot;] --&gt;|hasTask| T</code></pre>
+<p>Graph dùng GQL. Graph Materialization không xảy ra chỉ vì Ontology có definitions. Phải chọn những entities/relationships đủ điều kiện với keys và sources được hỗ trợ (bài học nhấn mạnh Delta tables trong Lakehouses/Mirrored Databases), và quản lý refresh. Entities dựa chỉ trên Semantic Model hoặc có multiple backing tables có thể không đủ điều kiện graph projection trong trải nghiệm mô tả.</p>
+<p>Nếu chỉ hỏi một property như rated capacity của E001, không bắt buộc cần Graph. Khi hỏi nhiều tầng dependencies, Graph phù hợp hơn.</p>
+<h5>3.4. Semantic models — Generate ontologies from existing data models</h5>
+<p>Semantic Model lưu tables, columns, DAX, relationships, hierarchies; Ontology có thể tái sử dụng cấu trúc và metrics liên kết đến DAX logic nguồn. Ví dụ:</p>
+<pre><code class="language-dax">Equipment Utilization =
+DIVIDE([Operating Hours], [Available Hours])</code></pre>
+<p>Generated metric không biến công thức DAX thành một business rule tự chạy độc lập. Phải kiểm tra Keys, Bindings, Relationship directions, metrics và nhu cầu bổ sung nguồn.</p>
+<h5>3.5. Operations agents — Monitor data and trigger actions</h5>
+<p>Operations Agent dùng để theo dõi conditions, phát hiện bất thường và đề xuất/kích hoạt hành động được cấu hình, ví dụ cảnh báo khi HydraulicTemperature vượt ngưỡng nghiệp vụ. Khác với Data Agent chỉ hỗ trợ read-only Q&amp;A.</p>
+<table><thead><tr><th>Data Agent</th><th>Operations Agent</th></tr></thead><tbody><tr><td>Trả lời câu hỏi theo yêu cầu</td><td>Theo dõi dữ liệu/điều kiện và phản ứng</td></tr><tr><td>Read-only analytical queries</td><td>Monitoring conditions + configured actions</td></tr><tr><td>“Thiết bị nào bị ảnh hưởng?”</td><td>“Gửi cảnh báo nếu nhiệt độ quá ngưỡng”</td></tr></tbody></table>
+<p>Một Business rule bằng ngôn ngữ tự nhiên trong Ontology <strong>không tự động chạy</strong>. Operations Agent phải có source, condition, threshold, playbook/actions, được review và đáp ứng capacity/tenant requirements.</p>
+<h5>3.6. Planning — Collaborate on business planning</h5>
+<p>Planning phục vụ kế hoạch, forecast và Actual vs Plan, có thể tận dụng Dimensions/Measures/Hierarchies từ Semantic Models.</p>
+<table><thead><tr><th>KPI</th><th>Actual minh họa</th><th>Plan minh họa</th></tr></thead><tbody><tr><td>Vessel operating hours</td><td>160</td><td>180</td></tr><tr><td>Installation cost</td><td>900 triệu</td><td>850 triệu</td></tr><tr><td>Completed installations</td><td>8</td><td>10</td></tr></tbody></table>
+<p>Planning không phải công cụ chuyên dùng traversal Graph hay natural-language Q&amp;A.</p>
+<h4>Bảng tổng hợp Unit 3</h4>
+<table><thead><tr><th>Nhu cầu</th><th>Chọn</th></tr></thead><tbody><tr><td>Shared vocabulary and relationships</td><td>Ontology</td></tr><tr><td>Natural-language read-only Q&amp;A</td><td>Data Agent</td></tr><tr><td>Trace dependencies over multiple hops</td><td>Graph</td></tr><tr><td>Trusted KPI and DAX</td><td>Semantic Model</td></tr><tr><td>Monitor threshold and act</td><td>Operations Agent</td></tr><tr><td>Forecast, plan, actual-vs-plan</td><td>Planning</td></tr></tbody></table>
+<h3>Unit 4 — Understand the ontology modeling paradigm</h3>
+<h4>Unit này dạy gì</h4>
+<p>Chuyển tư duy từ model để phục vụ một report cụ thể sang model các khái niệm nghiệp vụ ổn định và có thể tái sử dụng, đồng thời hiểu Entity instances, Properties, Relationships, Business Rules, Data Bindings.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>4.1. Shift from report schemas to business concepts</h5>
+<p><strong>Traditional analytical modeling</strong> bắt đầu từ reporting requirements/KPIs rồi thiết kế Facts và Dimensions:</p>
+<pre><code class="language-text">FactTaskProgress, DimProject, DimVessel, DimEquipment, DimDate
+FactMaintenance, DimEquipment, DimMaintenanceType, DimDate</code></pre>
+<p>Hai teams có thể hiểu <code>Equipment</code> khác nhau. <strong>Concept-driven modeling</strong> bắt đầu từ những đối tượng nghiệp vụ thực sự là gì, Properties và Relationships của chúng, sau đó bind nguồn dữ liệu và để nhiều consumers tái sử dụng. Star Schema vẫn phù hợp cho analytics; Ontology bổ sung lớp ngữ nghĩa dùng chung.</p>
+<h5>4.2. Model entity types as reusable concepts</h5>
+<table><thead><tr><th>Entity type</th><th>Ý nghĩa</th><th>Properties điển hình</th></tr></thead><tbody><tr><td>Project</td><td>Dự án</td><td>ProjectId, ProjectName, ProjectDeadline</td></tr><tr><td>Vessel</td><td>Tàu</td><td>VesselId, VesselName, VesselType</td></tr><tr><td>Equipment</td><td>Thiết bị quản lý riêng</td><td>EquipmentId, EquipmentName, RatedCapacityTonnes</td></tr><tr><td>Foundation</td><td>Móng cần lắp đặt</td><td>FoundationId, FoundationDesign, FoundationStatus</td></tr><tr><td>InstallationTask</td><td>Công việc lắp đặt</td><td>TaskId, PlannedStart, PlannedEnd, TaskStatus</td></tr><tr><td>MaintenanceOrder</td><td>Công việc bảo trì</td><td>OrderId, OrderStatus, BlocksOperation, BlockedFrom, BlockedUntil</td></tr></tbody></table>
+<p>Entity type là <strong>logical meaning</strong>, không phải bảng vật lý cố định. Khi chuyển source từ hệ thống cũ sang Lakehouse mới có thể cập nhật Binding mà giữ shared business concept.</p>
+<h5>4.3. Understand entity instances</h5>
+<p>Entity type <code>Equipment</code> là loại đối tượng. Entity instances là <code>E001</code> Crane, <code>E002</code> Winch và <code>E003</code> Generator. Một instance có các property values riêng; Materialized Graph biểu diễn instances thành Nodes và relationships instances thành Edges.</p>
+<h5>4.4. Define properties with semantic meaning</h5>
+<p>Properties phải có tên/kiểu/đơn vị rõ. Ví dụ <code>rated_tonnes</code>, <code>capacity_t</code> và <code>max_lift</code> ở ba nguồn có thể không mang cùng business meaning dù giá trị giống nhau. Cần kiểm tra là rated capacity hay operational limit, cùng đơn vị metric tonnes hay không.</p>
+<table><thead><tr><th>Property</th><th>Ý nghĩa</th></tr></thead><tbody><tr><td>EquipmentId</td><td>Mã định danh thiết bị</td></tr><tr><td>EquipmentName</td><td>Tên thiết bị</td></tr><tr><td>RatedCapacityTonnes</td><td>Công suất nâng định mức, tấn</td></tr><tr><td>HydraulicTemperatureC</td><td>Nhiệt độ thủy lực, °C</td></tr></tbody></table>
+<p>Key cần định danh đúng instance. <code>E001</code> và <code>EQ-001</code> có thể cùng thiết bị nhưng phải được reconciled; khai báo key không tự nhận dạng. Composite key có thể cần khi một code chỉ unique trong từng Hospital/Project.</p>
+<h5>4.5. Establish relationships between concepts</h5>
+<table><thead><tr><th>Origin</th><th>Relationship</th><th>Target</th></tr></thead><tbody><tr><td>Project</td><td>hasTask</td><td>InstallationTask</td></tr><tr><td>InstallationTask</td><td>assignedTo</td><td>Vessel</td></tr><tr><td>InstallationTask</td><td>installs</td><td>Foundation</td></tr><tr><td>InstallationTask</td><td>requiresEquipment</td><td>Equipment</td></tr><tr><td>Vessel</td><td>carries</td><td>Equipment</td></tr><tr><td>MaintenanceOrder</td><td>affects</td><td>Equipment</td></tr></tbody></table>
+<p>Phải phân biệt <code>Vessel carries Equipment</code> và <code>Task requiresEquipment Equipment</code>. Vessel có E001, E002 nhưng T001 chỉ cần E001; bảo trì E002 chưa đủ kết luận T001 gặp rủi ro. Traversal có thể đi ngược hướng một relationship đã định nghĩa, không cần đổi tên/hướng relationship type.</p>
+<h5>4.6. Define explicit business rules</h5>
+<p>Ví dụ MaintenanceOrder M001 ở trạng thái Open, BlocksOperation = true, blocked từ 06:00 đến 18:00; Task T001 cần E001 từ 08:00 đến 14:00.</p>
+<p>Quy tắc nghiệp vụ: Task có nguy cơ khi required equipment bị maintenance chưa giải quyết chặn vận hành và khoảng thời gian chặn trùng planned task interval.</p>
+<p>Với khoảng thời gian half-open, overlap có thể kiểm tra bằng:</p>
+<pre><code class="language-text">BlockedFrom &lt; PlannedEnd
+AND BlockedUntil &gt; PlannedStart
+AND Maintenance is unresolved
+AND BlocksOperation = true
+AND Equipment is required by the task</code></pre>
+<p>Cần chuẩn hóa timezone, trạng thái, định nghĩa blocking. Business rule trong Ontology là semantic guidance, không tự thực thi phép kiểm tra hoặc gửi cảnh báo. Kết luận task at risk cũng chưa đủ để ước tính số ngày project delay nếu không có schedule/dependency logic.</p>
+<h5>4.7. Bind concepts to data without duplication</h5>
+<table><thead><tr><th>Prepared source</th><th>Ontology binding</th></tr></thead><tbody><tr><td>Fleet master</td><td>Vessel instances</td></tr><tr><td>Equipment register</td><td>Equipment instances</td></tr><tr><td>Project source</td><td>Project instances</td></tr><tr><td>Installation tasks</td><td>InstallationTask instances</td></tr><tr><td>Maintenance orders</td><td>MaintenanceOrder instances</td></tr><tr><td>Task-equipment mapping</td><td>requiresEquipment relationship</td></tr><tr><td>Eventhouse measurements</td><td>Time-series Equipment properties</td></tr></tbody></table>
+<p><strong>Data Binding ≠ ETL</strong>: Binding chỉ ánh xạ business definitions đến dữ liệu hiện có; ETL xử lý, chuẩn hóa và di chuyển/load dữ liệu. ETL vẫn cần để sửa identifiers/units/quality nếu nguồn không thống nhất.</p>
+<p>Entity type có thể lấy static properties từ Lakehouse và time-series properties từ Eventhouse qua nhiều bindings; phải đảm bảo chung identifier. Materialized Graph có thể không hỗ trợ entity có multiple backing tables; có thể cần bảng hợp nhất để graph projection.</p>
+<p>Về freshness: direct source query dùng trạng thái nguồn được truy vấn; materialized Graph dùng snapshot được refresh. Không giả định mọi dữ liệu trong Ontology đều real-time.</p>
+<h4>Exam notes</h4>
+<table><thead><tr><th>Scenario</th><th>Khái niệm</th></tr></thead><tbody><tr><td>Business concept độc lập storage</td><td>Entity type</td></tr><tr><td>Vessel V001 cụ thể</td><td>Entity instance</td></tr><tr><td>Công suất đơn vị tấn</td><td>Property có semantic meaning</td></tr><tr><td>Task cần thiết bị</td><td>requiresEquipment</td></tr><tr><td>Tàu mang thiết bị</td><td>carries</td></tr><tr><td>Task bị maintenance block</td><td>Business rule + truy vấn kiểm tra</td></tr><tr><td>Không copy data</td><td>Data Binding</td></tr><tr><td>Hai systems dùng ID khác nhau</td><td>Identifier reconciliation</td></tr><tr><td>Graph stale</td><td>Materialization/refresh</td></tr></tbody></table>
+<h3>Unit 5 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm tra 5 tình huống chính thức về Fabric IQ capabilities, Data Agent, Data Binding, GQL và Entity types.</p>
+<h4>Câu 1 — Microsoft IQ capability cho entities/dependencies</h4>
+<p><strong>Scenario:</strong> Cần shared definitions của Equipment, Maintenance Order và Task dependencies giữa các sources.</p>
+<p><strong>Đáp án B — Fabric IQ.</strong></p>
+<ul><li>Work IQ tập trung cách nhân viên phối hợp, không phải enterprise data relationships.</li><li>Fabric IQ cung cấp business context từ entities và relations.</li><li>Foundry IQ tập trung tài liệu/chính sách làm nguồn tri thức.</li></ul>
+<p><strong>Mẹo:</strong> Business entities + cross-source relations → Fabric IQ. <strong>Liên hệ:</strong> Unit 2.</p>
+<h4>Câu 2 — Mục tiêu Data Agent</h4>
+<p><strong>Đáp án C — Trả lời natural-language questions bằng read-only queries trên configured data sources.</strong></p>
+<ul><li>Di chuyển dữ liệu Lakehouse → Warehouse là Data Engineering/Data Movement, không phải mục tiêu Data Agent.</li><li>Hiển thị graph links là Graph.</li><li>Data Agent phân tích câu hỏi và tạo query theo nguồn được cấp quyền.</li></ul>
+<p><strong>Mẹo:</strong> NL Q&amp;A + read-only → Data Agent. <strong>Liên hệ:</strong> Unit 3.</p>
+<h4>Câu 3 — Data Binding khác ETL</h4>
+<p><strong>Đáp án B — Binding map business concepts tới existing sources; ETL extract/transform/load data.</strong></p>
+<ul><li>Nói Binding copy dữ liệu vào Warehouse và ETL giữ nguyên là đảo ngược vai trò.</li><li>Nói hai thao tác giống nhau là sai về mục đích.</li></ul>
+<p><strong>Mẹo:</strong> Map ontology definitions without moving data → Binding. <strong>Liên hệ:</strong> Unit 4.</p>
+<h4>Câu 4 — Công cụ dùng GQL</h4>
+<p><strong>Đáp án C — Graph in Microsoft Fabric.</strong></p>
+<ul><li>Ontology item định nghĩa business concepts/bindings.</li><li>Data Agent thường sinh SQL, KQL, DAX tùy nguồn.</li><li>Graph sử dụng GQL để traversal Nodes, Edges, Paths.</li></ul>
+<p><strong>Mẹo:</strong> GQL + nodes/edges/traversal → Graph. <strong>Liên hệ:</strong> Unit 3.</p>
+<h4>Câu 5 — Entity type khác database table</h4>
+<p><strong>Đáp án B — Reusable logical model độc lập với storage system.</strong></p>
+<ul><li>Entity type không bắt buộc gắn một DB schema cố định.</li><li>Entity type không bị giới hạn vào static data; có thể bind time-series.</li></ul>
+<p><strong>Mẹo:</strong> Logical business concept independent of physical source → Entity type. <strong>Liên hệ:</strong> Unit 4.</p>
+<h3>Unit 6 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết vai trò của Fabric IQ trong việc kết nối shared business concepts với dữ liệu đã chuẩn bị và công cụ tiêu thụ.</p>
+<h4>Nội dung chính trong unit</h4>
+<pre><code class="language-mermaid">flowchart TD
+  O[&quot;Ontology: entities, properties, relationships, rules&quot;]
+  O --&gt; DA[&quot;Data Agent: Q&amp;A&quot;]
+  O --&gt; G[&quot;Graph: traversal&quot;]
+  O --&gt; OA[&quot;Operations Agent: monitoring/actions&quot;]
+  O --&gt; PL[&quot;Planning: plan/forecast&quot;]
+  SM[&quot;Semantic Model: DAX/KPI&quot;] --- O
+  OL[&quot;OneLake: unified data&quot;] --- SM
+  OL --- O</code></pre>
+<p>Sơ đồ mô tả vai trò logic, không yêu cầu mọi request đều đi qua đủ các items. Trong Contoso Offshore, Ontology làm rõ Task–Equipment–Maintenance; Graph hỗ trợ lần theo project impacts; Agent hỏi đáp bằng natural language; nhưng kết luận vẫn cần data quality, rules và freshness.</p>
+<p><strong>Continue learning:</strong> Ontology Agent, Graph Materialization, Business Rules và thực hành tạo Ontology tại Module 3.</p>
+<h3>Coverage check — Module 2</h3>
+<table><thead><tr><th>Unit</th><th>Heading/subheading coverage</th></tr></thead><tbody><tr><td>1</td><td>Maintenance &amp; project readiness; module overview</td></tr><tr><td>2</td><td>Ontology definitions; comparison; IQ context; interface; Build-Bind-Query; OneLake; 2 creation paths</td></tr><tr><td>3</td><td>Đủ 6 item types: Ontology, Data Agent, Graph, Semantic Model, Operations Agent, Planning</td></tr><tr><td>4</td><td>Đủ 7 heading: modeling paradigm, entities, instances, properties, relationships, rules, bindings</td></tr><tr><td>5</td><td>Đã giải thích 5/5 assessment và distractors</td></tr><tr><td>6</td><td>Tổng hợp vai trò, hướng học tiếp</td></tr></tbody></table>
+<p><strong>Không có Exercise/Lab chính thức.</strong> Đã đề cập AI Agents, Fabric IQ, Graph, OneLake, security/permissions, tenant settings, Preview và một số requirements về capacity. Nội dung ngoài phạm vi Module 2 (chi tiết click-by-click tạo Ontology, materialize Graph/query GQL) được giữ ở mức giới thiệu để học sâu tại Module 3 hoặc Learning Path riêng. Trọng tâm thi: chọn đúng item theo scenario; Binding vs ETL; Ontology vs Semantic Model vs Graph; Business Rule vs executable automation.</p>
+<hr>

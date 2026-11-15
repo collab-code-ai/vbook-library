@@ -1,0 +1,238 @@
+<h2>Module 1 — Prepare semantic models for AI in Power BI and Microsoft Fabric</h2>
+<p><strong>Learning Path:</strong> Prepare AI-ready analytics data in Microsoft Fabric<br><strong>Chương trình:</strong> DP-600T00-A<br><strong>Vị trí:</strong> Learning Path 4, Module 1/3<br><strong>Cấu trúc:</strong> 9 Units; 1 Exercise/Lab; 5 câu Module assessment.<br><strong>Tham khảo:</strong> https://learn.microsoft.com/en-us/training/modules/fabric-prepare-semantic-layer/</p>
+<blockquote><p>Mục tiêu: chuẩn bị Power BI Semantic Model để Copilot và AI Agents hiểu business entities, lựa chọn measures và filters chính xác, giải thích kết quả đáng tin cậy.</p></blockquote>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên chính thức</th><th>Heading/subheading đã đối chiếu</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Bối cảnh: AI cần business context</td></tr><tr><td>2</td><td>Explain how semantic model context guides Copilot answers</td><td>What Copilot reads from your semantic model; Why you fix the semantic model first; Where to start</td></tr><tr><td>3</td><td>Design a focused gold layer for AI consumption</td><td>Clearly define business entities; Tell similar concepts apart; Show business terms and hide technical fields</td></tr><tr><td>4</td><td>Select the appropriate prep for AI control</td><td>Match each control to a problem; Test before approval</td></tr><tr><td>5</td><td>Decide when to extend a semantic model with Fabric IQ</td><td>Why an ontology expands the value of your data; When to create an ontology; How ontology generation works</td></tr><tr><td>6</td><td>Validate AI readiness</td><td>Why testing matters; How to test; When to approve</td></tr><tr><td>7</td><td>Exercise: Prepare a semantic model for AI</td><td>Chuẩn bị, AI data schema, AI instructions, Verified answers, Synonyms, Publish, Test, Approval</td></tr><tr><td>8</td><td>Module assessment</td><td>5 câu scenario</td></tr><tr><td>9</td><td>Summary</td><td>Tổng kết và tài liệu học tiếp</td></tr></tbody></table>
+<p><strong>Giới hạn:</strong> Nội dung giảng và hướng dẫn bài lab đã đối chiếu; chưa có kết quả chạy lab thực tế trong tenant.</p>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Một Semantic Model được xây dựng đúng để sử dụng trong Power BI Report chưa chắc đã đủ rõ để Copilot hiểu câu hỏi tự nhiên. Một người phát triển report thường chủ động chọn measures, còn AI phải tự diễn giải câu hỏi, chọn đối tượng và xác định phép tính.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>Dữ liệu đúng nhưng business meaning mơ hồ</h5>
+<p>Xét hai measures:</p>
+<table><thead><tr><th>Measure</th><th>Công thức</th><th>Ý nghĩa</th></tr></thead><tbody><tr><td><code>Total Profit</code></td><td>Revenue - Cost</td><td>Lợi nhuận theo giá trị tiền</td></tr><tr><td><code>Profit Margin</code></td><td>Profit / Revenue</td><td>Tỷ suất lợi nhuận theo phần trăm</td></tr></tbody></table>
+<p>Câu hỏi “Which product is the most profitable?” có thể được hiểu là sản phẩm có tổng lợi nhuận lớn nhất hoặc tỷ suất lợi nhuận cao nhất.</p>
+<table><thead><tr><th>Sản phẩm</th><th>Total Profit</th><th>Profit Margin</th></tr></thead><tbody><tr><td>Product A</td><td>500 triệu</td><td>10%</td></tr><tr><td>Product B</td><td>300 triệu</td><td>30%</td></tr></tbody></table>
+<p>Nếu dùng <code>Total Profit</code>, Product A thắng. Nếu dùng <code>Profit Margin</code>, Product B thắng. Cả hai phép tính có thể đúng về toán học, nhưng kết quả nghiệp vụ chỉ đúng khi chọn đúng định nghĩa.</p>
+<h5>AI-ready Semantic Model</h5>
+<p>Semantic Model cần giúp AI xác định: entity nào được hỏi, measure nào là chuẩn, relationship nào nối các bảng, field nào phù hợp và business rule nào áp dụng. Ví dụ câu hỏi doanh thu theo thành phố của khách hàng phải dùng <code>Customer City</code>, không phải <code>Store City</code>.</p>
+<p>Mục tiêu không chỉ là Copilot trả ra một con số, mà còn bảo đảm <strong>đường đi từ câu hỏi đến measure, field, filter và dữ liệu là chính xác, nhất quán, kiểm chứng được</strong>.</p>
+<h3>Unit 2 — Explain how semantic model context guides Copilot answers</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tìm hiểu Copilot sử dụng metadata và cấu trúc của Semantic Model ra sao, vì sao nên cải thiện model trước AI-specific instructions và cách đặt ra expected results cho việc kiểm thử.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>2.1. What Copilot reads from your semantic model</h5>
+<p>Copilot sử dụng tên bảng, tên cột, descriptions, data types, measures, synonyms và relationships để phân tích yêu cầu.</p>
+<table><thead><tr><th>Thành phần</th><th>Vai trò</th><th>Ví dụ</th></tr></thead><tbody><tr><td>Tables</td><td>Business entities</td><td><code>Sales</code>, <code>Customer</code></td></tr><tr><td>Columns</td><td>Thuộc tính phân tích</td><td><code>Customer City</code></td></tr><tr><td>Descriptions</td><td>Ý nghĩa, phạm vi, đơn vị</td><td>Doanh thu không bao gồm VAT</td></tr><tr><td>Measures</td><td>Logic KPI</td><td><code>Total Sales</code></td></tr><tr><td>Data types</td><td>Loại giá trị</td><td>Date, Decimal, Text</td></tr><tr><td>Synonyms</td><td>Tên gọi tương đương</td><td>Revenue = Sales nếu được nghiệp vụ xác nhận</td></tr><tr><td>Relationships</td><td>Kết nối bảng</td><td>Customer → Sales</td></tr></tbody></table>
+<p><strong>Schema reduction</strong> là cách thu hẹp schema để tập trung vào những đối tượng liên quan tới câu hỏi. Giả sử model chứa 40 tables, 300 columns và 100 measures, nhưng câu hỏi là “Show total sales by customer city”. Copilot cần chọn <code>Total Sales</code>, <code>Customer City</code> và các relationships cần thiết, thay vì phân tích fields kỹ thuật không liên quan.</p>
+<pre><code class="language-mermaid">flowchart TD
+    Q[&quot;User: total sales by customer city&quot;] --&gt; M[&quot;Semantic Model metadata&quot;]
+    M --&gt; R[&quot;Schema reduction&quot;]
+    R --&gt; S[&quot;Total Sales, Customer City, relationships&quot;]
+    S --&gt; A[&quot;Answer or visual&quot;]</code></pre>
+<p>Nếu metadata không rõ, Copilot có thể chọn nhầm đối tượng ngay ở bước xác định schema. Cần nhớ cơ chế thu hẹp schema có thể khác nhau tùy Copilot capability và AI data schema; không phải tất cả Copilot experiences đều hoạt động giống nhau.</p>
+<h5>2.2. Why you fix the semantic model first</h5>
+<p>Ví dụ:</p>
+<pre><code class="language-dax">Profit =
+[Total Sales] - [Total Cost]
+
+Profit Margin =
+DIVIDE([Profit], [Total Sales])</code></pre>
+<p>Nếu model dùng tên khó hiểu như <code>Margin1</code>, <code>Margin2</code>, việc chỉ viết AI instruction không giải quyết vấn đề cho analyst hoặc các reports khác. Đổi tên và mô tả measures tại Semantic Model trước; thêm AI instructions khi cần diễn giải các business rules không thể hiện đủ bằng metadata.</p>
+<table><thead><tr><th>Model correction</th><th>AI instruction</th></tr></thead><tbody><tr><td>Giải quyết định nghĩa dùng chung</td><td>Bổ sung hướng dẫn riêng cho AI</td></tr><tr><td>Cải thiện cả reporting lẫn Copilot</td><td>Có thể chỉ ảnh hưởng những Copilot capabilities nhất định</td></tr><tr><td>Là sửa lỗi tại nguồn</td><td>Không được dùng để che lấp model sai</td></tr></tbody></table>
+<p><strong>Quy tắc:</strong> Model first → AI-specific guidance second.</p>
+<h5>2.3. Where to start</h5>
+<p>Thu thập câu hỏi nghiệp vụ và kết quả kỳ vọng:</p>
+<table><thead><tr><th>Câu hỏi</th><th>Measure mong đợi</th><th>Dimension</th><th>Filter</th></tr></thead><tbody><tr><td>Doanh thu theo khu vực</td><td><code>Total Sales</code></td><td>Customer Region</td><td>Năm hiện tại</td></tr><tr><td>Top 10 sản phẩm có tổng lợi nhuận lớn nhất</td><td><code>Total Profit</code></td><td>Product</td><td>Top 10 giảm dần</td></tr><tr><td>Tỷ suất lợi nhuận theo danh mục</td><td><code>Profit Margin</code> theo business definition</td><td>Product Category</td><td>Tháng hiện tại</td></tr></tbody></table>
+<p>Đó là baseline để đánh giá AI: không thể kiểm tra tính chính xác nếu chưa biết measure, dimension và filter kỳ vọng.</p>
+<h4>Exam notes / Bẫy dễ nhầm</h4>
+<ul><li>AI chọn sai measure: sửa name, description, business definition.</li><li>AI chọn sai bảng: kiểm tra business entity, relationship và metadata.</li><li>Thiếu quy tắc diễn giải: cân nhắc AI instruction sau khi chuẩn hóa model.</li><li>Không xem thêm prompt là giải pháp đầu tiên cho một model được định nghĩa sai.</li></ul>
+<h3>Unit 3 — Design a focused gold layer for AI consumption</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thiết kế Gold Layer đủ chuẩn hóa, sử dụng Star Schema, đặt tên business-friendly, mô tả các đối tượng gần giống và loại các field kỹ thuật không cần đưa lên bề mặt của AI.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>3.1. Clearly define business entities</h5>
+<p>Trong Medallion Architecture, Bronze thường chứa raw data, Silver chứa cleaned/standardized data và Gold là business-ready data. Semantic Model có thể xây dựng trên Gold Layer để phục vụ BI và AI.</p>
+<pre><code class="language-mermaid">flowchart LR
+  B[&quot;Bronze: raw&quot;] --&gt; S[&quot;Silver: cleaned&quot;]
+  S --&gt; G[&quot;Gold: business-ready&quot;]
+  G --&gt; M[&quot;Semantic Model&quot;]
+  M --&gt; R[&quot;Power BI reports / Copilot&quot;]</code></pre>
+<p>Ví dụ Sales Star Schema:</p>
+<pre><code class="language-mermaid">flowchart TB
+    C[&quot;Customer&quot;] --&gt; S[&quot;Sales fact&quot;]
+    P[&quot;Product&quot;] --&gt; S
+    D[&quot;Date&quot;] --&gt; S</code></pre>
+<p><code>Customer</code>, <code>Product</code>, <code>Date</code> là các dimensions; <code>Sales</code> là fact. Không cần chuyển toàn bộ sang một Flat Table chỉ để cho AI dễ hiểu: Star Schema vẫn có lợi cho tính toán, relationships, bảo trì model và hiệu suất.</p>
+<h5>3.2. Tell similar concepts apart</h5>
+<p><code>Customer City</code> là nơi khách hàng đăng ký; <code>Store City</code> là nơi cửa hàng hoạt động. Câu hỏi “Which customer cities generate the most sales?” phải dùng <code>Customer City</code>.</p>
+<table><thead><tr><th>Object</th><th>Description nên có</th></tr></thead><tbody><tr><td>Customer</td><td>Mỗi dòng là một khách hàng duy nhất</td></tr><tr><td>Customer City</td><td>Thành phố theo địa chỉ đăng ký của khách hàng</td></tr><tr><td>Store City</td><td>Thành phố của cửa hàng bán hàng</td></tr><tr><td>Total Sales</td><td>Tổng doanh thu theo filter hiện hành; đơn vị VND</td></tr><tr><td>Profit Margin</td><td>Total Profit / Total Sales; hiển thị dạng %</td></tr></tbody></table>
+<p>Descriptions cần giải thích <strong>table grain</strong>, business meaning, phép tính, đơn vị và phạm vi. Riêng Copilot trong DAX query view, tài liệu đề cập giới hạn chỉ đọc 200 ký tự đầu của description; đưa thông tin phân biệt quan trọng lên đầu. Không suy diễn giới hạn này cho mọi Copilot capability.</p>
+<h5>3.3. Show business terms and hide technical fields</h5>
+<table><thead><tr><th>Field</th><th>Hướng xử lý cho AI</th></tr></thead><tbody><tr><td><code>CustomerName</code></td><td>Cho hiển thị</td></tr><tr><td><code>CustomerCity</code></td><td>Cho hiển thị</td></tr><tr><td><code>Total Sales</code></td><td>Cho hiển thị</td></tr><tr><td><code>CustomerKey</code></td><td>Thường ẩn khỏi report view</td></tr><tr><td><code>LoadBatchID</code></td><td>Ẩn</td></tr><tr><td><code>ETLTimestamp</code></td><td>Ẩn</td></tr><tr><td><code>DeprecatedSalesMeasure</code></td><td>Gỡ hoặc loại khỏi bề mặt phân tích</td></tr></tbody></table>
+<p>Hai cơ chế cần phân biệt:</p>
+<ol><li><strong>Hide in report view</strong>: giảm nhiễu cho báo cáo và người dùng.</li><li><strong>AI data schema</strong>: chọn tập tables/columns/measures mà Copilot sử dụng trong những experiences có hỗ trợ.</li></ol>
+<p>Không coi hide field là bảo mật. RLS, OLS và permissions phải được cấu hình độc lập để bảo vệ dữ liệu nhạy cảm.</p>
+<p><strong>Synonyms</strong> giúp nhận biết các cách gọi tương đương: Revenue, Sales revenue, Total revenue có thể trỏ tới <code>Total Sales</code> nếu nghiệp vụ thống nhất; không biến <code>Profit</code> thành synonym của <code>Profit Margin</code> vì một bên là tiền và một bên là tỷ lệ.</p>
+<h4>Exam notes / Bẫy dễ nhầm</h4>
+<ul><li>Technical fields gây nhiễu → Hide/report view và AI data schema.</li><li>Hai field gần giống → Description rõ semantic difference.</li><li>Cùng một measure có nhiều cách gọi → Synonyms.</li><li>Relationship sai → Sửa model, không chỉ thêm AI instruction.</li><li>Bảo mật dữ liệu → Permissions/RLS/OLS, không phải chỉ Hide.</li></ul>
+<h3>Unit 4 — Select the appropriate prep for AI control</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt ba nhóm công cụ <strong>Prep data for AI</strong> và lựa chọn công cụ theo đúng nguyên nhân trong scenario.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>4.1. Match each control to a problem</h5>
+<table><thead><tr><th>Công cụ</th><th>Mục đích</th><th>Chọn khi</th></tr></thead><tbody><tr><td><strong>AI data schema</strong></td><td>Chọn subset fields/tables/measures để Copilot sử dụng</td><td>Model quá nhiều trường kỹ thuật hoặc nhiều domain</td></tr><tr><td><strong>AI instructions</strong></td><td>Hướng dẫn business rules và cách diễn giải</td><td>Quy tắc không thể hiện rõ trong metadata</td></tr><tr><td><strong>Verified answers</strong></td><td>Gắn trigger phrases với visual đã được phê duyệt</td><td>Câu hỏi lặp lại cần visual và filters cố định</td></tr></tbody></table>
+<p><strong>A. AI data schema</strong></p>
+<p>Trong Power BI Desktop: <code>Home</code> → <code>Prep data for AI</code> → <code>Simplify the data schema</code> → chọn các fields phù hợp → <code>Apply</code>. Ví dụ model phục vụ Sales, Finance và Inventory nhưng câu hỏi về Sales chỉ cần một số bảng và measures. Không suy diễn AI data schema áp dụng cho mọi Copilot experience; report summarization có thể hoạt động khác hỏi dữ liệu.</p>
+<p><strong>B. AI instructions</strong></p>
+<p><code>Home</code> → <code>Prep data for AI</code> → <code>Add AI instructions</code>. Ví dụ:</p>
+<pre><code class="language-text">When users ask about top products,
+rank products by Total Sales descending.
+
+When users ask about profitability,
+use Profit Margin rather than absolute Profit.
+
+When users mention city without clarification,
+use Customer City.</code></pre>
+<p>Instruction không tạo hay sửa DAX measure; nó hướng dẫn cách AI sử dụng những đối tượng đã tồn tại. Quy tắc rộng quá có thể làm sai các trường hợp ngoài phạm vi.</p>
+<p><strong>C. Verified answers</strong></p>
+<p>Tại report visual: <code>...</code> → <code>Set verified answer</code> → khai báo trigger phrases → <code>Apply</code>. Ví dụ một approved visual <code>Sales by Region</code> dùng chính xác <code>Total Sales</code>, kỳ báo cáo và filters được duyệt. Verified answer lưu ở Semantic Model level dù thao tác bắt đầu từ report visual; vẫn cần kiểm tra phrase nào nên và không nên trigger.</p>
+<table><thead><tr><th>Scenario</th><th>Ưu tiên</th></tr></thead><tbody><tr><td>Chỉ chọn Sales tables/fields</td><td>AI data schema</td></tr><tr><td><code>city</code> mặc định là <code>Customer City</code></td><td>AI instructions</td></tr><tr><td>Câu hỏi quan trọng phải dùng visual đã phê duyệt</td><td>Verified answers</td></tr><tr><td>Tên khác của measure</td><td>Synonyms</td></tr><tr><td>Công thức measure sai</td><td>Sửa Semantic Model</td></tr></tbody></table>
+<h5>4.2. Test before approval</h5>
+<ol><li>Chuẩn bị business questions với expected results.</li><li>Kiểm tra Copilot chọn đúng measures và fields từ AI data schema.</li><li>Kiểm tra AI instructions có được tuân thủ đúng phạm vi.</li><li>Kiểm tra Verified answer chỉ trigger các câu phù hợp.</li><li>Kiểm tra các câu hỏi gần giống nhưng không nên match.</li><li>Sau khi sửa, đóng/mở Copilot pane và chạy lại regression tests.</li></ol>
+<p>Cấu hình được lưu trong Semantic Model, không chỉ report cụ thể. <code>Approved for Copilot</code> thể hiện model đã được đánh giá để sử dụng; không bảo đảm AI chính xác tuyệt đối.</p>
+<h3>Unit 5 — Decide when to extend a semantic model with Fabric IQ</h3>
+<h4>Unit này dạy gì</h4>
+<p>Xác định khi nào Semantic Model là đủ, khi nào nhiều nguồn/đội nhóm cần một Ontology để chia sẻ entity definitions và business relationships.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>5.1. Why an ontology expands the value of your data</h5>
+<p>Một tổ chức có Sales Analytics, Support Analytics và Finance Analytics cùng dùng khái niệm Customer nhưng có thể khác phạm vi. Nếu AI Agent phải liên kết các nguồn, cần business vocabulary thống nhất.</p>
+<p>Ontology mô tả <strong>Entity types, Properties, Relationships, business rules</strong> và data bindings để nhiều hệ thống dùng chung ý nghĩa. Semantic Model giữ measures, DAX, calculations và cấu trúc phân tích riêng của từng domain. Ontology không thay thế toàn bộ Semantic Models.</p>
+<pre><code class="language-mermaid">flowchart TB
+  O[&quot;Fabric IQ Ontology: Customer, Product, Order&quot;]
+  O --- S[&quot;Sales semantic model&quot;]
+  O --- U[&quot;Support semantic model&quot;]
+  O --- F[&quot;Finance semantic model&quot;]</code></pre>
+<h5>5.2. When to create an ontology</h5>
+<p>Hai tiêu chí quan trọng: <strong>Stable definition</strong> (định nghĩa nghiệp vụ tương đối ổn định) và <strong>Cross-team reuse</strong> (nhiều nhóm/hệ thống cần tái sử dụng).</p>
+<table><thead><tr><th>Ví dụ</th><th>Khuyến nghị</th></tr></thead><tbody><tr><td>Customer được chuẩn hóa toàn doanh nghiệp</td><td>Có thể đưa vào Ontology</td></tr><tr><td>Product, Order dùng ở nhiều hệ thống</td><td>Có thể đưa vào Ontology</td></tr><tr><td>Một filter tạm cho report</td><td>Thường không cần Ontology</td></tr><tr><td>Measure chiến dịch chưa ổn định</td><td>Chưa nên thành shared concept</td></tr><tr><td>Customer chưa thống nhất giữa bộ phận</td><td>Chuẩn hóa định nghĩa trước</td></tr></tbody></table>
+<p>Nếu chỉ cần sửa metadata hay instructions cho một Semantic Model, chưa nhất thiết tạo Ontology.</p>
+<h5>5.3. How ontology generation works</h5>
+<table><thead><tr><th>Semantic Model</th><th>Fabric Ontology</th></tr></thead><tbody><tr><td>Table</td><td>Entity type</td></tr><tr><td>Column</td><td>Property</td></tr><tr><td>Relationship</td><td>Relationship type</td></tr><tr><td>DAX measure</td><td>Metric liên kết đến phép tính ở nguồn</td></tr></tbody></table>
+<p>Sau Generate cần kiểm tra keys, directions, bindings, metrics, relationship bindings. <strong>Generate definitions không đồng nghĩa truy vấn thành công mọi dữ liệu nguồn.</strong></p>
+<p>Bài học nhấn mạnh Direct Lake trong việc tạo generated data bindings; Import-mode có thể sinh định nghĩa nhưng không có automatic data bindings tương ứng. Phải kiểm tra điều kiện backing Lakehouse và cấu hình truy cập. Quyền Read và Build đối với Semantic Model, cùng quyền/tính năng Ontology trên tenant là những điều kiện quan trọng. Ontology generation đang ở Preview theo tài liệu đã học.</p>
+<h4>Exam notes</h4>
+<ul><li>Một model cần Copilot hiểu đúng measures → Semantic Model + Prep data for AI.</li><li>Nhiều model cần business entities thống nhất → Fabric IQ Ontology.</li><li>Generate nhưng data bindings thiếu → kiểm tra storage mode và nguồn.</li><li>Relationships tạo ra nhưng mapping sai/thiếu → hoàn thiện Relationship Bindings.</li></ul>
+<h3>Unit 6 — Validate AI readiness</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm tra không chỉ output mà còn reasoning path Copilot đã dùng, sau đó quyết định khi nào có thể đánh dấu Approved for Copilot.</p>
+<h4>Nội dung chính trong unit</h4>
+<h5>6.1. Why testing matters</h5>
+<p>Copilot có thể trả một con số đúng tình cờ nhưng dùng deprecated measure. Khi dữ liệu hoặc filters thay đổi, phép tính sẽ sai. Vì vậy cần cả <strong>output correctness</strong> và <strong>reasoning path correctness</strong>.</p>
+<h5>6.2. How to test</h5>
+<table><thead><tr><th>Prompt</th><th>Điều cần xác minh</th></tr></thead><tbody><tr><td>Which category has highest total sales?</td><td><code>Total Sales</code>, Product Category, ranking</td></tr><tr><td>Which product is most profitable?</td><td>Theo quy ước đã duyệt trong lab: <code>Profit Margin</code></td></tr><tr><td>How do sales compare by customer city?</td><td><code>Customer City</code>, không phải <code>Store City</code></td></tr></tbody></table>
+<p>Những expected results là quy tắc của bộ ví dụ, không phải business rule universal.</p>
+<p>Trong Copilot pane, dùng <strong>How Copilot arrived at this</strong> (HCAAT) để kiểm tra measures, fields, filters; khi được hỗ trợ có thể <code>Add to page</code> để xem visual trực tiếp.</p>
+<table><thead><tr><th>Lỗi</th><th>Kiểm tra/sửa</th></tr></thead><tbody><tr><td>Sai measure</td><td>Name, description, business definition</td></tr><tr><td>Sai entity</td><td>Table names, relationships</td></tr><tr><td>Dùng ETL fields</td><td>AI data schema</td></tr><tr><td>Không nhận synonym</td><td>Thêm synonym có kiểm chứng</td></tr><tr><td>Không tuân thủ rule</td><td>Thêm/sửa AI instruction</td></tr><tr><td>Câu quan trọng cần visual chuẩn</td><td>Verified answer</td></tr></tbody></table>
+<h5>6.3. When to approve</h5>
+<p>Quy trình: business questions → expected results → thử nhiều cách diễn đạt → HCAAT → sửa lỗi → regression tests → Approved for Copilot.</p>
+<p><code>Approved for Copilot</code> (tên cũ: <strong>Prepped for AI</strong>) là trạng thái phê duyệt model, không phải phép chứng minh tính đúng tuyệt đối hay cơ chế cấp quyền truy cập nguồn. Trong các trải nghiệm được hỗ trợ, nó giúp xác định model được đánh giá phù hợp cho Copilot.</p>
+<h3>Unit 7 — Exercise: Prepare a semantic model for AI</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thực hành cấu hình AI data schema, AI instructions, Verified answers, Synonyms, Publish, Testing và Approval trên mô hình Sales.</p>
+<p><strong>Lab chính thức:</strong> https://microsoftlearning.github.io/mslearn-fabric/Instructions/Labs/30-prepare-model-ai.html<br><strong>Bộ dữ liệu mẫu:</strong> https://github.com/MicrosoftLearning/mslearn-fabric/raw/refs/heads/main/Allfiles/Labs/30/30-prepare-model-ai.zip</p>
+<h4>Chuẩn bị</h4>
+<table><thead><tr><th>Hạng mục</th><th>Yêu cầu</th></tr></thead><tbody><tr><td>Power BI Desktop</td><td>November 2025 hoặc mới hơn theo lab</td></tr><tr><td>Workspace</td><td>Fabric/Premium paid capacity hỗ trợ Copilot</td></tr><tr><td>Capacity</td><td>Fabric F2+ hoặc P1+ theo điều kiện Copilot đã nêu trong bài học</td></tr><tr><td>Trial</td><td>Không đáp ứng lab Copilot</td></tr><tr><td>Permissions</td><td>Tạo/chỉnh sửa/publish, tenant Copilot settings</td></tr><tr><td>Sample PBIX</td><td><code>30-Starter-Sales Analysis.pbix</code></td></tr><tr><td>Chi phí</td><td>Có thể phát sinh capacity fees; không tự tạo paid resources</td></tr></tbody></table>
+<p>Power BI Pro/PPU đơn lẻ không thay thế yêu cầu Copilot capacity.</p>
+<h4>Bước 1 — Workspace và PBIX</h4>
+<ol><li>Vào <code>app.fabric.microsoft.com</code> → <code>Workspaces</code> → <code>New workspace</code>.</li><li>Tạo ví dụ <code>DP600_AI_Lab</code>; chọn paid capacity phù hợp.</li><li>Tải, giải nén Lab 30 và mở <code>30-Starter-Sales Analysis.pbix</code>.</li><li>Trong Power BI Desktop kết nối Copilot đến workspace hỗ trợ.</li><li>Xác nhận có Sales model và report visuals.</li></ol>
+<h4>Bước 2 — Simplify the data schema</h4>
+<p><code>Home</code> → <code>Prep data for AI</code> → <code>Simplify the data schema</code>.</p>
+<p>Chỉ giữ:</p>
+<table><thead><tr><th>Table</th><th>Fields</th></tr></thead><tbody><tr><td>Customer</td><td>City, CustomerName</td></tr><tr><td>Date</td><td>Date, Day, Month, Year</td></tr><tr><td>Product</td><td>Category, ListPrice, ProductName, StandardCost, Subcategory</td></tr><tr><td>Sales</td><td>LineTotal, OrderDate, OrderQty, Profit, Profit Margin, SalesOrderID, Total Sales, TotalCost, UnitPrice</td></tr></tbody></table>
+<p>Bỏ chọn <code>CustomerKey</code>, <code>ProductKey</code>, <code>LoadDate</code>, <code>SourceSystem</code>, <code>SalesOrderLineNumber</code> và sort columns không cần cho AI. Chọn <code>Apply</code>. Không xóa relationship keys khỏi underlying model.</p>
+<h4>Bước 3 — AI instructions</h4>
+<p><code>Prep data for AI</code> → <code>Add AI instructions</code>:</p>
+<pre><code class="language-text">This model contains retail sales data
+for an outdoor recreation products company.
+
+Business terminology:
+- Revenue and sales refer to Total Sales.
+- Products have Category and Subcategory.
+
+Analysis guidance:
+- Rank top products by Total Sales descending.
+- For profitability, use Profit Margin.
+- Identify customers by CustomerName.
+
+Data scope:
+January 2024 through December 2025.</code></pre>
+<p>Chọn Apply. Đây là rule của bộ mẫu, không áp đặt cho mọi tổ chức.</p>
+<h4>Bước 4 — Verified answers</h4>
+<p>Tại report page <code>Sales Overview</code>:</p>
+<p><strong>Card visual <code>Total Sales</code></strong> → <code>...</code> → <code>Set verified answer</code> → triggers:</p>
+<pre><code class="language-text">What were total sales?
+Show me total revenue
+How much did we sell?</code></pre>
+<p><strong>Bar chart <code>Sales by Category</code></strong> → <code>...</code> → <code>Set verified answer</code> → triggers:</p>
+<pre><code class="language-text">Show me sales by category
+Which product categories have the most sales?
+Break down revenue by product category</code></pre>
+<p>Lưu hai verified answers và kiểm tra chúng được nhận diện trong Copilot.</p>
+<h4>Bước 5 — Synonyms</h4>
+<p><code>Modeling</code> → <code>Q&amp;A setup</code> → <code>Synonyms</code>:</p>
+<table><thead><tr><th>Object</th><th>Synonyms</th></tr></thead><tbody><tr><td>CustomerName</td><td>buyer, client</td></tr><tr><td>Product Category</td><td>product category, item</td></tr><tr><td>Profit Margin</td><td>margin, profit percentage, profitability</td></tr><tr><td>Total Sales</td><td>income, revenue, total revenue</td></tr></tbody></table>
+<p>Chỉ dùng synonyms đúng với business definitions; ví dụ <code>income</code> có thể khác <code>revenue</code> ở môi trường khác.</p>
+<h4>Bước 6 — Publish</h4>
+<p><code>Home</code> → <code>Publish</code> → Workspace. Kiểm tra report và semantic model đã xuất hiện trên Power BI Service.</p>
+<h4>Bước 7 — Copilot validation</h4>
+<table><thead><tr><th>Prompt</th><th>Expected</th></tr></thead><tbody><tr><td>What were total sales?</td><td>Card Verified answer</td></tr><tr><td>Show me sales by category</td><td>Bar-chart Verified answer</td></tr><tr><td>Show me top products by profitability</td><td><code>Profit Margin</code></td></tr><tr><td>Which city had highest sales?</td><td><code>City</code> và <code>Total Sales</code></td></tr></tbody></table>
+<p>Dùng <code>How Copilot arrived at this</code> kiểm tra fields, measures, filters. Khi sửa metadata hoặc instructions, đóng/mở Copilot pane và chạy lại regression tests.</p>
+<h4>Bước 8 — Approved for Copilot</h4>
+<p>Trong Workspace: <code>Semantic Model</code> → <code>...</code> → <code>Settings</code> → khu vực <code>Copilot</code>/<code>Approved for Copilot</code> → bật và lưu sau khi đã đạt expected results. Vị trí UI có thể thay đổi theo phiên bản.</p>
+<h4>Bước 9 — Cleanup và troubleshooting</h4>
+<ul><li>Không thấy Prep data for AI: kiểm tra Power BI Desktop version và preview features.</li><li>Các tab bị vô hiệu hóa: kiểm tra Q&amp;A đã bật.</li><li>Không có Copilot: kiểm tra paid capacity, tenant settings và quyền.</li><li>Verified answer không trigger: rà lại trigger phrases và phạm vi câu hỏi.</li><li>Rule chưa áp dụng: mở lại Copilot pane, đợi đồng bộ và kiểm thử.</li><li>Sai measure: đọc HCAAT, sửa model và hướng dẫn.</li><li>Xóa workspace thử nghiệm nếu không còn cần, tránh xóa production workspace.</li></ul>
+<p><strong>Năm điểm luyện tay:</strong> AI data schema, AI instructions, Verified answers, Synonyms, HCAAT + Approval. <strong>Lab chưa chạy thực tế trong tenant</strong>.</p>
+<h3>Unit 8 — Module assessment</h3>
+<h4>Unit này dạy gì</h4>
+<p>Năm câu scenario kiểm tra cách chọn công cụ và xử lý các lỗi semantic ambiguity của AI.</p>
+<h4>Câu 1 — Copilot nhầm lẫn Margin</h4>
+<p><strong>Scenario:</strong> Gross margin amount và gross margin percentage bị Copilot chọn không nhất quán.</p>
+<p><strong>Đáp án:</strong> Đặt tên nghiệp vụ riêng biệt, descriptions thể hiện đơn vị và công thức.</p>
+<ul><li>Đúng vì khắc phục nguyên nhân metadata mơ hồ ngay tại model.</li><li>Tạo Verified answer cho mọi câu chứa “margin” quá rộng và không sửa definition.</li><li>Dùng measure xuất hiện đầu tiên không có ý nghĩa nghiệp vụ.</li></ul>
+<p><strong>Exam tip:</strong> Hai measures gần giống → sửa names/descriptions trước. <strong>Liên hệ:</strong> Unit 2–3.</p>
+<h4>Câu 2 — Gold Layer có technical fields</h4>
+<p><strong>Scenario:</strong> Model có <code>CustomerKey</code>, <code>LoadBatchID</code>, <code>Customer</code>, <code>Sales</code>; cần AI phân tích doanh thu theo vùng.</p>
+<p><strong>Đáp án:</strong> Giữ business entities và trusted measures, ẩn technical keys/load metadata không cần thiết.</p>
+<ul><li>Không giữ tất cả field visible vì gây nhiễu.</li><li>Không flatten Star Schema chỉ để Copilot xử lý.</li></ul>
+<p><strong>Exam tip:</strong> ETL metadata → hạn chế bề mặt phân tích, không đồng nghĩa xóa khỏi source. <strong>Liên hệ:</strong> Unit 3.</p>
+<h4>Câu 3 — Approved visual với fixed filters</h4>
+<p><strong>Scenario:</strong> Doanh nghiệp cần visual với measure và regulatory filters đã duyệt.</p>
+<p><strong>Đáp án:</strong> Verified answers + scoped trigger phrases.</p>
+<ul><li>Synonyms chỉ ánh xạ tên gọi, không cố định visual.</li><li>AI instruction rộng không bảo đảm visual cụ thể và có thể ảnh hưởng câu khác.</li></ul>
+<p><strong>Exam tip:</strong> Approved visual + common question + trigger phrase → Verified answer. <strong>Liên hệ:</strong> Unit 4.</p>
+<h4>Câu 4 — Ontology từ Import Model không có data bindings</h4>
+<p><strong>Scenario:</strong> Entity definitions có, generated data bindings thiếu.</p>
+<p><strong>Đáp án:</strong> Xem xét Direct Lake và điều kiện backing source/access phù hợp.</p>
+<ul><li>Foundry IQ không tự sửa generated bindings của Import model.</li><li>Approved for Copilot không phải cơ chế tạo binding.</li></ul>
+<p><strong>Exam tip:</strong> Ontology definition != queryable data binding. <strong>Liên hệ:</strong> Unit 5.</p>
+<h4>Câu 5 — Số đúng nhưng deprecated measure</h4>
+<p><strong>Scenario:</strong> Copilot trả con số đúng nhưng diagnostics cho thấy dùng measure cũ.</p>
+<p><strong>Đáp án:</strong> Ẩn/thay thế deprecated measure rồi test lại và regression test.</p>
+<ul><li>Phê duyệt chỉ vì number matches là sai.</li><li>Verified answer che lỗi không sửa được semantic root cause.</li></ul>
+<p><strong>Exam tip:</strong> Kiểm tra reasoning path, không chỉ output. <strong>Liên hệ:</strong> Unit 6.</p>
+<h3>Unit 9 — Summary</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tổng kết quy trình AI readiness và những điều cần duy trì sau phê duyệt.</p>
+<h4>Nội dung chính trong unit</h4>
+<pre><code class="language-mermaid">flowchart TD
+  A[&quot;Business questions + expected results&quot;] --&gt; B[&quot;Gold Layer and Semantic Model&quot;]
+  B --&gt; C[&quot;Prep data for AI&quot;]
+  C --&gt; D[&quot;Validate with HCAAT&quot;]
+  D --&gt; E[&quot;Fix + regression tests&quot;]
+  E --&gt; F[&quot;Approved for Copilot&quot;]</code></pre>
+<p>Các yếu tố của Prep data for AI gồm AI data schema, AI instructions và Verified answers. Khi nhiều bộ phận cần chia sẻ cùng business entity definitions, cân nhắc Fabric IQ Ontology; khi business rules/semantic model thay đổi, kiểm thử lại.</p>
+<h3>Coverage check — Module 1</h3>
+<table><thead><tr><th>Unit</th><th>Coverage</th></tr></thead><tbody><tr><td>1</td><td>Business meaning và AI-ready goal</td></tr><tr><td>2</td><td>Copilot metadata, schema reduction, model first, baseline</td></tr><tr><td>3</td><td>Gold Layer, Star Schema, descriptions, Hide/Synonyms</td></tr><tr><td>4</td><td>AI schema, instructions, Verified answers, validation</td></tr><tr><td>5</td><td>Fabric IQ Ontology, criteria, generation, bindings</td></tr><tr><td>6</td><td>HCAAT, output vs reasoning correctness, approval</td></tr><tr><td>7</td><td>Lab: prerequisites, steps, expected results, troubleshooting, cleanup</td></tr><tr><td>8</td><td>5 scenario questions và phân tích đúng/sai</td></tr><tr><td>9</td><td>Quy trình và hướng tiếp tục</td></tr></tbody></table>
+<p><strong>Coverage:</strong> 9/9 Units, 5/5 assessment, 1 lab ở mức hướng dẫn. Đã đề cập Copilot/AI, security (RLS/OLS), permissions, capacity/licensing, Fabric IQ limitations. <strong>Chưa chạy lab tenant</strong>. Trọng tâm thi: phân biệt ba công cụ Prep data for AI, sửa Semantic Model trước AI prompt, HCAAT, Direct Lake và Ontology generation.</p>
+<hr>
