@@ -12,7 +12,7 @@
     "DP-600",
     "Audio"
   ],
-  "updatedAt": "2026-11-15T15:54:40.620Z",
+  "updatedAt": "2026-11-15T22:40:00+07:00",
   "chapters": [],
   "volumes": [
     {
@@ -73,6 +73,68 @@
           "audioStandardVersion": "1.0",
           "sourceUrls": [
             "https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "learning-path-02",
+      "title": "Learning Path 2 — Design and transform analytics data in Microsoft Fabric",
+      "order": 2,
+      "chapters": [
+        {
+          "id": "module-06-choose-data-stores",
+          "title": "LP-2 | Module 1 — Choose data stores in Microsoft Fabric",
+          "order": 1,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-02/module-06-choose-data-stores.html",
+          "sourceChapterId": "learning-path-02/module-06-choose-data-stores",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/choose-data-store-fabric/"
+          ]
+        },
+        {
+          "id": "module-07-design-dimensional-models",
+          "title": "LP-2 | Module 2 — Design dimensional models for analytics in Microsoft Fabric",
+          "order": 2,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-02/module-07-design-dimensional-models.html",
+          "sourceChapterId": "learning-path-02/module-07-design-dimensional-models",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/design-dimensional-models-fabric/"
+          ]
+        },
+        {
+          "id": "module-08-transform-dataflows-gen2",
+          "title": "LP-2 | Module 3 — Transform data using Dataflows Gen2 in Microsoft Fabric",
+          "order": 3,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-02/module-08-transform-dataflows-gen2.html",
+          "sourceChapterId": "learning-path-02/module-08-transform-dataflows-gen2",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-dataflows/"
+          ]
+        },
+        {
+          "id": "module-09-transform-notebooks",
+          "title": "LP-2 | Module 4 — Transform data using notebooks in Microsoft Fabric",
+          "order": 4,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-02/module-09-transform-notebooks.html",
+          "sourceChapterId": "learning-path-02/module-09-transform-notebooks",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-notebooks/"
+          ]
+        },
+        {
+          "id": "module-10-transform-tsql",
+          "title": "LP-2 | Module 5 — Transform data using T-SQL in Microsoft Fabric",
+          "order": 5,
+          "path": "books/dp-600-fabric-analytics-audio/volumes/learning-path-02/module-10-transform-tsql.html",
+          "sourceChapterId": "learning-path-02/module-10-transform-tsql",
+          "audioStandardVersion": "1.0",
+          "sourceUrls": [
+            "https://learn.microsoft.com/en-us/training/modules/fabric-transform-data-tsql/"
           ]
         }
       ]
