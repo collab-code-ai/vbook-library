@@ -1,0 +1,289 @@
+<h2>Module 5 — Manage the semantic model development lifecycle</h2>
+<p><strong>Vị trí:</strong> Learning Path 3, Module 5/5 · <strong>9 Units</strong><br><strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/manage-semantic-model-lifecycle/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading / phần nội dung chính</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Develop → Validate → Deploy → Monitor</td></tr><tr><td>2</td><td>Create reusable Power BI assets</td><td>Shared semantic models; Power BI templates; Choose asset type; .pbids</td></tr><tr><td>3</td><td>Manage Power BI content in version control</td><td>PBIP; Fabric Git integration; Git-connected workspace; combined workflows</td></tr><tr><td>4</td><td>Manage semantic models with the XMLA endpoint</td><td>XMLA; SemPy metadata, relationships, Measures, quality; External tools; Choose approach</td></tr><tr><td>5</td><td>Deploy content through stages</td><td>Deployment pipelines; configuration; rules; compare/deploy; automation; Git with pipelines</td></tr><tr><td>6</td><td>Maintain and monitor semantic models</td><td>Scheduled refresh; Data Factory orchestrated refresh; monitoring; lineage/impact</td></tr><tr><td>7</td><td>Exercise: Manage semantic models through their lifecycle</td><td>SemPy validation; deployment pipeline; Dev → Production; post-deployment validation</td></tr><tr><td>8</td><td>Module assessment</td><td>5 câu Reusable Assets, Git Conflict, SemPy, Deployment Rules, Refresh Orchestration</td></tr><tr><td>9</td><td>Summary</td><td>Tổng kết vòng đời và Learn more</td></tr></tbody></table>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Quản lý Semantic Model như một tài sản phần mềm: thay đổi có version, kiểm thử, triển khai có kiểm soát và giám sát sau phát hành.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Nếu ba Developers cùng sửa PBIX và Publish trực tiếp Production, có thể xảy ra overwrite, KPI thay đổi không được review, thiếu rollback và report dependencies bị lỗi. Microsoft Learn đưa ra bốn giai đoạn:</p>
+<ol><li><strong>Develop:</strong> tạo Shared Models, Reports, PBIP/TMDL và Git History.</li><li><strong>Validate:</strong> kiểm tra Metadata, Relationships, DAX, Business Values bằng SemPy/XMLA/External Tools.</li><li><strong>Deploy:</strong> chuyển phiên bản được duyệt qua Development, Test, Production với Rules.</li><li><strong>Monitor:</strong> theo dõi Refresh, Data Freshness, Lineage, Errors, Change Impact.</li></ol>
+<p>Ví dụ thay <code>[Revenue] = SUM(Sales[Revenue])</code> thành <code>[Revenue] = SUM(Sales[Revenue]) - SUM(Sales[RefundAmount])</code> có thể hợp lệ cú pháp nhưng thay đổi định nghĩa KPI. ALM giúp kiểm soát và truy vết thay đổi, không tự xác nhận đúng nghiệp vụ.</p>
+<h3>Unit 2 — Create reusable Power BI assets</h3>
+<h4>Unit này dạy gì</h4>
+<p>Chọn Shared Semantic Model, Power BI Template hoặc Data Source File để tái sử dụng phần thích hợp của giải pháp.</p>
+<h4>Shared semantic models</h4>
+<p>Nhiều Reports (Sales, Finance, Executive, Regional) dùng một Model trung tâm chứa DAX Measures, Relationships và business definitions đã được thống nhất:</p>
+<pre><code class="language-dax">Gross Revenue = SUM(FactSales[GrossAmount])
+Net Revenue = [Gross Revenue] - [Refund Amount]
+Profit = [Net Revenue] - [Cost]</code></pre>
+<p>Nếu mọi Report cùng dùng <code>[Net Revenue]</code> từ Shared Model, sửa logic một lần có thể được phản ánh trong Reports phụ thuộc. Người xây Report phải có quyền truy cập/Build phù hợp.</p>
+<p>Trong Desktop: <code>Home</code> → <code>Get data</code> → <code>Power BI semantic models</code>. Có thể dùng <strong>Live Connection</strong> để sử dụng Model hiện có, không tạo bản sao Import. Khi mở rộng thành Composite Model, <strong>DirectQuery for Power BI semantic models</strong> là một khả năng khác, không hoàn toàn đồng nghĩa Live Connection.</p>
+<p><strong>Core-plus-specialized pattern:</strong> Core Semantic Model dùng chung KPI; specialized Reports có Layout/Filters riêng. Định nghĩa có governance tốt cũng giúp AI Consumers sử dụng cùng Business Logic.</p>
+<h4>Power BI templates (.pbit)</h4>
+<p><code>.pbit</code> lưu Report Pages, Visuals, Queries, Parameters và Model Definition nhưng <strong>không chứa dữ liệu Import đã nạp</strong>. Phù hợp khi nhiều chi nhánh cần cùng bố cục nhưng Data Source/Parameters khác nhau.</p>
+<p><code>File</code> → <code>Export</code> → <code>Power BI template</code> → Save. Khi mở <code>.pbit</code>, người dùng cung cấp Parameters, Source Credentials và tải dữ liệu theo môi trường.</p>
+<table><thead><tr><th>Parameter</th><th>Ví dụ</th></tr></thead><tbody><tr><td>ServerName</td><td>sql-dev.company.local</td></tr><tr><td>DatabaseName</td><td>Sales_North</td></tr></tbody></table>
+<p>Parameters giúp cấu hình, không phải cơ chế Security tự bảo đảm quyền truy cập.</p>
+<h4>PBIDS (.pbids)</h4>
+<p>Power BI Data Source File chứa thông tin cấu hình kết nối để Desktop biết nên kết nối Source nào. Không lưu toàn bộ Report/Measure/Credentials.</p>
+<table><thead><tr><th>Nhu cầu</th><th>Tài sản</th></tr></thead><tbody><tr><td>Common KPIs/Relationships</td><td>Shared Semantic Model</td></tr><tr><td>Same Report Structure, different sources</td><td><code>.pbit</code></td></tr><tr><td>Standardized source connection starting point</td><td><code>.pbids</code></td></tr><tr><td>Same KPI and Layout</td><td>Shared Semantic Model + Report Template</td></tr></tbody></table>
+<p><strong>Exam:</strong> <em>20 reports, same layout, different databases</em> → PBIT; <em>single source of truth for business metrics</em> → Shared Semantic Model.</p>
+<h3>Unit 3 — Manage Power BI content in version control</h3>
+<h4>Unit này dạy gì</h4>
+<p>Biến Report/Model thành file có thể diff, commit, branch và review; đồng bộ Git Repository với Fabric Workspace.</p>
+<h4>Power BI Desktop projects — PBIP</h4>
+<p>PBIX là file đóng gói, Git lưu phiên bản nhưng không thuận tiện diff từng Measure/Visual. Power BI Project <code>.pbip</code> lưu các thành phần thành thư mục/file văn bản.</p>
+<p>Ví dụ minh họa:</p>
+<pre><code class="language-text">SalesAnalytics/
+├── SalesAnalytics.pbip
+├── SalesAnalytics.SemanticModel/
+│   ├── definition.pbism
+│   └── definition/
+│       ├── model.tmdl
+│       ├── tables/
+│       └── relationships.tmdl
+├── SalesAnalytics.Report/
+│   └── definition.pbir
+└── .gitignore</code></pre>
+<p><strong>TMDL (Tabular Model Definition Language):</strong> định nghĩa Model Metadata, Measures, Relationships và Tables. <strong>PBIR (Power BI Enhanced Report Format):</strong> định nghĩa Pages, Visuals/Layout dưới dạng văn bản/JSON.</p>
+<p>Ví dụ DAX được lưu và review bằng Git Diff:</p>
+<pre><code class="language-tmdl">table Sales
+    measure Revenue = SUM(Sales[Amount])
+        formatString: &quot;#,0.00&quot;</code></pre>
+<p><code>Power BI Desktop</code> → <code>File</code> → <code>Save as</code> → <code>Power BI Project (.pbip)</code>. Tùy phiên bản có thể cần Settings/Preview Features.</p>
+<p><strong>Security:</strong> <code>.gitignore</code> không thay việc tự kiểm tra Secrets, Credentials, Tokens và dữ liệu nhạy cảm trước khi Commit.</p>
+<h4>Enable Git integration for a workspace</h4>
+<p>Fabric Git Integration hỗ trợ GitHub/Azure DevOps theo cấu hình Tenant/Capacity/Workspace và quyền Git Provider.</p>
+<ol><li><code>Fabric Portal</code> → <code>Workspace</code>.</li><li><code>Workspace settings</code> → <code>Git integration</code>.</li><li>Chọn GitHub hoặc Azure DevOps.</li><li>Authenticate.</li><li>Chọn Repository/Branch/Folder.</li><li>Thực hiện Initial Sync sau khi rà soát nguồn nào là authoritative.</li></ol>
+<p>Đừng tự động chọn giữ Git hoặc Workspace khi cả hai đã có Production Content vì có thể overwrite nội dung hợp lệ.</p>
+<h4>Work with Git-connected workspace</h4>
+<ul><li><strong>Commit:</strong> thay đổi Workspace → Git Repository.</li><li><strong>Update:</strong> thay đổi Git → Workspace.</li><li><strong>Branch:</strong> Feature Workflows, Pull Request, Code Review, Merge.</li><li><strong>Conflict:</strong> cùng Item thay đổi ở cả Workspace và Git từ lần sync cuối. Không chỉ là lỗi Permission.</li></ul>
+<p>Ví dụ:</p>
+<pre><code class="language-text">main
+├── feature/revenue-fix
+└── feature/new-kpi</code></pre>
+<p>Quy trình Resolve Conflict: kiểm tra Diff → quyết định merge/keep → validate Model → sync. Không chọn Keep Workspace/Git một cách mù quáng.</p>
+<h4>Combine projects and Git integration</h4>
+<p><code>PBIP local edit</code> → <code>Git Commit</code> → <code>Pull Request</code> → <code>Review</code> → <code>Merge</code> → <code>Fabric Development Workspace Update</code> → <code>Validation</code> → <code>Deployment</code>.</p>
+<p>Git Integration <strong>không mặc định</strong> triển khai Production và không tự chuyển Credentials, Data Source Bindings hay Import Data. Cần Pipeline/CI-CD riêng.</p>
+<p><strong>Exam:</strong> PBIP/TMDL để diff model; PBIR để diff report; Git Conflict do changes cả hai phía; Git = Source Control, không phải Stage Promotion.</p>
+<h3>Unit 4 — Manage semantic models with the XMLA endpoint</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng XMLA Protocol và SemPy Notebook để quản lý/kiểm tra Semantic Model bằng công cụ hoặc code có thể lặp lại.</p>
+<h4>XMLA endpoint</h4>
+<p>XMLA (XML for Analysis) là giao thức làm việc với Analysis Services engine của Power BI Semantic Models. Tools hỗ trợ đọc Metadata, chạy DAX, so sánh hoặc thay đổi Model theo quyền.</p>
+<p>Ví dụ Workspace URL:</p>
+<pre><code class="language-text">powerbi://api.powerbi.com/v1.0/myorg/MyWorkspace</code></pre>
+<p>Read-only: truy vấn/đọc. Read/write: sửa và quản lý Model trong trường hợp Capacity, Tenant Settings và Permissions hỗ trợ. XMLA không phải đường bỏ qua Security.</p>
+<h4>SemPy: inspect metadata</h4>
+<p>Fabric Notebook có <code>sempy.fabric</code> (API và phiên bản thực tế cần kiểm tra ở Runtime):</p>
+<pre><code class="language-python">import sempy.fabric as fabric
+
+model = &quot;Sales Model&quot;
+workspace = &quot;Sales Workspace&quot;
+
+tables = fabric.list_tables(model, workspace=workspace)
+columns = fabric.list_columns(model, workspace=workspace)
+measures = fabric.list_measures(model, workspace=workspace)
+
+display(tables)
+display(columns)
+display(measures)</code></pre>
+<p>Dùng để kiểm tra bảng DimDate, cột cần thiết, Measure Total Revenue, tên trường trước Deployment.</p>
+<h4>Relationships and quality</h4>
+<pre><code class="language-python">relationships = fabric.list_relationships(model, workspace=workspace)
+display(relationships)</code></pre>
+<p>Liệt kê Relationship không đủ chứng minh Foreign Keys khớp Dimension Keys. Theo ví dụ đã giảng, có thể dùng:</p>
+<pre><code class="language-python">model_tables = {
+    &quot;DimProduct&quot;: fabric.read_table(model, &quot;DimProduct&quot;, workspace=workspace),
+    &quot;FactSales&quot;: fabric.read_table(model, &quot;FactSales&quot;, workspace=workspace),
+}
+
+violations = fabric.list_relationship_violations(model_tables)
+display(violations)</code></pre>
+<p><strong>Quan trọng:</strong> trước khi chạy cần đối chiếu đúng Signature/API của phiên bản SemPy hiện có và những Metadata cần truyền; đây là đoạn minh họa từ bài giảng, chưa được thực thi trong Runtime. Với Fact rất lớn, <code>read_table()</code> có thể đưa quá nhiều data về Notebook; ưu tiên Sampling hoặc Data Layer Validation phù hợp. Kiểm tra thêm Null/Unique Keys và Referential Integrity.</p>
+<h4>Evaluate measures and DAX</h4>
+<pre><code class="language-python">result = fabric.evaluate_measure(
+    model,
+    measure=&quot;Total Revenue&quot;,
+    groupby_columns=[&quot;DimDate[Year]&quot;, &quot;DimProduct[Category]&quot;],
+    workspace=workspace
+)
+display(result)</code></pre>
+<pre><code class="language-python">query = '''
+EVALUATE
+ROW(&quot;Revenue&quot;, [Total Revenue])
+'''
+
+result = fabric.evaluate_dax(model, query, workspace=workspace)
+display(result)</code></pre>
+<p>Validation với Expected Value:</p>
+<pre><code class="language-python">actual = float(result.iloc[0, 0])
+expected = 1600.0
+assert abs(actual - expected) &lt; 0.001, f&quot;Expected {expected}, got {actual}&quot;</code></pre>
+<p>Nếu Assertion Fail, kiểm tra DAX/Filter Context/Data; không tự kết luận lỗi cú pháp. <code>evaluate_measure</code> thuận tiện theo Grouping, <code>evaluate_dax</code> linh hoạt với DAX Query bất kỳ.</p>
+<h4>External tools</h4>
+<table><thead><tr><th>Công cụ</th><th>Chức năng</th></tr></thead><tbody><tr><td>DAX Studio</td><td>DAX Queries, FE/SE timings, Query Plan</td></tr><tr><td>Tabular Editor</td><td>Metadata, Measures, Calculation Groups, BPA</td></tr><tr><td>ALM Toolkit</td><td>So sánh Semantic Models</td></tr><tr><td>SSMS</td><td>Quản lý/truy vấn theo tính năng hỗ trợ</td></tr><tr><td>Fabric Notebook + SemPy</td><td>Validation tự động, Metadata, Data Quality</td></tr></tbody></table>
+<p>BPA (Best Practice Analyzer) phát hiện các vấn đề theo rules; không thay thế kiểm thử Business Expected Values.</p>
+<p><strong>Exam:</strong> <code>list_relationships()</code> liệt kê Relationships; <code>list_relationship_violations()</code> hướng tới kiểm tra Orphaned Foreign Keys; <code>evaluate_measure()</code> kiểm tra Measure; <code>evaluate_dax()</code> chạy DAX Query. SemPy phù hợp Automated QA.</p>
+<h3>Unit 5 — Deploy content through stages</h3>
+<h4>Unit này dạy gì</h4>
+<p>Promote Fabric/Power BI Items qua các môi trường theo quy trình, cấu hình nguồn theo Stage và tự động hóa Deployment khi cần.</p>
+<h4>Deployment pipelines</h4>
+<p>Mặc định có thể tổ chức Development → Test → Production. Fabric hỗ trợ cấu hình Pipeline 2–10 Stages trong điều kiện phù hợp.</p>
+<p>Mỗi Stage gắn một Workspace; không tự cách ly Data Sources chỉ vì đặt tên Stage khác nhau.</p>
+<table><thead><tr><th>Stage</th><th>Ví dụ Workspace</th><th>Source</th></tr></thead><tbody><tr><td>Development</td><td>Sales-Dev</td><td>Sales_Dev</td></tr><tr><td>Test</td><td>Sales-UAT</td><td>Sales_UAT</td></tr><tr><td>Production</td><td>Sales-Prod</td><td>Sales_Prod</td></tr></tbody></table>
+<h4>Create/configure pipeline</h4>
+<p><code>Fabric</code> → <code>Workspaces</code> → <code>Deployment pipelines</code> → <code>Create pipeline</code> → đặt tên/chọn stages → gán Workspaces. Cần Permissions/Capacity phù hợp; Workspace không được cùng lúc gán vào Pipeline khác theo giới hạn thực tế.</p>
+<h4>Deployment rules</h4>
+<ul><li><strong>Data source rule:</strong> Source Connection thay theo môi trường khi item/connection được hỗ trợ.</li><li><strong>Parameter rule:</strong> Power Query Parameter thay theo Stage. Ví dụ <code>EnvironmentName</code> DEV / TEST / PROD.</li></ul>
+<p>Rules áp dụng cho môi trường đích khi Deploy, không tự sửa nguồn. Thay Rule sau Deployment có thể cần Redeploy. Với Direct Lake: Direct Lake on SQL và Direct Lake on OneLake khác nhau về cơ chế Binding/Rules; OneLake thường dùng M Parameters/Parameter Rules phù hợp.</p>
+<h4>Compare and deploy content</h4>
+<p>Source/Target Comparison cho thấy Item New, Different, Same. <strong>Selective Deployment</strong> cho phép chọn Items thay vì mọi thay đổi. <strong>Item Pairing</strong> liên kết Items giữa stages; hai Items cùng tên không luôn tự động Pair trong mọi tình huống. Kiểm tra Relationships giữa Items, Reports và Models.</p>
+<p><strong>Deployment ≠ data copy:</strong> Import Model Definition thường được triển khai nhưng dữ liệu Import/Credentials không tự được copy đầy đủ; cấu hình Data Source/Gateway và Refresh khi cần. Direct Lake phải bind tới đúng Lakehouse/Warehouse ở Stage đích.</p>
+<h4>Automate deployment pipelines</h4>
+<p>Fabric REST APIs có thể dùng trong GitHub Actions, Azure DevOps hoặc tool CI/CD được cấp quyền.</p>
+<pre><code class="language-text">Feature Branch → Pull Request → Review → Merge
+→ Sync Development Workspace
+→ Automated Validation
+→ Deploy Test → UAT/Approval
+→ Deploy Production → Post-deployment Test</code></pre>
+<p>Không mặc định Git Commit = tự Promote Production. Nên có Release Record, Approval và Rollback Plan cho các Model dùng chung.</p>
+<h4>Git vs Deployment Pipeline</h4>
+<table><thead><tr><th>Nhiệm vụ</th><th>Git Integration</th><th>Deployment Pipeline</th></tr></thead><tbody><tr><td>Version history/branch/PR</td><td>Có</td><td>Không thay thế Git</td></tr><tr><td>Workspace sync</td><td>Có</td><td>Mục đích khác</td></tr><tr><td>Dev → Test → Prod promotion</td><td>Không phải trọng tâm</td><td>Có</td></tr><tr><td>Rules theo Stage</td><td>Không thay thế</td><td>Có, với Items hỗ trợ</td></tr><tr><td>CI/CD</td><td>Git workflows</td><td>REST API/Deployment operation</td></tr></tbody></table>
+<p><strong>Exam:</strong> Different connection in Prod → Deployment Rule; selective promotion → Selective Deployment; source history → Git; Stage Promotion → Pipeline.</p>
+<h3>Unit 6 — Maintain and monitor semantic models</h3>
+<h4>Unit này dạy gì</h4>
+<p>Duy trì Data Freshness, xử lý Refresh Failures, theo dõi Dependencies và đánh giá Impact của thay đổi.</p>
+<h4>Scheduled refresh</h4>
+<p>Import Model cần Refresh dữ liệu theo lịch. <code>Semantic Model</code> → <code>Settings</code> → <code>Scheduled refresh</code>, cấu hình Frequency, Time Zone, Credentials, Gateway khi cần, Failure Notification. Không đặt tần suất quá cao nếu báo cáo chỉ cần daily data. SQL Server On-premises thường cần Gateway; Cloud Sources có thể không cần.</p>
+<p><strong>Direct Lake</strong> khác Import: Framing/metadata tham chiếu Delta version mới, không tự Import toàn bộ. Data freshness vẫn cần phối hợp thời điểm Delta được ghi xong với Model state. Không coi Direct Lake luôn real-time tuyệt đối hoặc không bao giờ cần Refresh.</p>
+<h4>Data Factory refresh orchestration</h4>
+<p>Nếu Lakehouse Load bắt đầu 05:00 nhưng lúc hoàn tất có thể là 05:30 hoặc 06:30, Scheduled Semantic Model Refresh lúc 06:00 sẽ đôi khi chạy trên dữ liệu chưa hoàn chỉnh.</p>
+<p>Giải pháp: Fabric Data Factory Pipeline với Dependencies:</p>
+<pre><code class="language-text">Load Lakehouse
+  └─ Success → Transform/Validate
+       └─ Success → Semantic model refresh
+            ├─ Success → Notify success
+            └─ Failure → Notify failure</code></pre>
+<p><code>Fabric</code> → <code>Workspace</code> → <code>New item</code> → <code>Data pipeline</code> → thêm Activities → <code>Semantic model refresh</code> → chọn Workspace/Model/Connection → Success/Failure Paths → Run/Monitor. Có các tùy chọn Refresh Tables/Partitions/Retry tùy tính năng được hỗ trợ.</p>
+<h4>Monitor refresh operations</h4>
+<p><strong>Monitoring Hub</strong> và <strong>Semantic Model Refresh History</strong> cho Status, Duration, Start/End, Errors. Một Model thường 5 phút nhưng tăng lên 18 phút cần điều tra Data Volume, Query Folding, Source, Gateway, Partitions và Capacity Throttling.</p>
+<table><thead><tr><th>Lỗi</th><th>Hướng xử lý</th></tr></thead><tbody><tr><td>Expired credentials</td><td>Update Credentials</td></tr><tr><td>Gateway unavailable</td><td>Check Gateway Service</td></tr><tr><td>Timeout</td><td>Source Query/Network</td></tr><tr><td>Source schema changed</td><td>Data Types/Power Query</td></tr><tr><td>Capacity throttling</td><td>Capacity Metrics/Workload</td></tr><tr><td>Upstream data incomplete</td><td>Data Pipeline Dependencies</td></tr></tbody></table>
+<h4>Lineage view and impact analysis</h4>
+<p>Lineage: Source → Lakehouse → Semantic Model → Reports. Nếu Report cũ dữ liệu, xem Last Refresh và Upstream Pipeline. <strong>Impact Analysis</strong> giúp nhận diện Reports/Items bị ảnh hưởng khi đổi hoặc xóa Column/Measure. Trước Schema Change: tìm dependencies → kiểm thử Test Stage → báo Report Owners → có kế hoạch Rollback.</p>
+<p>Endorsement hỗ trợ Governance/trust nhưng không thay Security, Refresh hay Validation.</p>
+<p><strong>Exam:</strong> Import freshness → Scheduled Refresh; upstream job variable duration → Data Factory Dependency; Refresh failure → Monitoring Hub/History; change column → Impact Analysis.</p>
+<h3>Unit 7 — Exercise: Manage semantic models through their lifecycle</h3>
+<h4>Unit này dạy gì</h4>
+<p>Lab Validate với SemPy và Promote Development → Production bằng Deployment Pipeline. <strong>Bài dưới được biên soạn theo mục tiêu Official Exercise, không phải log triển khai thật.</strong></p>
+<h4>Chuẩn bị</h4>
+<p>Fabric Trial/Capacity phù hợp, hai Workspaces (<code>DP600-Lifecycle-Dev</code>, <code>DP600-Lifecycle-Prod</code>), quyền Admin để Assignment, Fabric Notebook có SemPy, Power BI Desktop. Không tự kích hoạt Paid Capacity. Git không bắt buộc với Lab này.</p>
+<h4>Bước 1 — Tạo Import Semantic Model mẫu</h4>
+<p>Desktop → <code>Modeling</code> → <code>New table</code>:</p>
+<pre><code class="language-dax">FactSales =
+DATATABLE(
+    &quot;SalesID&quot;, INTEGER,
+    &quot;RegionKey&quot;, INTEGER,
+    &quot;Revenue&quot;, INTEGER,
+    {
+        {101,1,100},{102,1,200},
+        {103,2,150},{104,2,250},
+        {105,3,400},{106,3,500}
+    }
+)
+
+DimRegion =
+DATATABLE(
+    &quot;RegionKey&quot;, INTEGER,
+    &quot;RegionName&quot;, STRING,
+    {{1,&quot;North&quot;},{2,&quot;Central&quot;},{3,&quot;South&quot;}}
+)</code></pre>
+<p>Relationship: <code>DimRegion[RegionKey] (1)</code> → <code>FactSales[RegionKey] (*)</code>, Single Active. Measure:</p>
+<pre><code class="language-dax">Total Revenue = SUM(FactSales[Revenue])</code></pre>
+<p>Kết quả North 300, Central 400, South 900, Total 1600. Lưu <code>DP600-Lifecycle.pbix</code> và Publish vào <code>DP600-Lifecycle-Dev</code>.</p>
+<h4>Bước 2 — Fabric Notebook và SemPy</h4>
+<p><code>Workspace</code> → <code>New item</code> → <code>Notebook</code> → <code>NB-Validate-Semantic-Model</code>.</p>
+<pre><code class="language-python">import sempy.fabric as fabric
+WORKSPACE = &quot;DP600-Lifecycle-Dev&quot;
+MODEL = &quot;DP600-Lifecycle&quot;</code></pre>
+<p>Nếu không import được SemPy, kiểm tra Fabric Runtime/Package Availability.</p>
+<h4>Bước 3 — Validate model metadata</h4>
+<pre><code class="language-python">tables = fabric.list_tables(MODEL, workspace=WORKSPACE)
+columns = fabric.list_columns(MODEL, workspace=WORKSPACE)
+measures = fabric.list_measures(MODEL, workspace=WORKSPACE)
+
+display(tables)
+display(columns)
+display(measures)
+
+assert &quot;Total Revenue&quot; in measures[&quot;Name&quot;].tolist(), &quot;Missing Total Revenue&quot;</code></pre>
+<p>Expected: FactSales, DimRegion, Total Revenue. Nếu Assertion fail, không Promote.</p>
+<h4>Bước 4 — Relationships, Data Quality</h4>
+<pre><code class="language-python">relationships = fabric.list_relationships(MODEL, workspace=WORKSPACE)
+display(relationships)
+
+model_tables = {
+    &quot;DimRegion&quot;: fabric.read_table(MODEL, &quot;DimRegion&quot;, workspace=WORKSPACE),
+    &quot;FactSales&quot;: fabric.read_table(MODEL, &quot;FactSales&quot;, workspace=WORKSPACE),
+}
+
+violations = fabric.list_relationship_violations(model_tables)
+display(violations)
+
+dim = model_tables[&quot;DimRegion&quot;]
+assert dim[&quot;RegionKey&quot;].isnull().sum() == 0
+assert dim[&quot;RegionKey&quot;].duplicated().sum() == 0</code></pre>
+<p><strong>Lưu ý:</strong> Đối chiếu chữ ký hàm và schema DataFrame với SemPy Runtime hiện tại trước khi chạy; code trên được trích lại từ bài giảng, chưa chạy trong Tenant người học. Kết quả kỳ vọng: không có orphaned keys; Dimension Key unique và not null.</p>
+<h4>Bước 5 — Validate Business Measure</h4>
+<pre><code class="language-python">query = '''
+EVALUATE
+ROW(&quot;TotalRevenue&quot;, [Total Revenue])
+'''
+
+result = fabric.evaluate_dax(MODEL, query, workspace=WORKSPACE)
+display(result)
+
+actual = float(result.iloc[0, 0])
+expected = 1600.0
+assert abs(actual - expected) &lt; 0.001, f&quot;Revenue mismatch: {actual}&quot;
+print(&quot;Validation passed&quot;)</code></pre>
+<p>Message <code>Validation passed</code> chỉ xuất hiện nếu thật sự chạy và đạt; đây không phải xác nhận đã chạy thực tế.</p>
+<h4>Bước 6 — Create Deployment Pipeline</h4>
+<ol><li>Tạo <code>DP600-Lifecycle-Prod</code> trên Capacity hỗ trợ.</li><li><code>Fabric</code> → <code>Workspaces</code> → <code>Deployment pipelines</code> → <code>Create pipeline</code>.</li><li>Name: <code>DP600-Lifecycle-Pipeline</code>; dùng hai stages Development, Production.</li><li>Assign Workspace <code>DP600-Lifecycle-Dev</code> vào Development.</li><li>Assign Workspace <code>DP600-Lifecycle-Prod</code> vào Production.</li><li>Kiểm tra Items và Stage Comparison.</li></ol>
+<h4>Bước 7 — Deploy</h4>
+<p>Development Stage → chọn Semantic Model/Report cần thiết → <code>Deploy</code> → kiểm tra Operation Status → mở Production Workspace và xác nhận Model tồn tại. Vì Deployment không đảm bảo mang theo Import Data, kiểm tra Refresh/Binding khi cần. Với <code>DATATABLE</code> Sample không có SQL Credentials bên ngoài nên không chứng minh Data Source Rule.</p>
+<h4>Bước 8 — Post-deployment validation</h4>
+<pre><code class="language-python">WORKSPACE = &quot;DP600-Lifecycle-Prod&quot;
+MODEL = &quot;DP600-Lifecycle&quot;</code></pre>
+<p>Chạy lại Metadata, Relationship, Measure Assertions. Pre-deployment Validation ngăn bản lỗi; Post-deployment Validation xác nhận môi trường đích và binding hoạt động đúng.</p>
+<h4>Lỗi thường gặp</h4>
+<table><thead><tr><th>Lỗi</th><th>Hướng xử lý</th></tr></thead><tbody><tr><td>SemPy không tìm Model</td><td>Tên Model/Workspace/Publish/Permission</td></tr><tr><td>Expected Revenue sai</td><td>DAX/Filter/Data</td></tr><tr><td>Orphaned FK</td><td>Data Quality ở Source/Dimension</td></tr><tr><td>Cannot assign workspace</td><td>Admin, Capacity, Pipeline Assignment</td></tr><tr><td>Deployment success but no data</td><td>Refresh, Credentials, Binding</td></tr><tr><td>Destination differs from source</td><td>Item Pairing/Deployment Selection</td></tr></tbody></table>
+<p>Cleanup Notebook, Pipeline, Reports/Models, Workspaces được tạo riêng cho Lab khi không cần nữa; không xóa tài nguyên doanh nghiệp.</p>
+<h3>Unit 8 — Module assessment</h3>
+<p><strong>Câu 1 — Same visuals/measures/layout, different databases:</strong> A <code>.pbit</code>; B <code>.pbids</code>; C Shared Model DirectQuery. <strong>Đáp án A.</strong> PBIT chứa cấu trúc Report/Model/Parameters nhưng không nạp dữ liệu; PBIDS chỉ kết nối nguồn; Shared Model không giải quyết trực tiếp việc tạo lại toàn bộ Report Template với nguồn riêng.</p>
+<p><strong>Câu 2 — Git Conflict:</strong> A Item đổi cả Workspace và Repository từ lần sync cuối; B Item chỉ ở Workspace; C Git Provider thiếu Permission. <strong>Đáp án A.</strong> B là khác biệt/Pending Change, C là Authentication/Authorization issue.</p>
+<p><strong>Câu 3 — Kiểm tra orphaned foreign keys:</strong> A <code>list_relationship_violations()</code>; B <code>list_relationships()</code>; C <code>evaluate_measure()</code>. <strong>Đáp án A.</strong> B chỉ liệt kê relationships, C tính Measure.</p>
+<p><strong>Câu 4 — Production phải dùng live database:</strong> A Data Source Deployment Rule; B sửa thủ công mỗi lần; C hardcode model riêng từng Stage. <strong>Đáp án A</strong> với loại source hỗ trợ; các phương án còn lại tăng manual errors/maintenance.</p>
+<p><strong>Câu 5 — Lakehouse Load có thể lâu hơn 1 giờ:</strong> A Data Factory Pipeline refresh Model sau Success; B chờ cứng 2 giờ; C bật “real-time refresh” chung. <strong>Đáp án A.</strong> Dựa vào dependency completion, không dựa vào thời gian cố định.</p>
+<h3>Unit 9 — Summary</h3>
+<p>Lifecycle Semantic Models gồm Develop (Shared Models, PBIT, PBIP/TMDL, Git), Validate (XMLA, SemPy, DAX Studio, Tabular Editor, BPA), Deploy (Stages, Rules, APIs), Monitor (Refresh, Data Factory, Monitoring Hub, Lineage). Quy trình giúp KPI nhất quán, thay đổi có kiểm soát, phát hiện sớm lỗi và cung cấp nguồn tốt hơn cho Reports/AI.</p>
+<p>Đọc thêm:</p>
+<ul><li>https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview</li><li>https://learn.microsoft.com/en-us/fabric/cicd/git-integration/intro-to-git-integration</li><li>https://learn.microsoft.com/en-us/fabric/enterprise/powerbi/service-premium-connect-tools</li></ul>
+<h3>Coverage check — Module 5</h3>
+<ul><li><strong>Unit:</strong> 9/9, đi qua đủ Unit và các heading chính của Unit 2–6; Unit 1/9 là Intro/Summary.</li><li><strong>Exercise:</strong> mục tiêu SemPy Validation và Deployment Pipeline đã được trình bày thành quy trình độc lập; chưa chạy Runtime thực hoặc xác minh toàn bộ bước Hosted Exercise.</li><li><strong>Assessment:</strong> 5/5 câu, kèm lý do loại các đáp án sai.</li><li><strong>Exam focus:</strong> PBIX/PBIP/PBIT/PBIDS; TMDL/PBIR; Git Conflict; XMLA; SemPy; Deployment Rules; Refresh Orchestration; Lineage/Impact.</li><li><strong>Governance/Security:</strong> đã nêu Credentials, Workspace Roles, XMLA Permissions, Source Separation và CI/CD Approval; RLS/OLS chuyên sâu thuộc Module 4.</li><li><strong>AI/Agent:</strong> có liên hệ Shared Semantic Model và Governance; không thêm Lab Agent không nằm trong Unit chính thức.</li></ul>
+<hr>
+<h2>Tổng kết Learning Path 3</h2>
+<p><strong>Learning Path:</strong> Design and manage semantic models in Microsoft Fabric<br><strong>Chứng chỉ mục tiêu:</strong> DP-600 (Fabric Analytics Engineer Associate)<br><strong>Đã giảng trong cuộc trò chuyện:</strong> 5 Module, 42 Unit.</p>
+<table><thead><tr><th>#</th><th>Module</th><th>Unit</th><th>Trọng tâm</th></tr></thead><tbody><tr><td>1</td><td>Create DAX calculations in semantic models</td><td>9</td><td>DAX Tables, Columns, Measures, Iterators, Context</td></tr><tr><td>2</td><td>Design semantic models for scale in Microsoft Fabric</td><td>8</td><td>Storage Mode, Star Schema, Calculation Groups, Scale Settings</td></tr><tr><td>3</td><td>Optimize semantic model performance</td><td>9</td><td>Performance analyzer, DAX, Cardinality, Aggregations, Troubleshooting</td></tr><tr><td>4</td><td>Enforce semantic model security</td><td>7</td><td>RLS, OLS, Dynamic Security, Membership, Testing</td></tr><tr><td>5</td><td>Manage the semantic model development lifecycle</td><td>9</td><td>PBIP/Git, XMLA/SemPy, Deploy, Refresh, Monitoring</td></tr><tr><td></td><td><strong>Tổng</strong></td><td><strong>42</strong></td><td></td></tr></tbody></table>
+<h3>Kiến thức liên kết xuyên suốt</h3>
+<ol><li><strong>Business Logic:</strong> hiểu Row Context, Filter Context, Grain và DAX để tạo Measures đúng.</li><li><strong>Architecture:</strong> Star Schema và Storage Mode xác định nền tảng truy vấn, quản trị và Scale.</li><li><strong>Performance:</strong> đo trước khi sửa; không hy sinh KPI Correctness để tăng tốc.</li><li><strong>Security:</strong> RLS giới hạn Rows, OLS giới hạn Objects; danh tính và Workspace Permissions quyết định việc thực thi.</li><li><strong>ALM:</strong> Git quản lý phiên bản, SemPy/XMLA kiểm thử, Deployment Pipelines Promote, Monitoring quản lý Production.</li></ol>
+<h3>Bẫy Scenario cần ưu tiên ôn</h3>
+<ul><li><code>Calculated Column</code> vs <code>Measure</code>; <code>SUM</code> vs <code>SUMX</code>; <code>AVERAGEX(VALUES(...))</code> theo Grain.</li><li>Direct Lake on OneLake vs Direct Lake on SQL; không đồng nhất fallback.</li><li><code>USERELATIONSHIP</code> vs Role-playing Dimension.</li><li><code>HASONEVALUE</code> vs <code>ISINSCOPE</code>; <code>FILTER</code> vs <code>KEEPFILTERS</code>.</li><li><code>Calculation Group</code> vs <code>Aggregation Table</code> (logic reuse vs data summary optimization).</li><li>Query Scaleout vs Large Model vs XMLA vs OneLake Integration.</li><li>RLS vs OLS, Report Filters/Hide Columns không phải Security.</li><li>Multiple RLS Roles thường là Union; Admin/Member/Contributor không dùng RLS như Viewer.</li><li>Git Integration vs Deployment Pipeline; Deployment không tự copy Import Data/Credentials.</li><li><code>list_relationships</code> vs <code>list_relationship_violations</code> vs <code>evaluate_measure</code> vs <code>evaluate_dax</code>.</li><li>Scheduled Refresh theo giờ cố định vs Data Factory Dependency theo hoàn thành Upstream.</li></ul>
+<h3>Lưu ý về tình trạng hoàn thành</h3>
+<p>Bộ 5 Module/42 Unit đã được giảng theo nội dung cuộc trò chuyện. Điều này <strong>không đồng nghĩa</strong> với việc hoàn thành các Microsoft Learn Assessment trong tài khoản của người học hay chạy toàn bộ Lab trong Tenant thật. Những đoạn code dùng làm bài thực hành cần được áp dụng và kiểm tra theo Runtime, License, Storage Mode và quyền truy cập hiện hành.</p>
+<h3>Tài liệu chính thức</h3>
+<ul><li><a href="https://learn.microsoft.com/en-us/training/paths/design-manage-semantic-models-fabric/">Learning Path 3</a></li><li><a href="https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-600">DP-600 Study Guide</a></li><li><a href="https://learn.microsoft.com/en-us/training/modules/dax-power-bi-create-calculations/">Module 1 — DAX calculations</a></li><li><a href="https://learn.microsoft.com/en-us/training/modules/design-semantic-models-scale/">Module 2 — Semantic models for scale</a></li><li><a href="https://learn.microsoft.com/en-us/training/modules/optimize-semantic-model-performance/">Module 3 — Performance optimization</a></li><li><a href="https://learn.microsoft.com/en-us/training/modules/enforce-semantic-model-security/">Module 4 — Semantic model security</a></li><li><a href="https://learn.microsoft.com/en-us/training/modules/manage-semantic-model-lifecycle/">Module 5 — Semantic model lifecycle</a></li></ul>
+<hr>
+<p><em>Tài liệu hợp tuyển từ bài giảng LP3 trong cuộc trò chuyện, ngày 15/11/2026.</em></p>

@@ -1,0 +1,169 @@
+<h2>Module 4 — Enforce semantic model security</h2>
+<p><strong>Vị trí:</strong> Learning Path 3, Module 4/5 · <strong>7 Units</strong><br><strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/enforce-semantic-model-security/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading / phần nội dung chính</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Bối cảnh Security, RLS/OLS và AI</td></tr><tr><td>2</td><td>Implement row-level security</td><td>Star Schema; Roles; Dynamic UPN; Mapping Table; Static RLS; USERNAME vs UPN; DirectQuery SSO; Optimize</td></tr><tr><td>3</td><td>Apply object-level security</td><td>When OLS; Tabular Editor/TMDL; Hide tables; Hide columns; Limitations; Combine with RLS</td></tr><tr><td>4</td><td>Test security and manage roles</td><td>Desktop; Service; Membership; Entra Groups; Workspace roles; Mistakes; Trusted AI</td></tr><tr><td>5</td><td>Exercise: Implement RLS for a semantic model</td><td>Create sample model; Static/Dynamic RLS; Test; Publish; Role Membership</td></tr><tr><td>6</td><td>Module assessment</td><td>5 câu Dynamic RLS, OLS, Assignment, View as, Entra Security Groups</td></tr><tr><td>7</td><td>Summary</td><td>RLS, OLS, Validate, Security Governance</td></tr></tbody></table>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt bảo vệ dữ liệu với Report Filtering. Một Semantic Model duy nhất phục vụ North/Central/South Managers nhưng mỗi người chỉ xem vùng của mình, đồng thời Salary/PersonalAddress không được lộ cho người không thuộc HR.</p>
+<h4>Nội dung chính trong unit</h4>
+<ul><li><strong>RLS (Row-Level Security):</strong> giới hạn những hàng dữ liệu theo User/Role. Ví dụ North Manager chỉ thấy FactSales[Region] = North.</li><li><strong>OLS (Object-Level Security):</strong> giới hạn truy cập Table/Column. Ví dụ Salary Column chỉ cho HR.</li><li><strong>Report/Slicer Filter:</strong> hỗ trợ trải nghiệm phân tích; không thay thế RLS/OLS tại Semantic Model.</li></ul>
+<p>Nếu Copilot/Data Agent truy vấn Semantic Model dưới danh tính người dùng cuối và Security Context được truyền đúng, các giới hạn RLS/OLS phải được tôn trọng. Với Shared Technical Account/Service Principal, cần xem xét Effective Identity; không mặc định agent tự hiểu quyền người hỏi.</p>
+<h3>Unit 2 — Implement row-level security</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng DAX Rules, Roles và Security Mapping để lọc dữ liệu đúng người; phân biệt Static và Dynamic RLS, triển khai SSO/DirectQuery, tối ưu hiệu năng.</p>
+<h4>RLS and star schemas</h4>
+<p>Ví dụ:</p>
+<pre><code class="language-text">DimRegion(RegionKey, RegionName) [1] → [*] FactSales(RegionKey, Revenue)</code></pre>
+<p>Role trên DimRegion:</p>
+<pre><code class="language-dax">[RegionName] = &quot;North&quot;</code></pre>
+<p>Với FactSales có North: 100+200, Central:300, South:400, North Manager chỉ nhận Revenue 300 nếu Active Relationship truyền filter chính xác. Lọc Dimension nhỏ thường phù hợp hơn kiểm tra phức tạp trên từng Fact Row lớn.</p>
+<h4>Create security roles</h4>
+<p>Desktop → <code>Modeling</code> → <code>Manage roles</code> → <code>New</code> → đặt <code>North_Sales</code> → chọn DimRegion và biểu thức <code>[RegionName] = &quot;North&quot;</code> → Save. Định nghĩa Role trong Model khác với gán Role Members ở Service sau Publish.</p>
+<p><code>FALSE()</code> trên bảng trong một Role có thể chặn mọi dòng của bảng đó, nhưng không phải cách ẩn Column Metadata. Nếu một Role không định nghĩa filter, nó không tự giới hạn dữ liệu; cần cẩn trọng khi User thuộc nhiều Roles.</p>
+<h4>Dynamic security with USERPRINCIPALNAME()</h4>
+<pre><code class="language-dax">[UserUPN] = USERPRINCIPALNAME()</code></pre>
+<p>UPN là User Principal Name của danh tính đang truy vấn, thường giống email nhưng không bắt buộc trùng email chính. Dynamic RLS thay Role Per Region bằng logic định nghĩa chung và Data Mapping thay đổi được.</p>
+<h4>Security mapping table pattern</h4>
+<p>Ví dụ <code>UserRegionAccess</code>:</p>
+<table><thead><tr><th>UserUPN</th><th>RegionKey</th></tr></thead><tbody><tr><td>alice@example.com</td><td>1</td></tr><tr><td>alice@example.com</td><td>2</td></tr><tr><td>bob@example.com</td><td>3</td></tr><tr><td>carol@example.com</td><td>1</td></tr></tbody></table>
+<p>Đặt RLS Filter trên <code>DimRegion</code>:</p>
+<pre><code class="language-dax">CONTAINS(
+    UserRegionAccess,
+    UserRegionAccess[UserUPN], USERPRINCIPALNAME(),
+    UserRegionAccess[RegionKey], DimRegion[RegionKey]
+)</code></pre>
+<p>Alice thấy Regions 1 và 2. User không có Mapping trả FALSE ở mọi Region — Fail Closed. Ở thiết kế này Mapping Table được dùng như bảng tra cứu độc lập; khi triển khai Mapping qua Relationships, cần kiểm tra Security Filter Propagation, Cardinality và Both Direction.</p>
+<p><strong>Biểu thức nguy hiểm:</strong></p>
+<pre><code class="language-dax">IF(USERPRINCIPALNAME() = &quot;alice@example.com&quot;, [RegionName] = &quot;North&quot;, TRUE())</code></pre>
+<p>Mọi User khác Alice được TRUE và có thể xem dữ liệu không được phép. Không mặc định cấp toàn quyền cho danh tính không khớp.</p>
+<h4>Static RLS</h4>
+<p>Role <code>North_Sales</code>: <code>[RegionName]=&quot;North&quot;</code>; Role <code>South_Sales</code>: <code>[RegionName]=&quot;South&quot;</code>. Phù hợp ít nhóm, ít thay đổi; khó bảo trì nếu Users thường đổi Region hoặc một Manager phụ trách nhiều Region.</p>
+<h4>USERNAME vs USERPRINCIPALNAME</h4>
+<p>Desktop, <code>USERNAME()</code> có thể là <code>DOMAIN\user</code>; Service thường dùng UPN. <code>USERPRINCIPALNAME()</code> phù hợp hơn để map danh tính Microsoft Entra, nhưng trong B2B Guest có thể có biến thể <code>#EXT#</code>. Nên tạo Measure kiểm tra:</p>
+<pre><code class="language-dax">Current Identity = USERPRINCIPALNAME()</code></pre>
+<p>Kiểm tra bằng tài khoản Viewer thực, đặc biệt B2B/Cross-tenant. Không mặc định địa chỉ Email nhân sự bằng Entra UPN.</p>
+<h4>DirectQuery with SSO</h4>
+<p>DirectQuery Source có SSO có thể nhận danh tính người cuối và thực thi Source-side RLS; phụ thuộc connector, authentication và cấu hình hỗ trợ. Import không tự kế thừa Source RLS. DirectQuery không đồng nghĩa SSO được bật mặc định.</p>
+<h4>RLS performance</h4>
+<p>Ưu tiên lọc Dimensions, Relationship Paths hợp lệ, Mapping Table có Grain/Keys hợp lý; tránh Lookups phức tạp lặp trên Fact lớn. Đo bằng Performance analyzer và kiểm thử Security với dữ liệu quy mô thực tế.</p>
+<p><strong>Exam:</strong> Dynamic UPN + Mapping cho Users thay đổi quyền; <code>USERPRINCIPALNAME()</code> cho identity; Fail Closed khi không match; RLS trên Dimension cho Star Schema.</p>
+<h3>Unit 3 — Apply object-level security</h3>
+<h4>Unit này dạy gì</h4>
+<p>Bảo vệ Tables/Columns nhạy cảm, hiểu khác biệt giữa OLS và Hide in report view, công cụ cấu hình và các giới hạn.</p>
+<h4>When to use OLS</h4>
+<p>Employee(Name, Department, Salary, PersonalAddress): Sales Manager có thể xem Name/Department nhưng không xem Salary/PersonalAddress. RLS không thể ẩn một Column trên mọi hàng; dùng OLS.</p>
+<p><code>Hide in report view</code> chỉ ẩn trong Fields Pane, không phải Security Boundary. OLS <code>None</code> ngăn truy cập đối tượng và hạn chế metadata tương ứng.</p>
+<h4>Configure OLS with Tabular Editor</h4>
+<ol><li>Desktop → <code>Manage roles</code> → tạo <code>General_Manager</code>.</li><li><code>External tools</code> → <code>Tabular Editor</code>.</li><li>Mở Role/Table Permissions, chọn <code>Employee[Salary]</code>.</li><li>Đặt Metadata Permission = <code>None</code> (không Read).</li><li>Save/Publish, gán Members và Test.</li></ol>
+<p><strong>Cập nhật quan trọng:</strong> Tài liệu Microsoft mới có thêm cấu hình OLS bằng TMDL View, không chỉ Tabular Editor. Ví dụ minh họa:</p>
+<pre><code class="language-tmdl">createOrReplace
+
+    role General_Manager
+        modelPermission: read
+
+        tablePermission Employee
+            columnPermission Salary
+                metadataPermission: none</code></pre>
+<p>TMDL cần Preview/Apply/Publish và kiểm thử trong môi trường hỗ trợ.</p>
+<h4>Hide entire tables / columns</h4>
+<p>Có thể đặt <code>None</code> cho cả Payroll/SalaryBand Tables hoặc riêng Employee[Salary], Customer[NationalID], Finance[InternalCost]. Nếu Hide Table có Relationship/Measures phụ thuộc, cần kiểm tra các dependencies để tránh Visual errors.</p>
+<h4>OLS limitations</h4>
+<ul><li>OLS chủ yếu cho Tables/Columns, không phải một công tắc bảo vệ Measure độc lập.</li><li>Measure sử dụng Column bị OLS từ chối có thể không truy vấn được.</li><li>Admin/Member/Contributor có quyền chỉnh sửa thường không bị OLS/RLS giới hạn theo cách của Viewer.</li><li>Một số tính năng như Quick Insights, Smart Narrative và Excel Data Types Gallery có hạn chế với OLS.</li><li>Visual tham chiếu Column bị OLS chặn có thể hiển thị lỗi field not found.</li></ul>
+<h4>Combine OLS and RLS</h4>
+<p>North Manager: RLS = North, OLS = Salary None. HR Payroll: được cấp quyền Salary trong phạm vi nghiệp vụ. Không ghép các Role riêng biệt một cách tùy tiện: Analysis Services có giới hạn về phối hợp RLS từ một Role và OLS từ Role khác. Thiết kế Role phù hợp và kiểm thử quyền hợp nhất bằng danh tính thực.</p>
+<p><strong>Exam:</strong> restrict rows → RLS; sensitive columns/tables → OLS; hide field for usability ≠ security; OLS <code>Read</code> vs <code>None</code>.</p>
+<h3>Unit 4 — Test security and manage roles</h3>
+<h4>Unit này dạy gì</h4>
+<p>Kiểm thử Roles trên Desktop và Service; gán thành viên; phân biệt Model Security và Workspace Permissions; tránh lỗi nhiều Role và Guests.</p>
+<h4>Test on Desktop</h4>
+<p><code>Modeling</code> → <code>View as</code> → chọn Role → <code>Other user</code> để thử Dynamic RLS → kiểm tra Table, KPI Cards, Total Row, Slicers, Drillthrough và Measures → <code>Stop viewing</code>.</p>
+<p>Ví dụ Mapping: Alice = North, Bob = South, Carol = North+Central. Kỳ vọng tất cả Visual và Measures đều có Data Scope đúng, không chỉ một Table.</p>
+<h4>Test in Service</h4>
+<p><code>Workspace</code> → <code>Semantic Model</code> → <code>More options (...)</code> → <code>Security</code> → <code>Test as role</code>. Chú ý <code>Test as role</code> không hoàn toàn mô phỏng authentication của Guest, Embedded/SSO. Nên kiểm thử End-to-end bằng Viewer thực.</p>
+<h4>Assign role membership</h4>
+<p>Role Definitions được Publish từ Model; Role Membership cấu hình trong Semantic Model Security của Service. Có thể gán Individuals, Microsoft Entra Security Groups và các nhóm Mail/Distribution được hỗ trợ. Microsoft 365 Groups không hỗ trợ trực tiếp cho RLS Role Membership. Tài liệu chuyên sâu hiện tại không cho thêm Service Principal trực tiếp như người dùng cuối vào RLS Role; Embedded cần cơ chế Effective Identity phù hợp.</p>
+<h4>Entra Groups for scalable management</h4>
+<table><thead><tr><th>Group</th><th>Role</th></tr></thead><tbody><tr><td>PBI-Sales-North</td><td>North_Sales</td></tr><tr><td>PBI-Sales-South</td><td>South_Sales</td></tr><tr><td>PBI-Sales-Central</td><td>Central_Sales</td></tr></tbody></table>
+<p>Với 200 users/5 Regions, quản lý Groups hiệu quả hơn gán từng User. Phân biệt <strong>Static RLS + Group Membership</strong> (logic cố định, Members đổi) với <strong>Dynamic RLS + Mapping Table</strong> (một Role, quyền từng User từ dữ liệu). B2B Guests cần kiểm tra UPN/Group Membership thực tế.</p>
+<h4>Workspace Roles and RLS</h4>
+<table><thead><tr><th>Workspace Role</th><th>RLS áp dụng như với người chỉ đọc?</th></tr></thead><tbody><tr><td>Admin</td><td>Không</td></tr><tr><td>Member</td><td>Không</td></tr><tr><td>Contributor</td><td>Không</td></tr><tr><td>Viewer</td><td>Có, khi RLS được cấu hình/áp dụng phù hợp</td></tr></tbody></table>
+<p>Ngoài Workspace Roles còn có Read, Build, Write Permissions. Viewer + Build vẫn có thể chịu RLS; không cấp Contributor chỉ để User tự tạo Report nếu quyền Build đáp ứng nhu cầu.</p>
+<h4>Multiple roles and common mistakes</h4>
+<p>RLS Roles được hợp nhất theo <strong>union</strong>: nếu Alice thuộc North Role và South Role, có thể xem cả North+South. Không mặc định Role hạn chế hơn luôn thắng.</p>
+<p>Kiểm tra: Role Membership, Filter Direction, Broken Relationships, Both Security Filter, kết quả sau Publish, Identity và Permissions.</p>
+<p><strong>Cập nhật đối chiếu:</strong> có nơi trong Module Assessment gợi ý Viewer không thuộc Role thấy toàn bộ dữ liệu; tài liệu RLS chuyên sâu hiện tại nói Reader không thuộc RLS Role trong Model có RLS thường không nhận dữ liệu hoặc không truy vấn được. Nếu ai đó thấy toàn bộ dữ liệu, điều tra quyền chỉnh sửa/Workspace Role và Role không hạn chế, không quy kết chỉ vì thiếu Membership.</p>
+<h4>Trusted AI</h4>
+<p>Copilot/Data Agents phải truy vấn dưới danh tính/Effective Identity phù hợp để RLS/OLS được áp dụng. Nếu App dùng Technical Account/Service Principal, không tự suy ra quyền của người cuối.</p>
+<p><strong>Exam:</strong> <code>View as</code> trước Publish, <code>Test as role</code> sau Publish, Entra Security Groups cho Membership, Workspace Admin/Member/Contributor bypass Reader RLS semantics, Multiple Roles = Union.</p>
+<h3>Unit 5 — Exercise: Implement RLS for a semantic model</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo Sample Model, Static RLS, Dynamic RLS, kiểm thử và Publish. Đây là quy trình thực hành độc lập theo mục tiêu Unit; không phải Hosted Lab transcript.</p>
+<h4>Chuẩn bị</h4>
+<p>Power BI Desktop Windows, Workspace/License phù hợp nếu Publish. Không cần Capacity trả phí cho bước Desktop local. Sample data tạo bằng DAX, không cần Accounts example.com thực.</p>
+<h4>Bước 1 — Tạo dữ liệu</h4>
+<pre><code class="language-dax">DimRegion =
+DATATABLE(
+    &quot;RegionKey&quot;, INTEGER,
+    &quot;RegionName&quot;, STRING,
+    {{1,&quot;North&quot;},{2,&quot;Central&quot;},{3,&quot;South&quot;}}
+)</code></pre>
+<pre><code class="language-dax">FactSales =
+DATATABLE(
+    &quot;SalesID&quot;, INTEGER,
+    &quot;RegionKey&quot;, INTEGER,
+    &quot;Revenue&quot;, INTEGER,
+    {
+        {101,1,100}, {102,1,200},
+        {103,2,150}, {104,2,250},
+        {105,3,400}, {106,3,500}
+    }
+)</code></pre>
+<pre><code class="language-dax">UserRegionAccess =
+DATATABLE(
+    &quot;UserUPN&quot;, STRING,
+    &quot;RegionKey&quot;, INTEGER,
+    {
+        {&quot;alice@example.com&quot;,1},
+        {&quot;alice@example.com&quot;,2},
+        {&quot;bob@example.com&quot;,3},
+        {&quot;carol@example.com&quot;,1}
+    }
+)</code></pre>
+<p>Tạo Active Single Direction Relationship: DimRegion[RegionKey] (1) → FactSales[RegionKey] (*). Để UserRegionAccess độc lập vì RLS sử dụng <code>CONTAINS</code> để tra Mapping.</p>
+<pre><code class="language-dax">Total Revenue = SUM(FactSales[Revenue])
+Current User = USERPRINCIPALNAME()</code></pre>
+<p>Kỳ vọng North = 300, Central = 400, South = 900, Total = 1600.</p>
+<h4>Bước 2 — Static RLS</h4>
+<p><code>Modeling</code> → <code>Manage roles</code> → <code>New</code> → <code>North_Only</code> → DimRegion:</p>
+<pre><code class="language-dax">[RegionName] = &quot;North&quot;</code></pre>
+<p><code>View as</code> → <code>North_Only</code>: Table chỉ có North, Total = 300.</p>
+<h4>Bước 3 — Dynamic RLS</h4>
+<p><code>Manage roles</code> → <code>New</code> → <code>Dynamic_Region</code> → DimRegion:</p>
+<pre><code class="language-dax">CONTAINS(
+    UserRegionAccess,
+    UserRegionAccess[UserUPN], USERPRINCIPALNAME(),
+    UserRegionAccess[RegionKey], DimRegion[RegionKey]
+)</code></pre>
+<p><code>View as</code> → chỉ chọn <code>Dynamic_Region</code> → <code>Other user</code> để thử UPN. Không chọn đồng thời hai Roles khi muốn đo riêng Dynamic Role.</p>
+<table><thead><tr><th>User</th><th>Expected Regions</th><th>Revenue</th></tr></thead><tbody><tr><td>alice@example.com</td><td>North, Central</td><td>700</td></tr><tr><td>bob@example.com</td><td>South</td><td>900</td></tr><tr><td>carol@example.com</td><td>North</td><td>300</td></tr><tr><td>david@example.com</td><td>Không mapping</td><td>Không có dữ liệu</td></tr></tbody></table>
+<p>Card SUM có thể hiển thị BLANK với User không có mapping. Kiểm tra cả <code>Current User</code> và nguồn UPN trong Service.</p>
+<h4>Bước 4 — Publish và Role Membership</h4>
+<p><code>Home</code> → <code>Publish</code> → Workspace phù hợp → <code>Semantic Model</code> → <code>Security</code> → <code>Dynamic_Region</code> → thêm User hoặc Entra Security Group hợp lệ. User cần cả quyền truy cập Report/Semantic Model phù hợp. Gán Role không thay thế Report Access.</p>
+<h4>Bước 5 — End-to-end verification</h4>
+<ul><li>Test Static North = 300.</li><li>Dynamic Alice = 700, Bob = 900, Carol = 300.</li><li>User không mapping = không có dữ liệu.</li><li>Viewer thực được áp dụng RLS, Contributor không phải cơ chế hạn chế dữ liệu như Viewer.</li><li>Test Multi-role Union và Identity thật khi cần.</li></ul>
+<h4>Lỗi và Cleanup</h4>
+<table><thead><tr><th>Lỗi</th><th>Kiểm tra</th></tr></thead><tbody><tr><td>RLS không lọc Fact</td><td>Active Relationship và Filter Direction</td></tr><tr><td>User không thấy dữ liệu</td><td>UPN, Mapping, Membership, Read Access</td></tr><tr><td>User thấy quá nhiều</td><td>Multiple Roles, Workspace Roles, quyền chỉnh sửa</td></tr><tr><td>Desktop đúng, Service sai</td><td>UPN B2B, Real Identity, SSO, Mapping Refresh</td></tr><tr><td>Không thấy Security</td><td>Role Definition/Workspace Permissions</td></tr><tr><td>Không Publish</td><td>License, Workspace, Capacity</td></tr></tbody></table>
+<p>Lưu PBIX <code>DP600-Module4-RLS.pbix</code>; sau bài xóa Items và Membership thử nghiệm nếu không còn dùng, không xóa nhóm Entra dùng chung.</p>
+<h3>Unit 6 — Module assessment</h3>
+<p><strong>Câu 1 — Managers đổi Region, không muốn sửa Model:</strong> A Static RLS per Region; B Dynamic RLS + UPN + Mapping; C OLS. <strong>Đáp án B.</strong> Mapping cập nhật theo quyền, OLS chỉ bảo vệ Tables/Columns.</p>
+<p><strong>Câu 2 — Manager xem EmployeeName nhưng không Salary:</strong> A RLS; B OLS Salary; C xóa Salary tạo model riêng. <strong>Đáp án B.</strong> RLS lọc dòng; OLS bảo vệ Column. Model riêng có thể là phương án kiến trúc nhưng không cần cho yêu cầu này.</p>
+<p><strong>Câu 3 — Viewer thấy toàn dữ liệu, đề gợi ý chưa gán RLS Role:</strong> A DAX Syntax; B Missing Role Assignment; C DirectQuery. <strong>Đáp án Module hướng tới B</strong>, nhấn mạnh phải quản lý Membership. <strong>Nhưng cần hiệu chỉnh khi áp dụng Production:</strong> tài liệu RLS chuyên sâu hiện tại không ủng hộ kết luận một Viewer không có RLS Role sẽ tự thấy toàn dữ liệu; cần kiểm tra các quyền chỉnh sửa, Role không hạn chế và User identity.</p>
+<p><strong>Câu 4 — Test RLS trước Publish:</strong> A <code>Modeling</code> → <code>View as</code>; B Publish rồi chờ Users; C chỉ xem Formula. <strong>Đáp án A.</strong> View as kiểm tra Role và Filter Propagation trực tiếp trong Desktop.</p>
+<p><strong>Câu 5 — 200 Salespersons thuộc 5 Regions:</strong> A add users one-by-one; B Microsoft Entra Security Groups; C Microsoft 365 Groups. <strong>Đáp án B.</strong> Entra Security Groups phù hợp quản trị Role Membership; Microsoft 365 Groups không được hỗ trợ trực tiếp.</p>
+<h3>Unit 7 — Summary</h3>
+<p>RLS lọc dòng; OLS bảo vệ Tables/Columns; Dynamic RLS + UPN + Mapping cho quyền theo User; View as/Test as role và kiểm thử Viewer thật xác nhận Security. Workspace Role và quyền chỉnh sửa quan trọng; khi dùng Copilot/Data Agents phải bảo đảm danh tính được truyền đúng.</p>
+<p>Đọc thêm:</p>
+<ul><li>https://learn.microsoft.com/en-us/fabric/security/service-admin-row-level-security</li><li>https://learn.microsoft.com/en-us/fabric/security/service-admin-object-level-security</li></ul>
+<h3>Coverage check — Module 4</h3>
+<ul><li><strong>Unit:</strong> 7/7, gồm 8 heading Unit 2, 6 heading Unit 3, 7 heading Unit 4, Exercise, 5 câu Assessment và Summary.</li><li><strong>Exercise:</strong> dữ liệu DAX và Role Tests cụ thể, nhưng chưa chạy trong Fabric Tenant của người học; không phải Hosted Exercise transcript.</li><li><strong>Assessment:</strong> 5/5, có ghi rõ bất nhất quan trọng của câu 3 với tài liệu RLS hiện tại.</li><li><strong>Exam focus:</strong> Static/Dynamic RLS; USERPRINCIPALNAME; OLS; Union of Roles; View as; Entra Groups; Workspace Permission; B2B/SSO.</li><li><strong>AI/Security:</strong> đề cập rõ Trusted AI, Effective Identity, RLS/OLS. Không có Lab Power Automate/Dataverse bắt buộc trong Module.</li></ul>
+<hr>

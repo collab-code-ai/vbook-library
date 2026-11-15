@@ -1,0 +1,221 @@
+<h2>Module 3 — Optimize semantic model performance</h2>
+<p><strong>Vị trí:</strong> Learning Path 3, Module 3/5 · <strong>9 Units</strong><br><strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/optimize-semantic-model-performance/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading / phần nội dung chính</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Bottlenecks; Measure → Diagnose → Fix → Verify</td></tr><tr><td>2</td><td>Use Performance analyzer to diagnose issues</td><td>Open; Record; Timing metrics; Export DAX; DAX Studio; Interpret; Measurement best practices</td></tr><tr><td>3</td><td>Optimize DAX calculations</td><td>Variables; FILTER vs KEEPFILTERS; Iterators; Expensive patterns; Upstream; AI experience</td></tr><tr><td>4</td><td>Reduce cardinality for better performance</td><td>Cardinality; High-cardinality columns; Reduction strategies; Trade-offs</td></tr><tr><td>5</td><td>Implement aggregations</td><td>When help; User-defined; Automatic; Monitor; Direct Lake</td></tr><tr><td>6</td><td>Troubleshoot common performance issues</td><td>Systematic workflow; BPA; Visuals; Relationships; Filter Context; DirectQuery; DAX Studio; Checklist</td></tr><tr><td>7</td><td>Exercise: Diagnose and fix a slow report</td><td>Performance baseline; Optimize DAX; Cardinality; Retest</td></tr><tr><td>8</td><td>Knowledge check</td><td>5 câu Performance, Variables, Cardinality, Aggregations, Visuals</td></tr><tr><td>9</td><td>Summary</td><td>Tổng kết; Learn more</td></tr></tbody></table>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Chẩn đoán trước khi tối ưu. Một Report 30 giây có thể chậm do DAX, Data Model, Visual Rendering, DirectQuery Source, Network hoặc concurrency. Tăng Capacity mà chưa xác định bottleneck có thể lãng phí.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Ví dụ FactSales 50 triệu dòng, 20 Reports, 200 users, AI Consumers bị timeout. Trước tiên cần đo từng Visual, phân loại thời gian. Chu trình bắt buộc:</p>
+<pre><code class="language-text">Measure baseline -&gt; Diagnose root cause -&gt; Apply targeted fix -&gt; Measure again</code></pre>
+<p>Sau tối ưu phải bảo đảm kết quả nghiệp vụ không đổi trong cùng Filter Context. DAX nhanh hơn nhưng KPI sai không phải cải thiện thành công.</p>
+<h3>Unit 2 — Use Performance analyzer to diagnose issues</h3>
+<h4>Unit này dạy gì</h4>
+<p>Dùng Performance analyzer của Power BI Desktop/Service để tách thành phần thời gian của từng Visual và lấy DAX Query để phân tích.</p>
+<h4>Open Performance analyzer</h4>
+<p>Desktop: <code>Report view</code> → <code>Optimize</code> → <code>Performance analyzer</code>. Service: <code>Edit</code> → <code>View</code> → <code>Performance analyzer</code> (tùy UI/quyền). Công cụ đo chứ không tự tối ưu.</p>
+<h4>Record and measure performance</h4>
+<ol><li>Mở Report và Performance analyzer.</li><li>Chọn <code>Start recording</code>.</li><li>Chọn <code>Refresh visuals</code> hoặc thực hiện Filter/Slicer thường dùng.</li><li>Mở rộng từng Visual, ghi Timing Breakdown.</li><li><code>Stop</code>; Export JSON khi cần lưu baseline.</li><li>Phân biệt Initial Page Load và User Interaction.</li></ol>
+<p>Nên so sánh cold-cache và warm-cache khi cần, kiểm soát tải môi trường và đo lặp nhiều lần.</p>
+<h4>Timing metrics</h4>
+<table><thead><tr><th>Metric</th><th>Diễn giải</th><th>Hướng điều tra</th></tr></thead><tbody><tr><td>DAX query</td><td>Truy vấn Semantic Model</td><td>Measure, Filter, Relationships, Model</td></tr><tr><td>Visual display</td><td>Render Visual</td><td>Data points, Visual type, UI</td></tr><tr><td>Direct query</td><td>Thực thi truy vấn Source trong DirectQuery</td><td>SQL, source, network</td></tr><tr><td>Other</td><td>Scheduling, waiting, overhead</td><td>Concurrency, page design</td></tr><tr><td>Evaluated parameters</td><td>Field Parameters được đánh giá</td><td>Parameter complexity</td></tr></tbody></table>
+<p>Ví dụ Product Detail: DAX 4500 ms, Display 300 ms; KPI Card: DAX 50 ms, Display 30 ms. Nên tập trung điều tra DAX Query của Product Detail trước, không bắt đầu bằng đổi màu Visual.</p>
+<h4>Export and analyze DAX queries</h4>
+<p><code>Performance analyzer</code> → Expand slow visual → <code>Copy query</code> hoặc <code>Run in DAX query view</code> khi UI hỗ trợ. Truy vấn do Visual sinh ra có thể gồm <code>SUMMARIZECOLUMNS</code>, <code>TOPN</code>, Filters, <code>VAR</code>, <code>ORDER BY</code> và nhiều Measures. Nó khác Measure Definition.</p>
+<pre><code class="language-dax">EVALUATE
+SUMMARIZECOLUMNS(
+    DimProduct[Category],
+    &quot;Revenue&quot;, [Revenue]
+)</code></pre>
+<p>Ở Service, có thể cần Copy Query rồi mở DAX Query View riêng thay vì chạy trực tiếp.</p>
+<h4>DAX Studio diagnostics</h4>
+<ul><li><strong>Server Timings:</strong> Formula Engine (FE) vs Storage Engine (SE).</li><li><strong>Query Plan:</strong> Logical và Physical Plan.</li><li><strong>Model Metrics / VertiPaq Analyzer:</strong> kích thước bảng/cột, cardinality, compression, relationships.</li></ul>
+<p>FE thường xử lý DAX logic/điều phối; SE thực hiện truy xuất/tổng hợp dữ liệu hiệu quả theo storage. Phải xem số đo, không kết luận bottleneck chỉ từ tên hàm.</p>
+<h4>Interpret results và best practices</h4>
+<p>Ưu tiên Visual ảnh hưởng người dùng nhiều nhất, thay đổi từng yếu tố, dùng dataset tương đương Production, ghi Before/After và kiểm tra correctness. Ví dụ từ 4500 ms DAX xuống 1300 ms là một tín hiệu tốt nếu trong điều kiện tương đương; nhưng không được coi là kết quả đã đo trên môi trường thực của người học.</p>
+<p><strong>Exam:</strong> <em>slowest visual</em> → Performance analyzer; <em>FE/SE timings</em> → DAX Studio; <em>display dominates</em> → Visual Optimization; <em>DAX dominates</em> → DAX/Model.</p>
+<h3>Unit 3 — Optimize DAX calculations</h3>
+<h4>Unit này dạy gì</h4>
+<p>Viết lại DAX để giảm biểu thức lặp, lọc hợp lý và kiểm soát tính toán theo Grain mà không đổi kết quả nghiệp vụ.</p>
+<h4>Variables to eliminate repeated calculations</h4>
+<p>Trước:</p>
+<pre><code class="language-dax">Sales YoY Growth % =
+DIVIDE(
+    [Sales] - CALCULATE([Sales], PARALLELPERIOD('Date'[Date], -12, MONTH)),
+    CALCULATE([Sales], PARALLELPERIOD('Date'[Date], -12, MONTH))
+)</code></pre>
+<p>Sau:</p>
+<pre><code class="language-dax">Sales YoY Growth % =
+VAR SalesPriorYear =
+    CALCULATE([Sales], PARALLELPERIOD('Date'[Date], -12, MONTH))
+RETURN DIVIDE([Sales] - SalesPriorYear, SalesPriorYear)</code></pre>
+<p><code>VAR</code> tăng readability và có thể giảm tính lại kết quả trong cùng Context. Engine có thể tự tối ưu biểu thức lặp; không cam kết luôn nhanh hơn. <code>VAR</code> được đánh giá theo Context tại nơi định nghĩa nên di chuyển biến sai chỗ có thể đổi nghĩa.</p>
+<h4>FILTER vs KEEPFILTERS</h4>
+<pre><code class="language-dax">-- Filter a whole fact table
+High Value Sales =
+CALCULATE([Total Sales], FILTER(Sales, Sales[Amount] &gt; 1000))
+
+-- Column Boolean filter
+High Value Sales =
+CALCULATE([Total Sales], Sales[Amount] &gt; 1000)</code></pre>
+<p>Boolean Column Filter đơn giản thường dễ tối ưu hơn duyệt toàn Fact, nhưng phải giữ đúng semantics. Khi đang có Filter trên cùng Column, <code>CALCULATE</code> có thể ghi đè filter hiện tại; <code>KEEPFILTERS</code> lấy phép giao:</p>
+<pre><code class="language-dax">Online Sales =
+CALCULATE([Total Sales], KEEPFILTERS(Sales[Channel] = &quot;Online&quot;))</code></pre>
+<p>Nếu slicer đang chọn Retail, Retail ∩ Online thường không có dòng. Không <code>KEEPFILTERS</code> có thể thay Retail bằng Online. KEEPFILTERS là công cụ điều chỉnh Filter Context, không phải “FILTER nhanh hơn” một cách tuyệt đối.</p>
+<h4>Iterator costs</h4>
+<pre><code class="language-dax">Revenue = SUMX(Sales, Sales[Quantity] * Sales[UnitPrice])
+-- Nếu đã có cột LineTotal đúng nghiệp vụ:
+Revenue = SUM(Sales[LineTotal])</code></pre>
+<p>Iterator hữu ích khi cần biểu thức row-by-row. Cột tính sẵn có thể giúp phép tổng hợp đơn giản nhưng làm tăng Storage/ETL; chỉ chọn sau khi đo và xét Grain.</p>
+<h4>Avoid expensive patterns</h4>
+<pre><code class="language-dax">-- Pattern cần đánh giá
+Large Orders = COUNTROWS(FILTER(Sales, Sales[Amount] &gt; 1000))
+
+-- Viết lại điều kiện lọc cột
+Large Orders = CALCULATE(COUNTROWS(Sales), Sales[Amount] &gt; 1000)</code></pre>
+<p>Nested CALCULATE không luôn xấu, nhưng Filter Context nhiều tầng khó kiểm tra. Dùng <code>VAR</code>, tách Measures và loại logic không cần. Tránh <code>REMOVEFILTERS()</code> quá rộng nếu chỉ muốn bỏ Region:</p>
+<pre><code class="language-dax">Pct of Region Total =
+DIVIDE(
+    [Total Sales],
+    CALCULATE([Total Sales], REMOVEFILTERS(DimRegion))
+)</code></pre>
+<p><code>REMOVEFILTERS()</code> không tham số và <code>REMOVEFILTERS(DimRegion)</code> khác nghĩa; không được tối ưu bằng cách làm KPI sai.</p>
+<h4>Move calculations to data layer</h4>
+<p>Biến đổi tĩnh như FullName, Date Part hoặc Normalized Code có thể làm ở SQL View, Power Query, Dataflow Gen2 hoặc Notebook. Có thể giảm tính toán trong Model, nhưng vẫn tốn ETL, Storage và có thể ảnh hưởng Query Folding. KPI động theo Slicer thường là Measure.</p>
+<h4>AI experience</h4>
+<p>Copilot/Fabric Data Agents có thể tạo DAX Query trên cùng Semantic Model. Measure đắt đỏ gây timeout; Measure không rõ nghĩa gây kết quả sai. Cần tối ưu cả Performance, Description và Correctness.</p>
+<p><strong>Exam:</strong> repeated expression → VAR; large FILTER table → Boolean Column Filter khi tương đương; preserve filter → KEEPFILTERS; static transformation → upstream; dynamic KPI → Measure.</p>
+<h3>Unit 4 — Reduce cardinality for better performance</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giảm lượng dữ liệu phải lưu, nén và xử lý bằng cách quản lý số giá trị phân biệt của Column.</p>
+<h4>Cardinality</h4>
+<p>Cardinality = số distinct values trong cột. Ví dụ 1M rows: Region = 5, Category = 20, ProductKey = 10.000, TransactionID ≈ 1M, EventTimestamp ≈ 999.850. High-cardinality Text/GUID/Timestamp thường khó nén hơn cột ít giá trị; kiểu dữ liệu và thứ tự dòng cũng ảnh hưởng.</p>
+<h4>Identify high-cardinality columns</h4>
+<ul><li>GUID/Surrogate Keys không sử dụng.</li><li>Timestamp có mili giây nhưng chỉ báo cáo ngày.</li><li>Free-text descriptions dài.</li><li>Invoice/Order/Session IDs gần như duy nhất.</li></ul>
+<p>Không xóa một khóa chỉ vì không thấy trên Visual: nó có thể cần cho Relationship, RLS, Drillthrough hoặc downstream dependencies.</p>
+<h4>Reduction strategies</h4>
+<ol><li><strong>Vertical filtering:</strong> loại những cột không dùng; giảm size và các field gây nhiễu.</li><li><strong>Reduce time precision:</strong> DateTime milliseconds → Date nếu không cần giờ/phút. Nếu giữ cả cột gốc và cột Date mới thì có thể chưa giảm dung lượng.</li><li><strong>Bucket continuous values:</strong> Age Band, Amount Band; giữ cột gốc nếu Measure cần giá trị chính xác.</li><li><strong>Horizontal filtering:</strong> loại rows không cần thiết (ví dụ lịch sử 2010–2022 không phục vụ báo cáo), có cân nhắc compliance/history.</li><li><strong>Optimize data types:</strong> Integer Keys, Date, Currency/Decimal hợp lý. Không làm mất leading zeros có nghĩa, tràn kiểu hoặc tạo duplicate keys.</li></ol>
+<h4>Trade-offs</h4>
+<table><thead><tr><th>Thay đổi</th><th>Lợi ích</th><th>Rủi ro</th></tr></thead><tbody><tr><td>Timestamp → Date</td><td>Ít distinct values</td><td>Mất phân tích theo giờ</td></tr><tr><td>Age → Age Band</td><td>Dễ nhóm</td><td>Mất tuổi chính xác</td></tr><tr><td>Remove TransactionID</td><td>Model nhẹ</td><td>Mất Drillthrough</td></tr><tr><td>Filter historical rows</td><td>Ít dữ liệu</td><td>Mất phân tích nhiều năm</td></tr></tbody></table>
+<p><strong>Exam:</strong> <em>high precision timestamp, daily report only</em> → Date; <em>unused GUID</em> → remove; <em>unnecessary columns</em> → Vertical; <em>unnecessary rows</em> → Horizontal.</p>
+<h3>Unit 5 — Implement aggregations</h3>
+<h4>Unit này dạy gì</h4>
+<p>Sử dụng Summary Tables để phục vụ các truy vấn phổ biến ở Grain cao hơn Detail Fact.</p>
+<h4>When aggregations help</h4>
+<p>FactSales 500M rows nhưng Executive Dashboard chỉ cần Revenue by Month/Region. <code>AggSalesMonthRegion</code> có vài nghìn dòng và có thể trả lời những truy vấn phù hợp. Nó không tự trả lời chính xác Revenue by Customer nếu không có CustomerKey.</p>
+<h4>User-defined aggregations</h4>
+<p>Tạo bảng bằng SQL/Power Query/Warehouse:</p>
+<pre><code class="language-sql">SELECT MonthKey, RegionKey,
+       SUM(SalesAmount) AS TotalSales,
+       COUNT(*) AS SalesRows
+FROM FactSales
+GROUP BY MonthKey, RegionKey;</code></pre>
+<p>Dùng <code>Manage aggregations</code> để mapping Column/Function từ Aggregation tới Detail Table:</p>
+<table><thead><tr><th>Agg Column</th><th>Function</th><th>Detail</th></tr></thead><tbody><tr><td>TotalSales</td><td>Sum</td><td>FactSales[SalesAmount]</td></tr><tr><td>SalesRows</td><td>Count table rows</td><td>FactSales</td></tr><tr><td>MonthKey</td><td>GroupBy</td><td>FactSales[MonthKey]</td></tr><tr><td>RegionKey</td><td>GroupBy</td><td>FactSales[RegionKey]</td></tr></tbody></table>
+<p>Các Mapping Functions gồm Sum, Count, Count table rows, Min, Max, GroupBy khi được hỗ trợ. Ẩn Agg Table để người dùng query qua Fact/Measures. Kiến trúc phổ biến: Agg Import, Detail DirectQuery, Dimensions Import/Dual. Engine chỉ dùng Agg khi truy vấn và mapping đáp ứng quy tắc. RLS phải nhất quán giữa đường Aggregate và Detail.</p>
+<h4>Automatic aggregations</h4>
+<p>Automatic Aggregations sử dụng Query Patterns/Logs để huấn luyện và quản lý Aggregation Cache khi Capacity, nguồn DirectQuery và cấu hình được hỗ trợ. Có thể bật Training/Schedule trong Semantic Model Settings. Khác User-defined: system chọn cache theo workload, Developer không mapping thủ công mọi bảng. Không phải mọi SKU/Connector hỗ trợ.</p>
+<h4>Monitor effectiveness</h4>
+<p>Kiểm tra Training/Refresh History, Azure Log Analytics khi đã cấu hình, Aggregation Hit Rate, tỷ lệ quay về Detail Query, thời gian before/after, memory/cache và mapping/grain. Nếu báo cáo vẫn chậm, đừng mặc định Aggregation đã được dùng.</p>
+<h4>Direct Lake</h4>
+<p>Direct Lake đã tối ưu truy cập Delta Columns. Chỉ xây Delta Summary Table khi benchmark chứng minh cần thiết. Một Delta Summary Table không tự tương đương User-defined Aggregation Mapping của Import/DirectQuery.</p>
+<p><strong>Exam:</strong> <em>billions of DirectQuery fact rows + repeated summaries</em> → Aggregations; <em>well-known query grain</em> → User-defined; <em>patterns vary and supported capacity</em> → Automatic; <em>slow despite aggregation</em> → mapping/grain/hits.</p>
+<h3>Unit 6 — Troubleshoot common performance issues</h3>
+<h4>Unit này dạy gì</h4>
+<p>Xây quy trình điều tra hệ thống: Visual → DAX → Relationships/Model → Source → Test lại.</p>
+<h4>Systematic workflow</h4>
+<pre><code class="language-text">Slow Report
+   ↓
+Performance analyzer
+   ├── DAX query → DAX Query View / DAX Studio / Model
+   ├── Visual display → data points / visual complexity
+   ├── DirectQuery → source execution / folding / network
+   └── Other → scheduling / concurrency
+   ↓
+Targeted fix → Compare baseline → Verify business results</code></pre>
+<h4>Best Practice Analyzer (BPA)</h4>
+<p>BPA kiểm tra rules về Performance, DAX Expressions, Error Prevention, Maintenance và Formatting. Có thể sử dụng Tabular Editor/BPA hoặc Fabric Sample Notebooks; Model Memory Analyzer đánh giá Memory by Tables/Columns/Partitions/Relationships. Cảnh báo là gợi ý chứ không phải mọi rule đều phải được sửa.</p>
+<h4>Complex visuals</h4>
+<ul><li>Too many Measures trong một Table có thể tăng công việc của engine.</li><li>Scatter Chart với quá nhiều Points tăng Rendering.</li><li>30 Visuals trên một trang tạo nhiều Queries/overhead. Microsoft Learn gợi ý khoảng tám Visuals như một guideline chứ không là hard limit.</li><li>Cân nhắc Top N, Drillthrough, aggregation, chia trang.</li></ul>
+<h4>Relationships and filter context</h4>
+<p>Kiểm tra Ambiguous Paths, Both Direction không cần thiết, Large Bridge Tables, High-cardinality Relationship Keys. <code>REMOVEFILTERS()</code> quá rộng có thể làm sai Percentage of Total. <code>USERELATIONSHIP</code> phù hợp cho quan hệ khác được định nghĩa, trong giới hạn security.</p>
+<h4>DirectQuery</h4>
+<p>Kiểm tra Source SQL/Execution Plan, Index/Partition, Query Folding, Network Round Trips, Gateway và Source Capacity. Dùng Summary Import/Aggregations nếu kiến trúc phù hợp.</p>
+<h4>Checklist</h4>
+<ol><li>Đo từng Visual và ghi Baseline.</li><li>Phân loại DAX, Visual Display, DirectQuery, Other.</li><li>Copy DAX Query và kiểm tra Server Timings/Query Plan.</li><li>Rà soát DAX/Filter Context.</li><li>Rà soát Cardinality, Column Size, Data Types.</li><li>Kiểm tra Relationships, số Visual/Data Points.</li><li>Nếu DirectQuery: Source Query/Folding/Network.</li><li>Sửa một yếu tố, đo lại và đối chiếu KPI.</li></ol>
+<h3>Unit 7 — Exercise: Diagnose and fix a slow report</h3>
+<h4>Unit này dạy gì</h4>
+<p>Đo Report, tối ưu Measure và Cardinality, kiểm tra tốc độ và tính đúng đắn. Bài dưới là <strong>Lab tự biên soạn theo mục tiêu công khai</strong>, không phải log chạy thật hoặc bản sao Hosted Lab.</p>
+<h4>Chuẩn bị</h4>
+<p>Power BI Desktop Windows; không cần Capacity trả phí nếu làm local. Nếu dùng Fabric Workspace, cần quyền và License phù hợp. Dataset 120.000 dòng minh họa, không đảm bảo benchmark thấy khác biệt lớn.</p>
+<h4>Tạo Power Query Sales</h4>
+<p><code>Power BI Desktop</code> → <code>Transform data</code> → <code>New Source</code> → <code>Blank Query</code> → <code>Advanced Editor</code>:</p>
+<pre><code class="language-powerquery">let
+    Source = Table.FromList(List.Numbers(1, 120000), Splitter.SplitByNothing(), {&quot;RowId&quot;}),
+    Typed = Table.TransformColumnTypes(Source, {{&quot;RowId&quot;, Int64.Type}}),
+    AddOrderDate = Table.AddColumn(
+        Typed, &quot;OrderDate&quot;,
+        each Date.AddDays(#date(2025, 1, 1), Number.Mod([RowId], 730)),
+        type date
+    ),
+    AddTimestamp = Table.AddColumn(
+        AddOrderDate, &quot;EventTimestamp&quot;,
+        each #datetime(2025, 1, 1, 0, 0, 0) + #duration(0, 0, 0, [RowId] / 1000),
+        type datetime
+    ),
+    AddRegion = Table.AddColumn(
+        AddTimestamp, &quot;Region&quot;, each if Number.Mod([RowId], 2) = 0 then &quot;North&quot; else &quot;South&quot;, type text
+    ),
+    AddProduct = Table.AddColumn(
+        AddRegion, &quot;ProductKey&quot;, each Number.Mod([RowId], 200) + 1, Int64.Type
+    ),
+    AddQuantity = Table.AddColumn(
+        AddProduct, &quot;Quantity&quot;, each Number.Mod([RowId], 5) + 1, Int64.Type
+    ),
+    AddPrice = Table.AddColumn(
+        AddQuantity, &quot;UnitPrice&quot;, each 10 + Number.Mod([RowId], 40), Currency.Type
+    ),
+    AddAmount = Table.AddColumn(
+        AddPrice, &quot;Amount&quot;, each [Quantity] * [UnitPrice], Currency.Type
+    )
+in
+    AddAmount</code></pre>
+<p><code>Close &amp; Apply</code>. Tạo Date Table, Relationship và Measure:</p>
+<pre><code class="language-dax">Date = CALENDAR(DATE(2025, 1, 1), DATE(2026, 12, 31))
+YearMonth = FORMAT('Date'[Date], &quot;yyyy-MM&quot;)
+Revenue = SUM(Sales[Amount])</code></pre>
+<p><code>Date[Date] (1)</code> → <code>Sales[OrderDate] (*)</code>.</p>
+<h4>Before vs After DAX</h4>
+<pre><code class="language-dax">High Value Revenue Before =
+SUMX(FILTER(Sales, Sales[Amount] &gt; 100), Sales[Amount])
+
+High Value Revenue After =
+CALCULATE([Revenue], KEEPFILTERS(Sales[Amount] &gt; 100))</code></pre>
+<p>Và YoY:</p>
+<pre><code class="language-dax">YoY Growth Before =
+DIVIDE(
+    [Revenue] - CALCULATE([Revenue], DATEADD('Date'[Date], -1, YEAR)),
+    CALCULATE([Revenue], DATEADD('Date'[Date], -1, YEAR))
+)
+
+YoY Growth After =
+VAR RevenuePriorYear =
+    CALCULATE([Revenue], DATEADD('Date'[Date], -1, YEAR))
+RETURN DIVIDE([Revenue] - RevenuePriorYear, RevenuePriorYear)</code></pre>
+<h4>Đo và xác nhận</h4>
+<ol><li>Tạo Table <code>Date[YearMonth]</code>, <code>Sales[Region]</code>, hai Before Measures.</li><li><code>Optimize</code> → <code>Performance analyzer</code> → <code>Start recording</code> → <code>Refresh visuals</code>.</li><li>Ghi DAX Query, Display, Total và lưu query.</li><li>Đo lại với hai After Measures trong điều kiện tương đương; tránh benchmark hai Visual đồng thời.</li><li>Kiểm tra kết quả Before và After bằng nhau ở mọi Filter Context dùng thử.</li><li>Dùng Model Metrics tìm Column <code>EventTimestamp</code> có Cardinality cao; nếu không dùng, Remove trong Power Query → <code>Close &amp; Apply</code> → đo Model Size lại.</li><li>Lưu PBIX, ví dụ <code>DP600-Performance-Lab.pbix</code>.</li></ol>
+<h4>Lỗi và interpretation</h4>
+<ul><li>YoY trả BLANK: có thể không có dữ liệu năm trước.</li><li>Before/After gần bằng nhau: engine đã tối ưu hoặc dataset quá nhỏ/cache ảnh hưởng.</li><li>Remove Timestamp giảm Model Size nhưng chưa chắc DAX Query Time giảm đáng kể.</li><li>Nếu kết quả KPI khác nhau: phải sửa semantics, không được coi là tối ưu thành công.</li></ul>
+<h3>Unit 8 — Knowledge check</h3>
+<p><strong>Câu 1 — DAX query 4200 ms, display 150 ms:</strong> A Rendering; B Measures/DAX Filter Patterns; C Network. <strong>Đáp án B.</strong> DAX chiếm phần lớn; A/C không là ưu tiên theo số đo.</p>
+<p><strong>Câu 2 — CALCULATE lặp ba lần:</strong> A thay tất cả Iterators; B lưu bằng VAR; C Power Query Column. <strong>Đáp án B.</strong> Tái sử dụng biểu thức trong Context; không tự chuyển KPI động thành cột tĩnh.</p>
+<p><strong>Câu 3 — Timestamp mili giây nhưng chỉ phân tích ngày:</strong> A xóa không thay; B đổi Text; C giảm precision thành Date trong Power Query. <strong>Đáp án C.</strong> Giữ thông tin ngày và giảm distinct values.</p>
+<p><strong>Câu 4 — DirectQuery Fact hàng tỷ dòng, summary Month/Region:</strong> A Aggregations; B thêm FILTER; C chuyển mọi Dimension DirectQuery. <strong>Đáp án A.</strong> Summary Grain phù hợp giảm truy vấn Detail.</p>
+<p><strong>Câu 5 — 25 Visuals, mỗi DAX dưới 200 ms, trang tải hơn 10 giây:</strong> A mọi Measure đều sai; B Visual Count và overhead; C chắc chắn do Cardinality. <strong>Đáp án B.</strong> Tập trung Page Design, Rendering, Concurrency.</p>
+<h3>Unit 9 — Summary</h3>
+<p>Tối ưu Semantic Model cần: Performance analyzer để nhận diện bottleneck; DAX Optimization giữ đúng Filter Context; Cardinality Reduction; Aggregations theo Grain phù hợp; hệ thống Troubleshooting đo → chẩn đoán → sửa → đo lại. Tất cả áp dụng cả cho truy vấn được AI Consumers sinh ra.</p>
+<p>Đọc thêm:</p>
+<ul><li>https://learn.microsoft.com/en-us/power-bi/desktop-performance-analyzer</li><li>https://learn.microsoft.com/en-us/power-bi/guidance/import-modeling-data-reduction</li></ul>
+<h3>Coverage check — Module 3</h3>
+<ul><li><strong>Unit:</strong> 9/9, đủ 7 heading Unit 2; 6 heading Unit 3; 4 heading Unit 4; 5 heading Unit 5; 8 heading Unit 6; Exercise, Assessment, Summary.</li><li><strong>Lab:</strong> có dữ liệu mẫu, Measuring, Optimization, Cardinality, Validation; không phải bài chạy đã xác nhận trong Power BI thực tế.</li><li><strong>Assessment:</strong> 5/5 câu và tất cả các lựa chọn.</li><li><strong>Exam focus:</strong> DAX Query vs Display vs DirectQuery; VAR; FILTER/KEEPFILTERS; Cardinality; Aggregations; BPA; DirectQuery troubleshooting.</li><li><strong>Security/licensing:</strong> chỉ đề cập trong ngữ cảnh RLS Aggregations và yêu cầu tools; chuyên sâu bảo mật ở Module 4.</li></ul>
+<hr>

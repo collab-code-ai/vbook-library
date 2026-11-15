@@ -1,0 +1,173 @@
+<h2>Module 2 — Design semantic models for scale in Microsoft Fabric</h2>
+<p><strong>Vị trí:</strong> Learning Path 3, Module 2/5 · <strong>8 Units</strong><br><strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/design-semantic-models-scale/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading / phần chính</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Bối cảnh Semantic Model quy mô lớn</td></tr><tr><td>2</td><td>Choose a storage mode</td><td>Direct Lake; connection options; fallback; Import; DirectQuery; Composite; selection</td></tr><tr><td>3</td><td>Design star schema for semantic models</td><td>Fact–Dimension; relationships; cardinality; filter direction; referential integrity; inactive; snowflake; cross-source</td></tr><tr><td>4</td><td>Design scalable calculations</td><td>Calculation groups; SELECTEDMEASURE; dynamic format strings; Variables; Naming; Iterators; defensive DAX; Aggregations</td></tr><tr><td>5</td><td>Configure settings for scale</td><td>Large semantic model; XMLA; Query scaleout; Direct Lake fallback; OneLake integration</td></tr><tr><td>6</td><td>Exercise: Design a semantic model for scale in Fabric</td><td>Direct Lake; Star Schema; Relationships; Calculation Group; Scale Settings; Verification</td></tr><tr><td>7</td><td>Module assessment</td><td>5 câu về Storage Mode, Calculation Group, XMLA, Referential Integrity, Aggregations</td></tr><tr><td>8</td><td>Summary</td><td>Bốn nhóm quyết định thiết kế</td></tr></tbody></table>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>Một mô hình có vài triệu dòng và mười người dùng có thể chạy tốt, nhưng không mặc nhiên phù hợp khi tăng lên hàng trăm triệu dòng, hàng trăm người dùng, nhiều Reports và AI Consumers. Scalability bao gồm kích thước dữ liệu, hiệu năng truy vấn, concurrency, Data Freshness, Governance, Security và Maintenance.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Bốn quyết định nền tảng:</p>
+<ol><li><strong>Storage Mode:</strong> dữ liệu được nạp vào Model hay truy vấn từ Source/OneLake?</li><li><strong>Star Schema:</strong> Fact, Dimension, Cardinality và đường truyền Filter có rõ ràng?</li><li><strong>Scalable Calculations:</strong> có tái sử dụng Calculation Groups, tối ưu DAX và Aggregations khi cần?</li><li><strong>Settings for Scale:</strong> Capacity, Large Model, XMLA, Query Scaleout và OneLake Integration.</li></ol>
+<p>AI Consumers cũng phụ thuộc vào cùng Business Measures và Relationships. Một Model có hai đường lọc mơ hồ có thể khiến DAX hoặc truy vấn do AI sinh ra không phản ánh đúng nghiệp vụ.</p>
+<h3>Unit 2 — Choose a storage mode</h3>
+<h4>Unit này dạy gì</h4>
+<p>Phân biệt Direct Lake, Import, DirectQuery và Composite Models theo cơ chế dữ liệu, độ mới, hiệu năng và giới hạn.</p>
+<h4>Direct Lake</h4>
+<p>Direct Lake đọc các cột từ Delta Tables trong OneLake và nạp dữ liệu theo nhu cầu vào bộ nhớ. Nó không phải Import toàn bộ Fact vào Model, cũng không gửi SQL tới nguồn cho mọi tương tác như DirectQuery.</p>
+<p>Ví dụ Lakehouse có FactSales 100 triệu dòng ở định dạng Delta/Parquet. Direct Lake có thể phục vụ truy vấn trực tiếp trên dữ liệu nguồn trong OneLake và tận dụng columnar analytics.</p>
+<p><strong>Ưu điểm:</strong> ít sao chép dữ liệu, phù hợp Fabric-native, độ mới cao khi Delta/Model framing được cập nhật. <strong>Giới hạn:</strong> phụ thuộc khả năng hỗ trợ, Capacity và nguồn Delta; không phải streaming real-time tuyệt đối.</p>
+<h4>Connection options và fallback</h4>
+<ul><li><strong>Direct Lake on OneLake:</strong> kết nối Delta Tables trực tiếp; không có cùng cơ chế DirectQuery fallback.</li><li><strong>Direct Lake on SQL:</strong> đi qua SQL analytics endpoint; trong một số tình huống có thể fallback DirectQuery khi truy vấn không thực thi được bằng Direct Lake.</li></ul>
+<p>Cấu hình fallback của Direct Lake on SQL thường có <code>Automatic</code>, <code>DirectLakeOnly</code>, <code>DirectQueryOnly</code>; cần kiểm tra loại kết nối thật trước khi chọn. Fallback có thể làm truy vấn chậm hơn và thay đổi cách xử lý những chức năng hỗ trợ.</p>
+<h4>Import</h4>
+<p>Dữ liệu được sao chép/nén vào Semantic Model; truy vấn thường nhanh và hỗ trợ nhiều tính năng. Cần Refresh để cập nhật. Chi phí: kích thước mô hình, memory, refresh windows. Thích hợp khi dữ liệu vừa sức Capacity và refresh theo lịch đáp ứng nghiệp vụ. Giảm dung lượng bằng giảm cột, hàng, kiểu dữ liệu và cân nhắc incremental refresh.</p>
+<h4>DirectQuery</h4>
+<p>Truy vấn được gửi đến Source khi người dùng tương tác. Phù hợp khi data must remain at source hoặc cần cập nhật từ nguồn theo yêu cầu. Hiệu năng phụ thuộc Source, SQL, Network, concurrency, query folding và caching; không tự bảo đảm real-time hay latency thấp.</p>
+<h4>Composite</h4>
+<p>Kết hợp nhiều Storage Modes/sources. Ví dụ FactSales ở Direct Lake, DimProduct ở Import và ExchangeRate từ DirectQuery. Cần xem xét Cross-source Relationships, Filter Propagation, consistency và chi phí truy vấn.</p>
+<table><thead><tr><th>Mode</th><th>Dữ liệu ở đâu?</th><th>Độ mới</th><th>Khi chọn</th></tr></thead><tbody><tr><td>Direct Lake</td><td>Delta trong OneLake, nạp cột khi cần</td><td>Gần thời gian thực sau cập nhật/framing</td><td>Fabric Lakehouse/Warehouse phù hợp</td></tr><tr><td>Import</td><td>Bản sao nén trong Model</td><td>Theo Refresh</td><td>Truy vấn nhanh, nguồn có thể tải định kỳ</td></tr><tr><td>DirectQuery</td><td>Source bên ngoài/đích hỗ trợ</td><td>Theo truy vấn và Source/Caching</td><td>Data must remain at source</td></tr><tr><td>Composite</td><td>Kết hợp các modes</td><td>Theo từng bảng</td><td>Nhiều nguồn với yêu cầu khác nhau</td></tr></tbody></table>
+<p><strong>Exam:</strong> <em>Delta in OneLake</em> → Direct Lake; <em>scheduled refresh acceptable</em> → Import; <em>always query source</em> → DirectQuery; <em>mixed storage</em> → Composite. Không áp dụng kết luận fallback giống nhau cho Direct Lake on OneLake và on SQL.</p>
+<h3>Unit 3 — Design star schema for semantic models</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thiết kế Star Schema hỗ trợ Filter Propagation đúng, tốc độ và khả năng phân tích đa chiều.</p>
+<h4>Star schema</h4>
+<ul><li>Fact Table chứa sự kiện đo lường: <code>FactSales(SalesID, ProductKey, CustomerKey, DateKey, Revenue)</code>.</li><li>Dimension Table chứa thuộc tính: <code>DimProduct</code>, <code>DimCustomer</code>, <code>DimDate</code>, <code>DimRegion</code>.</li><li>Quan hệ điển hình: <code>DimProduct[ProductKey] (1)</code> → <code>FactSales[ProductKey] (*)</code>.</li></ul>
+<p>Filter trên Category ở DimProduct truyền sang FactSales và thay đổi kết quả Measure <code>[Revenue]</code> theo Filter Context. Không cần tạo một Measure riêng cho mỗi Category.</p>
+<h4>Storage Mode and relationships</h4>
+<p>Direct Lake hoạt động trên Delta Data, cần chú ý Dimension Keys duy nhất và Referential Integrity. Composite/cross-source relationships có thể có chi phí và hạn chế riêng. Một Relationship Key dạng Integer thường gọn hơn GUID/Text dài khi phù hợp; không thay khóa bằng cách gây trùng hoặc sai nghiệp vụ.</p>
+<h4>Cardinality, filtering và bridge</h4>
+<p>One-to-many là quan hệ cốt lõi của Star Schema. Với many-to-many về mặt nghiệp vụ, Bridge Table là lựa chọn phổ biến:</p>
+<pre><code class="language-text">DimCustomer (1) -&gt; (*) BridgeCustomerAccount (*) &lt;- (1) DimAccount</code></pre>
+<p>Bridge không tự giải quyết việc đếm trùng hoặc truyền Filter đúng; cần thiết kế riêng Cross-filter Direction và đường liên kết tới Fact.</p>
+<p><strong>Single Direction</strong> từ Dimension đến Fact là mặc định nên ưu tiên. <strong>Both</strong> chỉ chọn khi thực sự cần; có thể tạo Ambiguous Paths, chi phí truy vấn và khó dự đoán Security Filters.</p>
+<h4>Referential integrity</h4>
+<p>Fact có ProductKey = 3 nhưng DimProduct chỉ có keys 1,2 → Orphaned Foreign Key. Với những quan hệ và Mode hỗ trợ, <code>Assume referential integrity</code> có thể cho phép INNER JOIN thay vì OUTER JOIN. Phải chắc chắn Foreign Keys hợp lệ và không null; bật khi dữ liệu sai có thể làm mất Fact Rows trong kết quả.</p>
+<h4>Inactive relationships</h4>
+<p>FactSales có OrderDate và ShipDate với cùng DimDate. Một Relationship Active, một Relationship Inactive:</p>
+<pre><code class="language-dax">Shipped Revenue =
+CALCULATE(
+    [Revenue],
+    USERELATIONSHIP(FactSales[ShipDate], DimDate[Date])
+)</code></pre>
+<p>Dùng Role-playing Date Dimension khi cần hai bộ lọc ngày độc lập; dùng <code>USERELATIONSHIP</code> khi Measure cần một quan hệ khác. Chú ý giới hạn của RLS khi dùng USERELATIONSHIP.</p>
+<h4>Snowflake vs Star</h4>
+<p>Snowflake: Category → Subcategory → Product → Sales. Có thể Flatten thuộc tính Category/Subcategory vào DimProduct để ít Relationships, Filter Path dễ hiểu và Report Author/AI dùng thuận tiện hơn. Nhưng giữ Snowflake có thể hợp lý nếu nhiều Facts dùng cùng Subdimension hoặc có yêu cầu Governance/Reuse cụ thể.</p>
+<h4>Cross-source</h4>
+<p>Composite có thể kết hợp Lakehouse Fact, Warehouse Dimensions, dữ liệu ngoài Fabric. Kiểm tra Filter Passing, Query Plan, Storage Groups và độ mới nguồn; không giả định Cross-source Join có hiệu năng bằng cùng một engine.</p>
+<p><strong>Exam:</strong> Unique Dimension Key → one-to-many; unmatched Fact Keys → Referential Integrity; ambiguous paths → kiểm tra Both; normalized dimensions → cân nhắc Flatten; OrderDate/ShipDate → Inactive Relationship/Role-playing Dimension.</p>
+<h3>Unit 4 — Design scalable calculations</h3>
+<h4>Unit này dạy gì</h4>
+<p>Giảm Measure Duplication, viết DAX dễ bảo trì và áp dụng Aggregations ở đúng Grain.</p>
+<h4>Calculation groups</h4>
+<p>Nếu có 50 Base Measures và cần YTD/QTD/MTD, tạo riêng có thể phát sinh thêm 150 Measures. Calculation Group định nghĩa các Calculation Items dùng chung:</p>
+<pre><code class="language-dax">-- YTD calculation item
+CALCULATE(SELECTEDMEASURE(), DATESYTD(DimDate[Date]))
+
+-- QTD calculation item
+CALCULATE(SELECTEDMEASURE(), DATESQTD(DimDate[Date]))
+
+-- MTD calculation item
+CALCULATE(SELECTEDMEASURE(), DATESMTD(DimDate[Date]))</code></pre>
+<p><code>SELECTEDMEASURE()</code> đại diện Measure đang được áp dụng Calculation Item. Calculation Group yêu cầu Explicit Measures và <code>Discourage implicit measures</code>. Không áp dụng mọi Calculation Item mù quáng: ví dụ YTD cho một tỷ lệ có thể không đúng ngữ nghĩa nếu chỉ cộng dồn các tỷ lệ.</p>
+<h4>Dynamic format strings</h4>
+<p>Calculation Expression tính giá trị, Format String Expression định dạng (ví dụ <code>&quot;0.0%&quot;</code>). Không nên dùng <code>FORMAT()</code> để biến mọi kết quả số thành Text khi còn cần tổng hợp hoặc so sánh số.</p>
+<h4>Variables, naming và iterators</h4>
+<pre><code class="language-dax">Profit Margin =
+VAR TotalRevenue = SUM(FactSales[Revenue])
+VAR TotalCost = SUM(FactSales[Cost])
+RETURN DIVIDE(TotalRevenue - TotalCost, TotalRevenue)</code></pre>
+<p><code>VAR</code> giúp đặt tên phép tính trung gian, giảm lặp và có thể có lợi hiệu năng; nhưng được đánh giá trong Context nơi khai báo. Dùng tên dễ hiểu (<code>Profit Margin</code>, <code>Revenue Previous Year</code>); Description phục vụ self-service và AI. <code>SUM</code> trên một cột đã có thường gọn hơn <code>SUMX</code> nếu không có biểu thức row-by-row cần thiết.</p>
+<h4>Defensive DAX</h4>
+<ul><li><code>ISBLANK</code>: kiểm tra BLANK.</li><li><code>HASONEVALUE</code>: kiểm tra đúng một giá trị phân biệt trong Filter Context.</li><li><code>ISINSCOPE</code>: kiểm tra cột là một cấp grouping của truy vấn; không đồng nghĩa <code>HASONEVALUE</code>.</li></ul>
+<pre><code class="language-dax">Customer Revenue =
+IF(HASONEVALUE(DimCustomer[CustomerKey]), [Revenue], BLANK())</code></pre>
+<h4>Aggregations</h4>
+<p>Nếu FactSales có 150 triệu dòng nhưng Report chủ yếu xem Month–Region, có thể chuẩn bị bảng nhỏ:</p>
+<table><thead><tr><th>YearMonth</th><th>RegionKey</th><th>Revenue</th></tr></thead><tbody><tr><td>202601</td><td>North</td><td>15000000</td></tr><tr><td>202601</td><td>South</td><td>12000000</td></tr></tbody></table>
+<p>Bảng tổng hợp chỉ trả lời chính xác những truy vấn có Grain/Dimensions phù hợp. Import/DirectQuery có cơ chế User-defined Aggregation Mapping được hỗ trợ; một Delta Summary Table trên Direct Lake không tự đồng nghĩa với mapping/hit của User-defined Aggregations.</p>
+<p><strong>Exam:</strong> many Measures × same time logic → Calculation Group; repeated expression → VAR; fact large and reports summary → Aggregation; percentage format → Dynamic Format String.</p>
+<h3>Unit 5 — Configure settings for scale</h3>
+<h4>Unit này dạy gì</h4>
+<p>Cấu hình những khả năng quản lý và truy vấn của Semantic Model trên Capacity phù hợp.</p>
+<h4>Large semantic model storage format</h4>
+<p>Giúp Import Model tăng vượt giới hạn PBIX Upload 10 GB khi xử lý/refresh ở Service, tùy Capacity và các giới hạn áp dụng. Không làm mất giới hạn Upload PBIX từ Desktop và không đồng nghĩa Unlimited Storage. Direct Lake tự sử dụng định dạng phù hợp.</p>
+<h4>XMLA endpoint</h4>
+<p>XMLA cho DAX Studio, Tabular Editor, SSMS, ALM Toolkit và công cụ CI/CD kết nối Semantic Model. Read-only đọc/truy vấn; Read/write cho sửa đổi khi Capacity và Permission hỗ trợ. Điều kiện thực tế bao gồm Capacity Settings, Tenant Settings, User Permissions và Storage Format thích hợp. Large Model Format được Microsoft khuyến nghị cho nhiều XMLA write workflows nhưng không phải điều kiện duy nhất.</p>
+<h4>Query scaleout</h4>
+<p>Phân phối truy vấn đọc qua các Read Replicas khi loại Capacity hỗ trợ, giảm tải khi nhiều users đồng thời. Cần kiểm tra điều kiện Large Model và khả năng đồng bộ các replicas; không phải cơ chế trực tiếp tăng kích thước dữ liệu hay sửa một DAX Measure chậm.</p>
+<h4>Direct Lake fallback configuration</h4>
+<p>Direct Lake on SQL có thể cấu hình <code>Automatic</code>, <code>DirectLakeOnly</code>, <code>DirectQueryOnly</code>; Direct Lake on OneLake không có cùng fallback. <code>DirectLakeOnly</code> có thể khiến truy vấn unsupported bị lỗi thay vì chuyển sang DirectQuery.</p>
+<h4>OneLake integration</h4>
+<p>OneLake Integration for Semantic Models xuất dữ liệu của Import Tables thành Delta trong OneLake để workload khác đọc. Không xuất toàn bộ Measures, Calculation Groups, DirectQuery Tables hoặc Semantic Logic tương đương. Khác hướng với Direct Lake (đọc Delta từ OneLake). Direct Lake-only không cần xuất lại các Delta nguồn theo cơ chế này.</p>
+<table><thead><tr><th>Yêu cầu</th><th>Công cụ/Setting</th></tr></thead><tbody><tr><td>Large Import Model</td><td>Large semantic model storage format</td></tr><tr><td>Chỉnh sửa Model từ Tabular Editor</td><td>XMLA Read/write + quyền phù hợp</td></tr><tr><td>Many concurrent report users</td><td>Query scaleout</td></tr><tr><td>Ngăn fallback khi hỗ trợ</td><td>DirectLakeOnly</td></tr><tr><td>Export Import data to Delta</td><td>OneLake integration</td></tr></tbody></table>
+<h3>Unit 6 — Exercise: Design a semantic model for scale in Fabric</h3>
+<h4>Unit này dạy gì</h4>
+<p>Thực hành Direct Lake, Star Schema, Relationships, Calculation Group và Scale Settings. <strong>Lưu ý:</strong> bài dưới đây là bài thực hành độc lập biên soạn theo mục tiêu công khai, không phải transcript click-by-click của Hosted Lab.</p>
+<h4>Chuẩn bị</h4>
+<ul><li>Fabric-enabled Workspace trên Capacity/Trial hợp lệ; quyền Contributor/Member/Admin phù hợp.</li><li>Lakehouse, Notebook, Semantic Model; Power BI Desktop phù hợp nếu cần chỉnh Calculation Groups.</li><li>Không tự tạo Capacity trả phí; dữ liệu mẫu rất nhỏ để kiểm tra logic, không phải benchmark scale thực tế.</li></ul>
+<h4>Bước 1 — Tạo Lakehouse và Notebook</h4>
+<p><code>Fabric</code> → <code>Workspace</code> → <code>New item</code> → <code>Lakehouse</code> (<code>DP600_Scale_LH</code>) → <code>New item</code> → <code>Notebook</code>; attach Default Lakehouse.</p>
+<h4>Bước 2 — Tạo Delta Tables</h4>
+<pre><code class="language-python">from pyspark.sql import functions as F
+
+spark.createDataFrame(
+    [(1, &quot;Product A&quot;), (2, &quot;Product B&quot;)],
+    [&quot;ProductKey&quot;, &quot;ProductName&quot;]
+).write.format(&quot;delta&quot;).mode(&quot;overwrite&quot;).saveAsTable(&quot;DimProduct&quot;)
+
+spark.createDataFrame(
+    [(10, &quot;North&quot;), (20, &quot;South&quot;)],
+    [&quot;RegionKey&quot;, &quot;RegionName&quot;]
+).write.format(&quot;delta&quot;).mode(&quot;overwrite&quot;).saveAsTable(&quot;DimRegion&quot;)
+
+spark.range(365).select(
+    F.date_add(F.to_date(F.lit(&quot;2026-01-01&quot;)), F.col(&quot;id&quot;).cast(&quot;int&quot;)).alias(&quot;Date&quot;)
+).write.format(&quot;delta&quot;).mode(&quot;overwrite&quot;).saveAsTable(&quot;DimDate&quot;)
+
+sales = [
+    (1, &quot;2026-01-05&quot;, 1, 10, 2, 100),
+    (2, &quot;2026-01-12&quot;, 2, 10, 1, 250),
+    (3, &quot;2026-02-09&quot;, 1, 20, 3, 100),
+    (4, &quot;2026-03-10&quot;, 2, 20, 2, 250),
+    (5, &quot;2026-03-20&quot;, 1, 10, 4, 100),
+    (6, &quot;2026-04-02&quot;, 2, 10, 1, 250),
+]
+
+df = spark.createDataFrame(
+    sales, [&quot;SalesID&quot;, &quot;SalesDate&quot;, &quot;ProductKey&quot;, &quot;RegionKey&quot;, &quot;Quantity&quot;, &quot;UnitPrice&quot;]
+).withColumn(&quot;SalesDate&quot;, F.to_date(&quot;SalesDate&quot;))
+
+df.write.format(&quot;delta&quot;).mode(&quot;overwrite&quot;).saveAsTable(&quot;FactSales&quot;)</code></pre>
+<p>Mong đợi: DimDate 365, DimProduct 2, DimRegion 2, FactSales 6 dòng.</p>
+<h4>Bước 3 — New Direct Lake Semantic Model</h4>
+<p>Lakehouse → <code>New semantic model</code> → chọn bốn bảng → <code>Confirm</code> → <code>Open data model</code>. Ưu tiên Direct Lake on OneLake nếu có lựa chọn và không có yêu cầu SQL Security riêng. Sau 05/09/2025, không nên mặc định Lakehouse mới tự có Default Semantic Model; tạo Semantic Model riêng.</p>
+<h4>Bước 4 — Star Schema</h4>
+<table><thead><tr><th>From</th><th>To</th><th>Cardinality</th><th>Direction</th></tr></thead><tbody><tr><td>DimDate[Date]</td><td>FactSales[SalesDate]</td><td>1:*</td><td>Single</td></tr><tr><td>DimProduct[ProductKey]</td><td>FactSales[ProductKey]</td><td>1:*</td><td>Single</td></tr><tr><td>DimRegion[RegionKey]</td><td>FactSales[RegionKey]</td><td>1:*</td><td>Single</td></tr></tbody></table>
+<pre><code class="language-dax">Revenue = SUMX(FactSales, FactSales[Quantity] * FactSales[UnitPrice])
+Units Sold = SUM(FactSales[Quantity])
+Orders = COUNTROWS(FactSales)</code></pre>
+<p>Kết quả: Revenue = 1900, Units Sold = 13, Orders = 6; North = 1100, South = 800.</p>
+<h4>Bước 5 — Calculation Group</h4>
+<p>Tạo <code>Time Intelligence</code> với Calculation Items:</p>
+<pre><code class="language-dax">-- YTD
+CALCULATE(SELECTEDMEASURE(), DATESYTD(DimDate[Date]))
+-- QTD
+CALCULATE(SELECTEDMEASURE(), DATESQTD(DimDate[Date]))
+-- MTD
+CALCULATE(SELECTEDMEASURE(), DATESMTD(DimDate[Date]))</code></pre>
+<p>Đánh dấu DimDate phù hợp, sử dụng Explicit Measures, bảo đảm <code>Discourage implicit measures</code>. Kiểm tra trong Matrix: March Revenue 900; March QTD/YTD 1650; April MTD/QTD 250 và April YTD 1900 (theo đúng Date Filter Context của các visual tương ứng).</p>
+<h4>Bước 6 — Scale Settings</h4>
+<p>Kiểm tra trạng thái Large Model, XMLA, Query Scaleout và OneLake Integration theo loại model/capacity. Với Direct Lake on OneLake, không áp dụng cơ chế DirectQuery fallback của Direct Lake on SQL. OneLake Integration chỉ xuất những bảng Import được hỗ trợ; không ép xuất các Direct Lake Tables nguồn.</p>
+<h4>Bước 7 — Verify và Cleanup</h4>
+<p>Xác nhận Storage Mode, Active Relationships, DAX Results, Calculation Group và quyền. Những lỗi thường gặp: không thấy New Semantic Model do Capacity/Permission, không thấy Delta Tables do Notebook/Lakehouse, Relationship Keys sai kiểu/unique, Time Intelligence thiếu Date Table. Xóa tài nguyên Lab nếu không còn dùng và không có dependency khác.</p>
+<h3>Unit 7 — Module assessment</h3>
+<p><strong>Câu 1 — Storage Mode cho Lakehouse:</strong> A Import; B Direct Lake; C DirectQuery. <strong>Đáp án B.</strong> Direct Lake phù hợp Delta Tables trong OneLake. Import cần copy/refresh; DirectQuery thêm phụ thuộc SQL Source Query cho tình huống Fabric-native này.</p>
+<p><strong>Câu 2 — 60 Base Measures cần YTD/QTD/MTD:</strong> A Calculation Group với <code>SELECTEDMEASURE()</code>; B DAX Variables; C Aggregation Tables. <strong>Đáp án A.</strong> Variables không chia sẻ Calculation Items qua nhiều Measures; Aggregation phục vụ tổng hợp dữ liệu/hiệu năng.</p>
+<p><strong>Câu 3 — XMLA Read/write và External Tools:</strong> A Large Semantic Model Storage Format; B OneLake Integration; C Query Scaleout. <strong>Đáp án Microsoft Learn A.</strong> Tuy nhiên, trên Production còn cần Capacity/Tenant Settings và Permissions; Large Format không là điều kiện duy nhất. B xuất Delta, C tăng read concurrency.</p>
+<p><strong>Câu 4 — Assume Referential Integrity:</strong> A INNER JOIN thay LEFT OUTER JOIN; B bỏ Relationship Evaluation bằng cache; C tạo Index tự động. <strong>Đáp án A.</strong> Chỉ bật khi Source Keys toàn vẹn để không mất dữ liệu.</p>
+<p><strong>Câu 5 — Fact 150M rows, chủ yếu phân tích tháng/vùng:</strong> A Aggregation Tables; B Calculation Groups; C Bi-directional filtering. <strong>Đáp án A.</strong> Aggregation đúng Grain giảm lượng dữ liệu cần truy vấn; B tái sử dụng logic, C có thể tăng phức tạp.</p>
+<h3>Unit 8 — Summary</h3>
+<p>Thiết kế mô hình lớn cần bốn quyết định: Storage Mode theo nguồn/độ mới; Star Schema rõ ràng; Scalable Calculations gồm Calculation Groups và Aggregations; Scale Settings gồm Large Model, XMLA, Query Scaleout, Fallback và OneLake Integration. Các thành phần cùng quyết định độ tin cậy cho Reports và AI Consumers.</p>
+<h3>Coverage check — Module 2</h3>
+<ul><li><strong>Unit:</strong> 8/8; đã đi qua toàn bộ headings chính nhận diện ở Structure check.</li><li><strong>Exercise:</strong> bao gồm sáu nhóm nhiệm vụ, có code Delta, Modeling và kiểm tra; không khẳng định đã chạy Fabric/Hosted Lab.</li><li><strong>Assessment:</strong> 5/5 câu giải thích đúng/sai; lưu ý riêng về điều kiện XMLA, Direct Lake Fallback và Aggregation Mapping.</li><li><strong>Exam focus:</strong> Direct Lake vs Import vs DirectQuery vs Composite; Referential Integrity; Calculation Groups; Aggregations; Query Scaleout; XMLA.</li><li><strong>Giới hạn:</strong> các click-by-click của Hosted Lab không được xác minh đầy đủ; Licensing/SKU thay đổi theo môi trường.</li></ul>
+<hr>

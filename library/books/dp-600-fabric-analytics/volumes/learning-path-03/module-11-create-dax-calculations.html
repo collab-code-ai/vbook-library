@@ -1,0 +1,179 @@
+<h2>DP-600 — Learning Path 3: Design and manage semantic models in Microsoft Fabric</h2>
+<p><strong>Tài liệu tổng hợp bài giảng trong cuộc trò chuyện</strong><br><strong>Ngôn ngữ:</strong> Tiếng Việt; giữ tên sản phẩm, API, DAX, UI và exam keywords bằng tiếng Anh.<br><strong>Phạm vi:</strong> 5 Module · 42 Unit · bài giảng, ví dụ, Lab, đáp án có giải thích và Coverage check.<br><strong>Mốc đối chiếu trong các bài giảng:</strong> 15/11/2026.<br><strong>Nguồn chương trình:</strong> https://learn.microsoft.com/en-us/training/paths/design-manage-semantic-models-fabric/</p>
+<blockquote><p><strong>Ghi chú biên tập:</strong> Đây là bản hợp tuyển thống nhất nội dung đã giảng trong cuộc trò chuyện, được định dạng lại thành Markdown và chuẩn hóa tiêu đề/bảng/code để thuận tiện lưu trữ. Đây không phải bản export nguyên văn từng tin nhắn. Các Lab độc lập do bài giảng biên soạn được đánh dấu riêng; chúng không phải log đã chạy và không thay thế toàn bộ thao tác của Hosted Exercise khi phần đó không công khai.</p></blockquote>
+<h3>Mục lục</h3>
+<ol><li>Module 1 — Create DAX calculations in semantic models</li><li>Module 2 — Design semantic models for scale in Microsoft Fabric</li><li>Module 3 — Optimize semantic model performance</li><li>Module 4 — Enforce semantic model security</li><li>Module 5 — Manage the semantic model development lifecycle</li><li>Tổng kết Learning Path 3</li></ol>
+<hr>
+<h2>Module 1 — Create DAX calculations in semantic models</h2>
+<p><strong>Vị trí:</strong> Learning Path 3, Module 1/5 · <strong>9 Units</strong><br><strong>Microsoft Learn:</strong> https://learn.microsoft.com/en-us/training/modules/dax-power-bi-create-calculations/</p>
+<h3>Structure check</h3>
+<table><thead><tr><th>Unit</th><th>Tên Unit</th><th>Heading / phần nội dung chính</th></tr></thead><tbody><tr><td>1</td><td>Introduction</td><td>Mục tiêu; Calculated Table, Calculated Column, Measure</td></tr><tr><td>2</td><td>Create calculated tables</td><td>Duplicate a table; Configure duplicate tables; Create a date table; Mark as a date table</td></tr><tr><td>3</td><td>Create calculated columns</td><td>Fiscal Year; Fiscal Quarter; Month Key; Full Date Label; Understand row context</td></tr><tr><td>4</td><td>Understand implicit measures</td><td>Identify implicit measures; Summarize non-numeric columns; Considerations</td></tr><tr><td>5</td><td>Create explicit measures</td><td>Simple measures; Compound measures; Quick measures; Columns vs. measures</td></tr><tr><td>6</td><td>Use iterator functions</td><td>Complex summarization; Higher-grain summarization; Ranking</td></tr><tr><td>7</td><td>Exercise — Create DAX calculations</td><td>Salesperson table; Date table; Calculated columns; Relationships; Measures</td></tr><tr><td>8</td><td>Check your knowledge</td><td>3 câu hỏi về calculated table, column, measure</td></tr><tr><td>9</td><td>Summary</td><td>Tổng kết DAX calculations</td></tr></tbody></table>
+<h3>Unit 1 — Introduction</h3>
+<h4>Unit này dạy gì</h4>
+<p>DAX (Data Analysis Expressions) được dùng để mở rộng Semantic Model với logic nghiệp vụ. Ba loại phép tính quan trọng nhất có mục đích và thời điểm đánh giá khác nhau.</p>
+<h4>Nội dung chính trong unit</h4>
+<p>Xét bảng giao dịch:</p>
+<table><thead><tr><th>OrderID</th><th>Quantity</th><th>UnitPrice</th></tr></thead><tbody><tr><td>A001</td><td>2</td><td>100</td></tr><tr><td>A002</td><td>3</td><td>200</td></tr><tr><td>A003</td><td>1</td><td>150</td></tr></tbody></table>
+<p>Từ dữ liệu này, ta có thể cần một bảng ngày để phân tích, một cột giá trị theo từng giao dịch và một Measure tổng doanh thu động.</p>
+<ul><li><strong>Calculated Table:</strong> công thức DAX trả về một bảng; ví dụ tạo Calendar hoặc Role-playing Dimension.</li><li><strong>Calculated Column:</strong> công thức trả về một giá trị cho từng dòng, thường được lưu trong Import Model và tính lại khi refresh/processing. Thích hợp làm thuộc tính grouping/filtering.</li><li><strong>Measure:</strong> công thức trả về kết quả scalar theo Filter Context của truy vấn. Thích hợp cho KPI và các phép tính tổng hợp thay đổi khi người dùng lọc báo cáo.</li></ul>
+<p>Một yêu cầu như doanh thu theo tháng thường nên triển khai bằng Measure, không cần lưu tổng doanh thu tháng trên mọi dòng Fact.</p>
+<h3>Unit 2 — Create calculated tables</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo bảng bằng DAX, sao chép Dimension để phục vụ nhiều vai trò và xây dựng Date Table hợp lệ.</p>
+<h4>Duplicate a table — Role-playing Dimension</h4>
+<p>FactSales có <code>OrderDateKey</code>, <code>ShipDateKey</code>, <code>DueDateKey</code>. Nếu tất cả nối vào một bảng Date, thường chỉ một trong các quan hệ cạnh tranh cùng cặp bảng có thể Active.</p>
+<pre><code class="language-dax">Ship Date = 'Date'</code></pre>
+<p>Sau đó nối <code>Ship Date[DateKey]</code> với <code>FactSales[ShipDateKey]</code>. Hai Date Dimensions độc lập có thể hỗ trợ các phép nhóm/lọc riêng cho ngày đặt và ngày giao hàng.</p>
+<p>Phương án thay thế khi chỉ cần Measure theo quan hệ Inactive:</p>
+<pre><code class="language-dax">Shipped Revenue =
+CALCULATE(
+    [Revenue],
+    USERELATIONSHIP('Date'[DateKey], Sales[ShipDateKey])
+)</code></pre>
+<p><strong>Khi chọn:</strong> cần bộ lọc và hierarchy ngày độc lập cho các vai trò khác nhau. <strong>Khi không chọn:</strong> chỉ cần vài Measure theo Inactive Relationship; <code>USERELATIONSHIP</code> có thể gọn hơn.</p>
+<h4>Configure duplicate tables</h4>
+<p>Một Calculated Table sao chép dữ liệu không tự động mang theo mọi metadata. Cần rà soát Rename, Sort by Column, Hide technical keys, Relationships, Formatting, Hierarchy và Description. Nó cũng tăng dung lượng mô hình khi dữ liệu được vật chất hóa.</p>
+<h4>Create a date table</h4>
+<p><code>CALENDAR</code> tạo dãy ngày theo giới hạn chỉ định:</p>
+<pre><code class="language-dax">Date = CALENDAR(DATE(2024, 1, 1), DATE(2026, 12, 31))</code></pre>
+<p><code>CALENDARAUTO</code> tự xác định phạm vi ngày từ dữ liệu phù hợp và mở rộng đến các năm trọn vẹn. Tham số là tháng kết thúc năm tài chính:</p>
+<pre><code class="language-dax">Date = CALENDARAUTO(6)</code></pre>
+<p>Với năm tài chính kết thúc tháng 6, khoảng chứa 15/10/2021 đến 15/06/2022 được bao thành 01/07/2021–30/06/2022.</p>
+<h4>Mark as a date table</h4>
+<p><code>Power BI Desktop</code> → chọn bảng Date → <code>Table tools</code> → <code>Mark as date table</code> → chọn Date Column.</p>
+<p>Cột ngày phải có giá trị duy nhất, không BLANK, liên tục trong phạm vi và có thời gian nhất quán nếu là DateTime. <code>01/01, 02/01, 04/01</code> không hợp lệ vì thiếu 03/01. Date Table chủ động thiết kế linh hoạt hơn Auto date/time khi làm việc với nhiều Fact và Time Intelligence.</p>
+<h3>Unit 3 — Create calculated columns</h3>
+<h4>Unit này dạy gì</h4>
+<p>Tạo các thuộc tính cho từng dòng và hiểu Row Context; phân biệt tính toán trên một bảng với việc lấy giá trị từ bảng liên quan.</p>
+<h4>Create calculated columns</h4>
+<pre><code class="language-dax">NetAmount =
+Sales[Quantity] * Sales[UnitPrice] * (1 - Sales[Discount])</code></pre>
+<p>Với số lượng 2, đơn giá 100, discount 10%, NetAmount = 180. Giá trị được đánh giá trên từng dòng và thường lưu trong Import Model. Nếu chỉ cần tổng <code>Quantity × UnitPrice</code> mà không cần dùng cột làm grouping, cân nhắc <code>SUMX</code> thay vì tạo Calculated Column.</p>
+<p>Ưu tiên thực hiện các biến đổi tĩnh tại Source hoặc Power Query khi thích hợp; DAX Column có giá trị khi cần logic phụ thuộc quan hệ và DAX trong mô hình.</p>
+<h4>Fiscal Year</h4>
+<p>Nếu năm tài chính bắt đầu từ tháng 7:</p>
+<pre><code class="language-dax">Fiscal Year =
+&quot;FY&quot; &amp; (
+    YEAR('Date'[Date]) + IF(MONTH('Date'[Date]) &gt; 6, 1, 0)
+)</code></pre>
+<p>30/06/2025 thuộc FY2025; 01/07/2025 thuộc FY2026.</p>
+<h4>Fiscal Quarter</h4>
+<p>Năm tài chính tháng 7–6: Q1 = tháng 7–9, Q2 = 10–12, Q3 = 1–3, Q4 = 4–6.</p>
+<pre><code class="language-dax">Fiscal Quarter =
+'Date'[Fiscal Year] &amp; &quot; Q&quot; &amp;
+SWITCH(
+    TRUE(),
+    MONTH('Date'[Date]) &lt;= 3, 3,
+    MONTH('Date'[Date]) &lt;= 6, 4,
+    MONTH('Date'[Date]) &lt;= 9, 1,
+    2
+)</code></pre>
+<h4>Month Key; Full Date Label</h4>
+<pre><code class="language-dax">MonthKey = YEAR('Date'[Date]) * 100 + MONTH('Date'[Date])
+
+Full Date Label = FORMAT('Date'[Date], &quot;yyyy mmm, dd&quot;)</code></pre>
+<p><code>MonthKey</code> giúp sắp xếp nhãn tháng-năm theo thời gian; nếu nhãn chỉ là <code>Jan</code> lặp qua nhiều năm, hãy dùng MonthNumber (1–12), không dùng YYYYMM làm Sort Key cho một nhãn không duy nhất. <code>FORMAT</code> trả về Text; không nên sử dụng nhãn Text thay thế Date trong phép tính ngày.</p>
+<h4>Understand row context</h4>
+<p>Trong Calculated Column, <code>Sales[Quantity]</code> và <code>Sales[UnitPrice]</code> được đọc từ dòng hiện tại. <code>RELATED(Product[ListPrice])</code> có thể lấy một giá trị từ bảng phía one của Relationship phù hợp.</p>
+<pre><code class="language-dax">DiscountAmount =
+Sales[Quantity] * RELATED(Product[ListPrice]) - Sales[SalesAmount]</code></pre>
+<ul><li><code>RELATED</code>: lấy một giá trị từ bảng liên quan trong ngữ cảnh phù hợp.</li><li><code>RELATEDTABLE</code>: trả về tập dòng liên quan.</li><li><code>LOOKUPVALUE</code>: tra cứu theo điều kiện, không nên mặc định thay cho Relationship có sẵn.</li></ul>
+<p><strong>Exam:</strong> Row Context → Calculated Column; yêu cầu KPI động → Measure; Grouping/Slicer → thường cần Column.</p>
+<h3>Unit 4 — Understand implicit measures</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu việc Power BI tự tổng hợp cột khi kéo vào Values và giới hạn so với Explicit Measure.</p>
+<h4>Identify implicit measures</h4>
+<p>Kéo <code>SalesAmount</code> vào Matrix có thể tạo <code>Sum of SalesAmount</code> mà không phải định nghĩa DAX Measure. Các kiểu tổng hợp số gồm Sum, Average, Minimum, Maximum, Count, Count (Distinct), Median, Standard deviation và Variance.</p>
+<h4>Summarize non-numeric columns</h4>
+<p>Text có thể được Count/Count Distinct, First/Last; Date có thể Earliest/Latest, Count và Count Distinct tùy loại Visual và cột. Số dòng bán hàng, số đơn và số khách hàng duy nhất thường không giống nhau.</p>
+<h4>Considerations</h4>
+<p>Implicit Measure nhanh và thuận tiện để khám phá dữ liệu nhưng thiếu khả năng kiểm soát logic nghiệp vụ. <code>Sum of UnitPrice</code> thường là KPI sai nếu không có ý nghĩa nghiệp vụ cộng đơn giá. Với KPI dùng chung, tỷ suất lợi nhuận hay Time Intelligence, nên dùng Explicit Measures.</p>
+<h3>Unit 5 — Create explicit measures</h3>
+<h4>Unit này dạy gì</h4>
+<p>Viết Measures có thể tái sử dụng, dùng chúng trong các phép tính phức hợp và phân biệt với Calculated Columns.</p>
+<h4>Simple measures</h4>
+<pre><code class="language-dax">Revenue = SUM(Sales[SalesAmount])
+Orders = DISTINCTCOUNT(Sales[OrderID])
+Order Lines = COUNTROWS(Sales)
+Nonblank Keys = COUNT(Sales[SalesOrderLineKey])</code></pre>
+<p>Nếu 10.000 Sales Lines nhưng chỉ 2.000 OrderIDs duy nhất, <code>COUNTROWS</code> = 10.000 còn <code>DISTINCTCOUNT(OrderID)</code> = 2.000. Đề bài hỏi <em>number of orders</em> thì cần xác định Grain, không tự dùng COUNTROWS.</p>
+<h4>Compound measures</h4>
+<pre><code class="language-dax">Cost = SUM(Sales[CostAmount])
+Profit = [Revenue] - [Cost]
+Profit Margin = DIVIDE([Profit], [Revenue])</code></pre>
+<p><code>DIVIDE</code> xử lý trường hợp mẫu số bằng 0 hoặc BLANK tốt hơn phép chia trực tiếp. Compound Measures giảm lặp logic; nếu sửa Base Measure, mọi Measure phụ thuộc cũng có thể thay đổi.</p>
+<h4>Quick measures</h4>
+<p>Power BI có thể sinh DAX từ mẫu calculation như Division, Running Total hoặc Time Intelligence. Quick Measure giúp học cú pháp nhưng Developer vẫn phải kiểm tra ngữ nghĩa.</p>
+<h4>Compare columns and measures</h4>
+<table><thead><tr><th>Tiêu chí</th><th>Calculated Column</th><th>Measure</th></tr></thead><tbody><tr><td>Ngữ cảnh điển hình</td><td>Row Context</td><td>Filter Context</td></tr><tr><td>Import Model</td><td>Lưu giá trị theo dòng</td><td>Không lưu kết quả từng tổ hợp lọc</td></tr><tr><td>Dùng làm Slicer/Group</td><td>Có</td><td>Không như Column</td></tr><tr><td>KPI động</td><td>Thường không tối ưu</td><td>Phù hợp</td></tr><tr><td>Chi phí</td><td>Tăng kích thước mô hình</td><td>Tính khi truy vấn</td></tr></tbody></table>
+<h3>Unit 6 — Use iterator functions</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hiểu các hàm <code>X</code> đánh giá biểu thức qua từng dòng của một bảng, sử dụng cho tổng hợp phức tạp, thay đổi Grain và Ranking.</p>
+<h4>Complex summarization</h4>
+<pre><code class="language-dax">Revenue = SUMX(Sales, Sales[Quantity] * Sales[UnitPrice])</code></pre>
+<p>Nếu ba dòng có <code>Quantity × UnitPrice</code> lần lượt 200, 600, 150 thì Revenue = 950. <code>SUMX</code> không cần một LineRevenue Calculated Column nhưng không mặc nhiên nhanh hơn <code>SUM</code> trên cột đã có.</p>
+<pre><code class="language-dax">Total Discount =
+SUMX(
+    Sales,
+    Sales[Quantity] * (RELATED(Product[ListPrice]) - Sales[UnitPrice])
+)</code></pre>
+<h4>Higher-grain summarization</h4>
+<p>Sales Lines: Order A = 100 + 300; Order B = 500. Trung bình theo dòng = 300; trung bình theo Order = (400+500)/2 = 450.</p>
+<pre><code class="language-dax">Average Revenue per Order =
+AVERAGEX(VALUES(Sales[OrderID]), [Revenue])</code></pre>
+<p>Phải xác định Grain yêu cầu trước khi chọn <code>AVERAGE</code>, <code>AVERAGEX</code>, <code>SUM</code> hoặc <code>SUMX</code>. Khi Measure được gọi trong iterator, Context Transition có thể giúp Measure được đánh giá theo Order hiện tại.</p>
+<h4>Ranking with iterator functions</h4>
+<pre><code class="language-dax">Product Rank =
+RANKX(ALL(Product[ProductName]), [Revenue], , DESC, DENSE)</code></pre>
+<p>Với Revenue 500, 400, 400, 300: <code>SKIP</code> cho rank 1,2,2,4; <code>DENSE</code> cho rank 1,2,2,3.</p>
+<pre><code class="language-dax">Product Rank =
+IF(
+    HASONEVALUE(Product[ProductName]),
+    RANKX(ALL(Product[ProductName]), [Revenue], , DESC, DENSE)
+)</code></pre>
+<p>Điều kiện <code>HASONEVALUE</code> giúp không hiển thị rank không mong muốn tại Total Row có nhiều ProductNames. <code>ALL(Product[ProductName])</code> chỉ loại filter trên cột đó, không tự loại mọi filter khác.</p>
+<h3>Unit 7 — Exercise: Create DAX calculations</h3>
+<h4>Unit này dạy gì</h4>
+<p>Hoàn thiện Semantic Model bán hàng với bảng Salesperson, Date Table, các Calculated Columns và Measures trong Power BI Desktop.</p>
+<h4>Chuẩn bị</h4>
+<ul><li>Power BI Desktop trên Windows hoặc Hosted Lab VM.</li><li>Bộ Sales Analysis trong Lab MicrosoftLearning, file <code>04-Starter-Sales Analysis.pbix</code> và <code>Snippets.txt</code>.</li><li>Không cần Power BI Pro chỉ để thực hành mô hình hóa cục bộ; có thể dùng Hosted Lab theo quyền truy cập hiện có.</li><li>Hướng dẫn: https://microsoftlearning.github.io/PL-300-Microsoft-Power-BI-Data-Analyst/Instructions/Labs/04-create-dax-calculations.html</li></ul>
+<h4>Các bước</h4>
+<p><strong>Bước 1 — Salesperson table.</strong> Mở PBIX → <code>Modeling</code> → <code>New table</code>:</p>
+<pre><code class="language-dax">Salesperson = 'Salesperson (Performance)'</code></pre>
+<p>Tạo <code>Salesperson[EmployeeKey]</code> → <code>Sales[EmployeeKey]</code>; xóa quan hệ Inactive cũ theo hướng dẫn Lab. Ẩn EmployeeID, EmployeeKey, UPN trên bảng mới; đặt các Descriptions thích hợp.</p>
+<p><strong>Bước 2 — Date Table.</strong></p>
+<pre><code class="language-dax">Date = CALENDARAUTO(6)</code></pre>
+<p>Trong bộ mẫu chính thức, hướng dẫn dự kiến khoảng 1.826 dòng ngày; số thực tế phụ thuộc dữ liệu nguồn.</p>
+<p><strong>Bước 3 — Calculated Columns.</strong> Tạo <code>Year</code>, <code>Quarter</code>, <code>Month</code> theo fiscal year tháng 7–6; dùng <code>Snippets.txt</code> cho các biểu thức chính thức. Tạo <code>MonthKey</code>:</p>
+<pre><code class="language-dax">MonthKey = YEAR('Date'[Date]) * 100 + MONTH('Date'[Date])</code></pre>
+<p>Chọn <code>Month</code> → <code>Sort by Column</code> → <code>MonthKey</code> nếu nhãn tháng có ánh xạ một-một tới sort key. Nếu nhãn lặp qua các năm, thiết kế lại nhãn/sort key phù hợp.</p>
+<p><strong>Bước 4 — Complete Date Table.</strong> Ẩn MonthKey; tạo hierarchy <code>Fiscal</code> gồm Year, Quarter, Month. Tạo Relationships Date→Sales[OrderDate] và Date→Targets[TargetMonth] theo data type/grain. Ẩn những cột ngày kỹ thuật trên Fact/Targets khi thích hợp.</p>
+<p><strong>Bước 5 — Mark as Date Table.</strong> <code>Table tools</code> → <code>Mark as date table</code> → chọn <code>Date</code>.</p>
+<p><strong>Bước 6 — Simple Measures.</strong></p>
+<pre><code class="language-dax">Avg Price = AVERAGE(Sales[Unit Price])
+Orders = DISTINCTCOUNT(Sales[SalesOrderNumber])
+Order Lines = COUNTROWS(Sales)</code></pre>
+<p>Tạo thêm Median Price, Min Price, Max Price; Format kiểu tiền/số thích hợp; Display Folder <code>Pricing</code> và <code>Counts</code>.</p>
+<p><strong>Bước 7 — Additional Measures.</strong></p>
+<pre><code class="language-dax">Target =
+IF(
+    HASONEVALUE('Salesperson (Performance)'[Salesperson]),
+    SUM(Targets[TargetAmount])
+)</code></pre>
+<p>Tạo Variance và Variance Margin theo <code>Snippets.txt</code> và định nghĩa KPI của Lab; kiểm tra Total Rows và Format.</p>
+<p><strong>Bước 8 — Save.</strong> Lưu PBIX; kiểm tra các Visual và Relationships.</p>
+<h4>Kết quả và lỗi thường gặp</h4>
+<ul><li>Date Table được đánh dấu thành công; Relationship Active hợp lý.</li><li>Sort by Column không báo lỗi; nếu báo lỗi, kiểm tra nhãn tháng ánh xạ nhiều MonthKeys.</li><li><code>A single value cannot be determined</code>: kiểm tra ngữ cảnh của Column trong biểu thức.</li><li><code>Circular dependency</code>: kiểm tra cột hoặc bảng tính toán phụ thuộc vòng.</li><li>Target Total trả BLANK có thể đúng do <code>HASONEVALUE</code>.</li></ul>
+<p><strong>Exam:</strong> Calculated Table, Date Table, Row Context, Display Folders, <code>DISTINCTCOUNT</code>, <code>HASONEVALUE</code>.</p>
+<h3>Unit 8 — Check your knowledge</h3>
+<p><strong>Câu 1 — Phát biểu nào đúng về Calculated Table?</strong></p>
+<p>A. Làm tăng kích thước Semantic Model. <strong>Đúng</strong>, vì bảng được vật chất hóa.<br>B. Luôn được đánh giá bằng Row Context. Sai, đây không phải quy tắc chung của mọi biểu thức bảng.<br>C. Được tạo trong Power Query. Sai, Calculated Table đang xét được tạo bằng DAX.<br>D. Không thể có Calculated Columns. Sai, có thể thêm cột vào Calculated Table.</p>
+<p><strong>Câu 2 — Phát biểu nào đúng về Calculated Column?</strong></p>
+<p>A. Chỉ tạo trong Power Query. Sai.<br>B. Được đánh giá trong Row Context. <strong>Đúng</strong>.<br>C. Chỉ tham chiếu cột cùng bảng. Sai, có thể dùng <code>RELATED</code>.<br>D. Không thể tham gia Relationship. Sai, có thể tham gia nếu đáp ứng điều kiện.</p>
+<p><strong>Câu 3 — Phát biểu nào đúng về Measure?</strong></p>
+<p>A. Luôn lưu sẵn kết quả trong Model. Sai.<br>B. Bắt buộc có Measure mới tổng hợp được cột. Sai, còn Implicit Measures.<br>C. Có thể tham chiếu trần cột nhiều giá trị và luôn trả scalar hợp lệ. Sai.<br>D. Có thể trực tiếp sử dụng Measure khác. <strong>Đúng</strong>; ví dụ <code>[Profit]=[Revenue]-[Cost]</code>.</p>
+<h3>Unit 9 — Summary</h3>
+<p>DAX mở rộng mô hình thông qua Calculated Tables, Calculated Columns và Measures. Calculated Column dùng Row Context và thường được xử lý khi refresh Import; Measure được đánh giá động theo Filter Context; Iterators như <code>SUMX</code>, <code>AVERAGEX</code>, <code>RANKX</code> xử lý phép tính phức tạp và nhiều Grain. Điều cốt lõi là chọn đúng loại phép tính và giữ đúng ngữ nghĩa nghiệp vụ.</p>
+<h3>Coverage check — Module 1</h3>
+<ul><li><strong>Unit:</strong> 9/9, đã đi qua đủ Introduction, Tables, Columns, Implicit Measures, Explicit Measures, Iterators, Exercise, Knowledge check và Summary.</li><li><strong>Heading chính:</strong> đủ các heading nhận diện trong Structure check; bổ sung ví dụ cho Date Table, Fiscal Calendar, Row Context, Grain, Ranking.</li><li><strong>Exercise:</strong> có quy trình và mã DAX trọng tâm, nhưng một số công thức được dẫn về <code>Snippets.txt</code> vì nội dung file đó chưa xác minh nguyên văn; không tự nhận đã chạy Lab.</li><li><strong>Assessment:</strong> 3/3 câu, giải thích cả đáp án sai.</li><li><strong>Nội dung nên ôn:</strong> Row Context vs Filter Context; Column vs Measure; SUM vs SUMX; RELATED; USERELATIONSHIP; Date Table; Ranking.</li><li><strong>AI/Copilot/Agent/Power Automate:</strong> không phải nội dung trọng tâm của Module 1; không bổ sung cưỡng ép.</li></ul>
+<hr>

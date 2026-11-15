@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "libraryName": "VBook Personal Library",
-  "updatedAt": "2026-11-15T22:39:00+07:00",
+  "updatedAt": "2026-11-15T15:46:57.400Z",
   "books": [
     {
       "id": "dp-700-fabric-data-engineering-audio",
@@ -41,7 +41,7 @@
       "edition": "normal",
       "description": "Giáo trình DP-600 bằng tiếng Việt, đầy đủ bài giảng, ví dụ, lab, assessment và coverage theo Microsoft Learn, chia thành Learning Path.",
       "status": "ongoing",
-      "updatedAt": "2026-11-15T22:39:00+07:00",
+      "updatedAt": "2026-11-15T15:46:57.400Z",
       "latestChapter": "LP-5 | Module 3 — Secure data access in Microsoft Fabric",
       "bookPath": "books/dp-600-fabric-analytics/book.json",
       "genres": [
